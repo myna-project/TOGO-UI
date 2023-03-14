@@ -1,0 +1,89 @@
+.my-container {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.my-toolbar {
+  position: fixed;
+  z-index: 2;
+  min-height: 80px;
+}
+
+h1.my-app-name {
+  margin-left: 8px;
+  margin-right: 4px;
+}
+
+h1.small-screen-text {
+  font-size: 20px;
+}
+
+h1.my-is-mobile {
+  display: none;
+}
+
+h1.my-is-large-screen {
+  display: none;
+}
+
+.my-sidenav-container {
+  flex: 1 0 auto;
+  margin-top: 80px;
+}
+
+.my-sidenav {
+  position: fixed;
+  margin-top: 80px;
+}
+
+.my-sidenav-icon {
+  margin-right: 6px;
+  vertical-align: bottom;
+}
+
+.my-sidenav-right {
+  width: 62px;
+}
+
+.my-sidenav-right .my-sidenav-icon-right {
+  margin-right: 0px;
+}
+
+.dashboard-org {
+  display: flex;
+}
+
+.fill-remaining-space {
+  flex: 1 1 auto;
+}
+
+.avatar-button {
+  background-color: grey;
+}
+
+.user-avatar {
+  width: 100%;
+}
+
+.selected-lang-flag {
+  padding-left: 10px;
+}
+
+.available-lang-flag {
+  padding-right: 10px;
+}
+
+.scroll-to-top {
+  position: fixed;
+  bottom: 2%;
+  right: 0.3%;
+  border-radius: 2px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+  cursor: hand;
+  border-radius: 50%;
+}

@@ -1,0 +1,12 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option disabled>{{ 'MENU.ABOUT' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  <h4>{{ 'MENU.ABOUT' | translate }}</h4>
+  <mat-divider></mat-divider>
+  <p><span class="bold-title">{{ 'ABOUT.VERSION' | translate }}</span><span> {{version}}</span></p>
+  <p><span class="bold-title">{{ 'ABOUT.BUILD' | translate }}</span><span> {{time}}</span></p>
+</div>

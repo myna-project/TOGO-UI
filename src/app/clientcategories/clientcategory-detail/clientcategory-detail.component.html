@@ -1,0 +1,38 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container" *ngIf="category">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/clientcategories" routerLinkActive="active">{{ 'MENU.CLIENTCATEGORIES' | translate }}</mat-chip-option>
+      <mat-chip-option disabled>{{ category.id ? category.description : ('CLIENTCATEGORY.NEW' | translate) }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="category.id" mat-flat-button color="warn" [disabled]="isDeleting" (click)="delete()">{{ 'CLIENTCATEGORY.DELETE' | translate }}</button>
+    </div>
+  </div>
+  <h4>
+    {{ (category.id ? 'CLIENTCATEGORY.EDITTITLE' : 'CLIENTCATEGORY.CREATETITLE') | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="categoryForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'CLIENTCATEGORY.DESCRIPTION' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'CLIENTCATEGORY.DESCRIPTION' | translate }}" [formControl]="description" required>
+        <mat-error *ngIf="description.invalid && (description.dirty || description.touched) && description.errors.required">{{ 'CLIENTCATEGORY.MISSINGDESCRIPTION' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="style-label">{{ 'CLIENTCATEGORY.IMAGE' | translate }}</div>
+    <div class="togo-form-field-group">
+      <label class="clientcategory-img-label" for="imageInput">
+        <img class="clientcategory-img" [src]="category_image_show">
+        <div class="clientcategory-img-label-text">{{ 'CLIENTCATEGORY.CHANGEIMAGE' | translate }}</div>
+        <div class="clientcategory-img-background"></div>
+      </label>
+      <br>
+      <input id="imageInput" type='file' accept="image/*" (change)="onSelectImage($event)">
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || categoryForm.invalid">{{ 'CLIENTCATEGORY.SAVE' | translate }}</button>
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

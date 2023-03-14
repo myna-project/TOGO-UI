@@ -1,0 +1,178 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/organizations" routerLinkActive="active">{{ 'MENU.ORGS' | translate }}</mat-chip-option>
+      <mat-chip-option disabled>{{ 'MENU.MEASURES' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  <h4>
+    {{ 'MEASURES.TITLE' | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="measuresForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'MEASURES.STARTTIME' | translate }}</mat-label>
+        <input matInput [ngxMatDatetimePicker]="startpicker" placeholder="{{ 'MEASURES.STARTTIME' | translate }}" [formControlName]="'startTime'" required>
+        <mat-datepicker-toggle matSuffix [for]="startpicker"></mat-datepicker-toggle>
+        <ngx-mat-datetime-picker #startpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
+        <mat-error *ngIf="group['startTime'].invalid && (group['startTime'].dirty || group['startTime'].touched) && group['startTime'].errors.required">{{ 'MEASURES.MISSINGSTARTDATE' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'MEASURES.ENDTIME' | translate }}</mat-label>
+        <input matInput [ngxMatDatetimePicker]="endpicker" placeholder="{{ 'MEASURES.ENDTIME' | translate }}" [formControlName]="'endTime'" required>
+        <mat-datepicker-toggle matSuffix [for]="endpicker"></mat-datepicker-toggle>
+        <ngx-mat-datetime-picker #endpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
+        <mat-error *ngIf="group['endTime'].invalid && (group['endTime'].dirty || group['endTime'].touched) && group['endTime'].errors.required">{{ 'MEASURES.MISSINGENDDATE' | translate }}</mat-error>
+      </mat-form-field>
+      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastHour()">{{ 'MEASURES.LASTHOUR' | translate }}</button>
+      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastDay()">{{ 'MEASURES.LASTDAY' | translate }}</button>
+      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastWeek()">{{ 'MEASURES.LASTWEEK' | translate }}</button>
+      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastMonth()">{{ 'MEASURES.LASTMONTH' | translate }}</button>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'MEASURES.TIMEAGGREGATION' | translate }}</mat-label>
+        <mat-select [formControlName]="'timeAggregation'" required>
+          <mat-option *ngFor="let aggregation of timeAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div>
+      <h5>
+        {{ 'MEASURES.DRAINS' | translate }}
+        <button *ngIf="!isLoading" mat-raised-button class="togo-form-button adddrains-button" (click)="addDrains()">{{ 'MEASURES.ADDDRAINS' | translate }}</button>
+        <button *ngIf="!isLoading" mat-raised-button class="togo-form-button loadformulas-button" (click)="addFormulas()">{{ 'MEASURES.LOADFORMULAS' | translate }}</button>
+      </h5>
+      <div *ngIf="drains.length > 0" class="togo-form-field-group">
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'FORMULASTREE.FORMULANAME' | translate }}</mat-label>
+          <input matInput placeholder="{{ 'FORMULASTREE.FORMULANAME' | translate }}" formControlName="formulaName">
+        </mat-form-field>
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'MEASURES.ORG' | translate }}</mat-label>
+          <mat-select [formControlName]="'organization'">
+            <mat-option *ngFor="let org of allOrgs" [value]="org.id">{{org.name}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'MEASURES.CLIENT' | translate }}</mat-label>
+          <mat-select [formControlName]="'client'">
+            <mat-option *ngFor="let c of formulaClients" [value]="c.id">{{c.name}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <button type="submit" class="togo-form-button" mat-raised-button (click)="createFormula()" color="primary" [disabled]="!visibleDrains || measuresForm.get('formulaName').value === '' || measuresForm.get('formulaName').value === undefined || measuresForm.get('organization').value === undefined">{{ 'FORMULASTREE.SAVE' | translate }}</button>
+        <button class="togo-form-button" mat-raised-button (click)="updateFormula()" [disabled]="!formulaId || !visibleDrains || measuresForm.get('formulaName').value === '' || measuresForm.get('formulaName').value === undefined || measuresForm.get('organization').value === undefined">{{ 'FORMULASTREE.UPDATE' | translate }}</button>
+      </div>
+      <div class="togo-list">
+        <div *ngFor="let d of drains; let i = index" class="togo-list-item drain">
+          <div *ngIf="d.visible" class="togo-form-field-group">
+            <div class="togo-list-item-title">
+              <button mat-icon-button class="togo-list-item-title-icon" (click)="removeDrain(i)" >
+                <mat-icon class="togo-list-item-title-icon error" title="{{ 'MEASURES.REMOVEDRAIN' | translate }}">remove_circle</mat-icon>
+              </button>
+              {{d.full_name}}
+              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.operation === 'SEMICOLON')" (click)="showLegend(i)" >
+                <mat-icon class="togo-list-item-title-icon" color="primary" title="{{ 'MEASURES.EDITLEGEND' | translate }}">edit</mat-icon>
+              </button>
+            </div>
+            <div class="togo-list-item-right togo-list-item-right-form-field">
+              <mat-form-field class="short-form-field">
+                <mat-label>{{ 'MEASURES.AGGREGATION' | translate }}</mat-label>
+                <mat-select [formControlName]="'aggregation_' + i" required>
+                  <mat-option *ngFor="let aggregation of d.aggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field class="short-form-field">
+                <mat-label>{{ 'MEASURES.OPERATION' | translate }}</mat-label>
+                <mat-select [formControlName]="'operation_' + i" required>
+                  <mat-option *ngFor="let operation of d.operations" [value]="operation.id">{{operation.description}}</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div *ngIf="(d.operation === 'SEMICOLON') && d.show_legend" class="chart-legend-field-div">
+              <mat-form-field class="long-form-field">
+                <mat-label>{{ 'MEASURES.LEGEND' | translate }}</mat-label>
+                <input matInput placeholder="{{ 'MEASURES.LEGEND' | translate }}" [formControlName]="'legend_' + i">
+              </mat-form-field>
+            </div>
+            <mat-divider *ngIf="d.operation === 'SEMICOLON'" class="togo-list-item-divider"></mat-divider>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="togo-form-field-group">
+      <button type="submit" mat-raised-button class="chart-load-button" color="primary" (click)="loadMeasures()" [disabled]="measuresForm.invalid || (drains.length == 0)">{{ 'MEASURES.LOADMEASURES' | translate }}</button>
+      <mat-spinner class="chart-loading-spinner" *ngIf="isLoadingMeasures" diameter="30"></mat-spinner>
+    </div>
+    <div class="no-data-div" *ngIf="measuresLoaded && (chartSeries.length === 0)">
+      <span>{{ 'MEASURES.NOMEASURES' | translate }}</span>
+    </div>
+    <div *ngIf="chart">
+      <h5>{{ 'MEASURES.CHART' | translate }}</h5>
+      <div class="togo-form-field-group">
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'MEASURES.CHARTTYPE' | translate }}</mat-label>
+          <mat-select [formControlName]="'chartType'" required>
+            <mat-option *ngFor="let type of visibleChartTypes" [value]="type.id">{{type.description}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field *ngIf="isSplineChart" class="short-form-field" floatLabel="always" appearance="none">
+          <mat-label>{{ 'MEASURES.SHOWMARKERS' | translate }}</mat-label>
+          <mat-slide-toggle color="primary" [formControlName]="'showMarkers'"></mat-slide-toggle>
+          <textarea matInput hidden></textarea>
+        </mat-form-field>
+      </div>
+      <div *ngIf="!isPieChart && !isHeatmapChart" class="togo-form-field-group">
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'MEASURES.WARNINGVALUE' | translate }}</mat-label>
+          <input matInput placeholder="{{ 'MEASURES.WARNINGVALUE' | translate }}" [formControlName]="'warningValue'">
+          <mat-error *ngIf="group['warningValue'].invalid && (group['warningValue'].dirty || group['warningValue'].touched) && group['warningValue'].errors.pattern">{{ 'DASHBOARDWIDGET.MEASURESWARNINGVALUE' | translate }}</mat-error>
+        </mat-form-field>
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'MEASURES.ALARMVALUE' | translate }}</mat-label>
+          <input matInput placeholder="{{ 'MEASURES.ALARMVALUE' | translate }}" [formControlName]="'alarmValue'">
+          <mat-error *ngIf="group['alarmValue'].invalid && (group['alarmValue'].dirty || group['alarmValue'].touched) && group['alarmValue'].errors.pattern">{{ 'DASHBOARDWIDGET.MEASURESWARNINGVALUE' | translate }}</mat-error>
+        </mat-form-field>
+      </div>
+      <div *ngIf="isHeatmapChart" class="togo-form-field-group">
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'MEASURES.COLOR' | translate }} 1 (0%)</mat-label>
+          <input matInput [ngxMatColorPicker]="color1" [formControlName]="'color1'">
+          <ngx-mat-color-toggle matSuffix [for]="color1"></ngx-mat-color-toggle>
+          <ngx-mat-color-picker #color1></ngx-mat-color-picker>
+        </mat-form-field>
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'MEASURES.COLOR' | translate }} 2 (50%)</mat-label>
+          <input matInput [ngxMatColorPicker]="color2" [formControlName]="'color2'">
+          <ngx-mat-color-toggle matSuffix [for]="color2"></ngx-mat-color-toggle>
+          <ngx-mat-color-picker #color2></ngx-mat-color-picker>
+        </mat-form-field>
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'MEASURES.COLOR' | translate }} 3 (90%)</mat-label>
+          <input matInput [ngxMatColorPicker]="color3" [formControlName]="'color3'">
+          <ngx-mat-color-toggle matSuffix [for]="color3"></ngx-mat-color-toggle>
+          <ngx-mat-color-picker #color3></ngx-mat-color-picker>
+        </mat-form-field>
+        <button mat-raised-button color="primary" (click)="drawChart()">{{ 'MEASURES.RELOADCHART' | translate }}</button>
+      </div>
+      <div [chart]="chart"></div>
+      <div *ngIf="!isPieChart && !isHeatmapChart && chartOptions" class="togo-form-field-group">
+        <mat-form-field *ngIf="!isHeatmapChart" class="short-form-field">
+          <mat-label>{{ 'MEASURES.CHARTAGGREGATION' | translate }}</mat-label>
+          <mat-select [formControlName]="'chartAggregation'" required>
+            <mat-option *ngFor="let aggregation of chartAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div>
+        <button *ngIf="!isPieChart && !isHeatmapChart && !chartOptions" mat-raised-button color="primary" (click)="chartOptions = true">{{ 'MEASURES.SHOWCHARTOPTIONS' | translate }}</button>
+        <button mat-raised-button color="primary" class="chart-footer-button" (click)="exportCsv()">{{ 'MEASURES.DOWNLOADCSV' | translate }}</button>
+        <button mat-raised-button color="primary" class="chart-footer-button" (click)="shareLink()">{{ 'MEASURES.SHARELINK' | translate }}</button>
+      </div>
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

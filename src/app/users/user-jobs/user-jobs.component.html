@@ -1,0 +1,39 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container" *ngIf="user">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/users" routerLinkActive="active">{{ 'MENU.USERS' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="user.id" routerLink="/user/{{user.id}}" routerLinkActive="active">{{user.username}}</mat-chip-option>
+      <mat-chip-option disabled>{{ 'USER.JOBS' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  <h4>
+    {{ 'USER.EDITJOBS' | translate }}
+  </h4>
+  <div class="togo-list">
+    <div *ngFor="let job of userJobs" class="togo-list-item">
+      <div class="togo-list-item-title">{{job.name}}</div>
+      <div class="togo-list-item-right">
+        <button mat-stroked-button color="primary" (click)="removeJob(job.id)">
+          <mat-icon>edit</mat-icon>
+          {{ 'USER.REMOVEJOB' | translate }}
+        </button>
+      </div>
+      <mat-divider class="togo-list-item-divider"></mat-divider>
+    </div>
+  </div>
+  <form class="togo-form" [formGroup]="userJobsForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="long-form-field">
+        <mat-label>{{ 'USER.NEWJOB' | translate }}</mat-label>
+        <mat-select [formControl]="newJob" [compareWith]="compareObjects">
+          <mat-option *ngFor="let j of jobs" [value]="j">{{j.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <button type="submit" mat-raised-button color="primary" (click)="addJob()" [disabled]="userJobsForm.invalid">{{ 'USER.ADDJOB' | translate }}</button>
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

@@ -1,0 +1,429 @@
+@import "custom-theme";
+
+@media only screen and (max-width: 600px) {
+  .togo-form .togo-form-fieldset .short-form-field,
+  .togo-form .togo-form-fieldset .togo-form-field-group .short-form-field,
+  .togo-form .togo-form-field-group .short-form-field,
+  .togo-list .togo-list-item .short-form-field,
+  .togo-form .togo-form-fieldset .medium-form-field,
+  .togo-form .togo-form-fieldset .togo-form-field-group .medium-form-field,
+  .togo-form .togo-form-field-group .medium-form-field,
+  .togo-list .togo-list-item .medium-form-field,
+  .togo-form .togo-form-fieldset .long-form-field,
+  .togo-form .togo-form-fieldset .togo-form-field-group .long-form-field,
+  .togo-form .togo-form-field-group .long-form-field,
+  .togo-list .togo-list-item .long-form-field {
+    min-width: 90%;
+  }
+}
+
+@media only screen and (min-width: 600px) {
+  .togo-form .togo-form-fieldset .short-form-field,
+  .togo-form .togo-form-fieldset .togo-form-field-group .short-form-field,
+  .togo-form .togo-form-field-group .short-form-field,
+  .togo-list .togo-list-item .short-form-field {
+    min-width: 25%;
+    margin-right: 12px;
+  }
+
+  .togo-form .togo-form-fieldset .medium-form-field,
+  .togo-form .togo-form-fieldset .togo-form-field-group .medium-form-field,
+  .togo-form .togo-form-field-group .medium-form-field,
+  .togo-list .togo-list-item .medium-form-field {
+    min-width: 40%;
+    margin-right: 12px;
+  }
+
+  .togo-form .togo-form-fieldset .long-form-field,
+  .togo-form .togo-form-fieldset .togo-form-field-group .long-form-field,
+  .togo-form .togo-form-field-group .long-form-field,
+  .togo-list .togo-list-item .long-form-field {
+    min-width: 75%;
+    margin-right: 12px;
+  }
+}
+
+html, body {
+  margin: 0;
+  font-family: 'Roboto', 'Helvetica', sans-serif;
+}
+
+.main-container {
+  margin-top: 1%;
+  margin-right: 2.5%;
+  margin-bottom: 2.5%;
+  margin-left: 2.5%;
+}
+
+.mat-dialog-title > .mat-icon {
+  vertical-align: sub;
+}
+
+.breadcrumb {
+  display: flex;
+}
+
+.breadcrumb-left {
+  margin-right: auto;
+}
+
+.breadcrumb-right {
+  margin-left: auto;
+}
+
+.breadcrumb-right button {
+  margin: 5px;
+}
+
+.no-data-div {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.search-box {
+  margin-top: 6px;
+  margin-right: 6px;
+}
+
+.togo-list {
+  margin-bottom: 20px;
+}
+
+.togo-list .togo-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  padding-bottom: 5px;
+  padding-left: 2.5%;
+  padding-right: 2.5%;
+  padding-top: 5px;
+}
+
+.togo-list .togo-list-item.drain {
+  padding: 0;
+}
+
+.togo-list .togo-list-item.index-component {
+  width: 100%;
+}
+
+.togo-list-item-title {
+  margin-top: auto;
+  margin-bottom: auto;
+  padding-left: 1%;
+}
+
+.togo-list-item-title-icon {
+  margin-bottom: 8px;
+  vertical-align: middle;
+}
+
+.togo-list-item-title-bold {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.togo-list-item-right {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+  margin-left: auto;
+}
+
+.togo-list-item-right-form-field {
+  margin-top: 10px;
+}
+
+mat-divider.togo-list-item-divider {
+  flex-basis: 100%;
+  margin-top: 5px;
+}
+
+.list-tree {
+  margin-top: 20px;
+}
+
+.list-tree-invisible {
+  display: none;
+}
+
+.togo-fieldset {
+  border-width: 1px;
+  height: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  position: relative;
+}
+
+.togo-form .togo-form-fieldset,
+.togo-list-fieldset {
+  border-style: dotted;
+  border-color: #999999;
+  border-width: 1px;
+  height: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  position: relative;
+}
+
+.togo-form .togo-form-field-group {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+  position: relative;
+  width: 100%;
+}
+
+.togo-form .togo-form-fieldset .very-short-form-field,
+.togo-form .togo-form-fieldset .togo-form-field-group .very-short-form-field,
+.togo-form .togo-form-field-group .very-short-form-field,
+.togo-list .togo-list-item .very-short-form-field {
+  margin-right: 12px;
+}
+
+.togo-form .togo-form-button {
+  margin-bottom: 4px;
+  margin-right: 12px;
+}
+
+.togo-radio-button {
+  margin-bottom: 6px;
+}
+
+.button-row-right button,
+.button-row-right a {
+  margin: 1%;
+  float: right;
+}
+
+.mat-tree {
+  padding-top: 8px;
+}
+
+.mat-tree-node-content {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.mat-tree-node-title {
+  align-self: center;
+}
+
+.mat-tree-node-bold-title {
+  font-weight: bold;
+}
+
+.mat-tree-node-underlined-title {
+  text-decoration: underline;
+}
+
+.mat-tree-node-italic-title {
+  font-style: italic;
+}
+
+.mat-tree-node-title-icon {
+  position: relative;
+  top: 5px;
+  right: 6px;
+}
+
+.mat-tree-node-title-icon-after {
+  left: 6px;
+}
+
+.mat-tree-node-right {
+  margin-left: auto;
+}
+
+.mat-tree-node-buttons {
+  display: contents;
+}
+
+.mat-tree-node-buttons button {
+  display: flex;
+  margin-bottom: auto;
+  margin-top: auto;
+}
+
+.mat-tree-node-buttons.button-row-right button:first-of-type {
+  margin-left: auto
+}
+
+.mat-tree-node-buttons.button-row-right button {
+  margin-bottom: 4px;
+  min-height: 40px;
+}
+
+.mat-tree-node-divider {
+  flex-basis: 100%;
+}
+
+.mitch-graph .mitch-d3-tree.boxed-tree.default .node.inactive-client .title-group .title-box {
+  fill: #888a85;
+}
+
+.mitch-graph .mitch-d3-tree.boxed-tree.default .node.empty-client .title-group .title-box {
+  fill: #468266;
+}
+
+.mitch-graph .mitch-d3-tree.boxed-tree.default .node.collapsed .body-group .body-box {
+  fill: #4ecf53;
+}
+
+.mitch-graph .mitch-d3-tree.boxed-tree.default .node .body-group .body-box {
+  fill: #42f548;
+}
+
+.mitch-graph .mitch-d3-tree.boxed-tree.default .node.collapsed.alert .body-group .body-box {
+  fill: #fc4958;
+}
+
+.mitch-graph .mitch-d3-tree.boxed-tree.default .node.alert .body-group .body-box {
+  fill: red;
+}
+
+.mitch-graph .mitch-d3-tree.boxed-tree.default .node.collapsed.warning .body-group .body-box {
+  fill: #fdff6b;
+}
+
+.mitch-graph .mitch-d3-tree.boxed-tree.default .node.warning .body-group .body-box {
+  fill: yellow;
+}
+
+.gauges {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.gauges div {
+  display: table;
+  margin: 0 auto;
+  min-width: 200px;
+}
+
+.togo-form .togo-form-button.darkmagenta-button,
+.main-container .button-row-right .darkmagenta-button {
+  background-color: #3465a4;
+  color: white;
+}
+
+.togo-form .togo-form-button.clear-button {
+  margin-left: 30px;
+}
+
+.togo-form .togo-form-button.adddrains-button {
+  background-color: #204a87;
+  color: white;
+  margin-left: 30px;
+}
+
+.togo-form .togo-form-button.loadformulas-button {
+  background-color: #204a87;
+  color: white;
+  margin-left: 30px;
+}
+
+.togo-form .togo-form-button.addindices-button {
+  background-color: #204a87;
+  color: white;
+  margin-left: 30px;
+}
+
+.togo-form .togo-form-button.adddraincontrols-button {
+  background-color: #204a87;
+  color: white;
+  margin-left: 30px;
+}
+
+.drain-selected {
+  background-color: #8ae234;
+}
+
+.formula-selected {
+  background-color: #8ae234;
+}
+
+.index-selected {
+  background-color: #8ae234;
+}
+
+.control-selected {
+  background-color: #8ae234;
+}
+
+.vertical-middle {
+  vertical-align: middle;
+}
+
+.right {
+  float: right;
+}
+
+.synoptic {
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+.last-updated {
+  margin-top: 1.5%;
+  margin-bottom: 1.5%;
+  margin-right: 2.5%;
+}
+
+.chart-legend-field-div {
+  min-width: 100%;
+}
+
+.chart-load-button {
+  margin-bottom: 12px;
+}
+
+.mat-spinner.chart-loading-spinner {
+  margin-left: 10px;
+}
+
+.chart-footer-button {
+  margin-left: 20px;
+}
+
+.mat-mdc-snack-bar-container {
+  --mat-mdc-snack-bar-button-color: #155724;
+  --mdc-snackbar-container-color: #8ae234;
+  --mdc-snackbar-supporting-text-color: #155724;
+}
+
+.notify-success {
+  color: #155724;
+  background-color: #8ae234;
+  border-color: #155724;
+}
+
+mat-dialog-actions .mat-mdc-raised-button.confirm,
+.confirm {
+  background-color: #8ae234;
+}
+
+.info {
+  color: blue;
+}
+
+.error {
+  color: red;
+}
+
+.warning {
+  color: yellow;
+}
+
+.client-default-drain {
+  color: yellow;
+}
+
+.clickable {
+  cursor: pointer;
+}

@@ -1,0 +1,111 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container" *ngIf="drain">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/organizations" routerLinkActive="active">{{ 'MENU.ORGS' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}" routerLinkActive="active">{{org.name}}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}/clients" routerLinkActive="active">{{ 'MENU.CLIENTS' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id && c.id" routerLink="/organization/{{org.id}}/client/{{c.id}}" routerLinkActive="active">{{c.name}}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id && c.id" routerLink="/organization/{{org.id}}/client/{{c.id}}/drains" routerLinkActive="active">{{ 'CLIENT.DRAINLIST' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id && c.id && f.id" routerLink="/organization/{{org.id}}/client/{{c.id}}/feed/{{f.id}}" routerLinkActive="active">{{f.description}}</mat-chip-option>
+      <mat-chip-option disabled>{{ drain.id ? drain.name : ('DRAIN.NEW' | translate) }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="drain.id" mat-flat-button color="warn" [disabled]="isDeleting" (click)="delete()">{{ 'DRAIN.DELETE' | translate }}</button>
+    </div>
+  </div>
+  <h4>
+    {{ (drain.id ? 'DRAIN.EDITTITLE' : 'DRAIN.CREATETITLE') | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="drainForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.ORG' | translate }}</mat-label>
+        <mat-select [formControl]="organization" [compareWith]="compareObjects" required>
+          <mat-option *ngFor="let o of allOrgs" [value]="o">{{o.name}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="organization.invalid && (organization.dirty || organization.touched) && organization.errors.required">{{ 'DRAIN.MISSINGORG' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.CLIENT' | translate }}</mat-label>
+        <mat-select [formControl]="client" [compareWith]="compareObjects" required>
+          <mat-option *ngFor="let c of orgClients" [value]="c">{{c.name}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="client.invalid && (client.dirty || client.touched) && client.errors.required">{{ 'DRAIN.MISSINGCLIENT' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.FEED' | translate }}</mat-label>
+        <mat-select [formControl]="feed" [compareWith]="compareObjects" required>
+          <mat-option *ngFor="let f of feedsForClient" [value]="f">{{f.description}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="feed.invalid && (feed.dirty || feed.touched) && feed.errors.required">{{ 'DRAIN.MISSINGFEED' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.NAME' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAIN.NAME' | translate }}" [formControl]="name" required>
+        <mat-error *ngIf="name.invalid && (name.dirty || name.touched) && name.errors.required">{{ 'DRAIN.MISSINGNAME' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.MEASUREID' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAIN.MEASUREID' | translate }}" [formControl]="measure_id" required>
+        <mat-error *ngIf="measure_id.invalid && (measure_id.dirty || measure_id.touched) && measure_id.errors.required">{{ 'DRAIN.MISSINGMEASUREID' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.UNITOFMEASURE' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAIN.UNITOFMEASURE' | translate }}" [formControl]="measure_unit">
+      </mat-form-field>
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.MEASURETYPE' | translate }}</mat-label>
+        <mat-select [formControl]="measure_type" [compareWith]="compareObjects" required>
+          <mat-option *ngFor="let t of measureTypes" [value]="t">{{t.name}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="measure_type.invalid && (measure_type.dirty || measure_type.touched) && measure_type.errors.required">{{ 'DRAIN.MISSINGMEASURETYPE' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DRAIN.DECIMALS' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAIN.DECIMALS' | translate }}" [formControl]="decimals">
+        <mat-error *ngIf="decimals.invalid && (decimals.dirty || decimals.touched) && decimals.errors.pattern">{{ 'DRAIN.INVALIDDECIMALS' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle color="primary" [formControl]="incremental">{{ 'DRAIN.INCREMENTAL' | translate }}<mat-icon class="incremental-info" matTooltip="{{ 'DRAIN.INCREMENTALINFO' | translate }}">info_outline</mat-icon></mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle color="primary" [formControl]="client_default_drain">{{ 'DRAIN.CLIENTDEFAULTDRAIN' | translate }}</mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.BASEDRAIN' | translate }}</mat-label>
+        <mat-select [formControl]="baseDrain" [compareWith]="compareObjects">
+          <mat-option value=""> -- </mat-option>
+          <mat-option *ngFor="let d of drainsForFeed" [value]="d">{{d.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.COEFFICIENT' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAIN.COEFFICIENT' | translate }}" [formControl]="coefficient">
+        <mat-error *ngIf="coefficient.invalid && (coefficient.dirty || coefficient.touched) && coefficient.errors.pattern">{{ 'DRAIN.INVALIDCOEFFICIENT' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || drainForm.invalid">{{ 'DRAIN.SAVE' | translate }}</button>
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

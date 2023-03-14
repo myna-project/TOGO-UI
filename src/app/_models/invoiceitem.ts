@@ -1,0 +1,34 @@
+export class InvoiceItem {
+  id: number;
+  vendor_id: number;
+  vendor_name: string;
+  drain_id: number;
+  year: number;
+  month: number;
+  month_name: string;
+  f1_energy: number;
+  f2_energy: number;
+  f3_energy: number;
+  interruptibility_remuneration: number;
+  production_capacity_availability: number;
+  grtn_operating_costs: number;
+  procurement_dispatching_resources: number;
+  reintegration_temporary_safeguard: number;
+  f1_unit_safety_costs: number;
+  f2_unit_safety_costs: number;
+  f3_unit_safety_costs: number;
+  transport_energy: number;
+  transport_energy_equalization: number;
+  system_charges_energy: number;
+  duty_excise_1: number;
+  duty_excise_2: number;
+  duty_excise_3: number;
+  f1_reactive_energy_33: number;
+  f2_reactive_energy_33: number;
+  f3_reactive_energy_33: number;
+  f1_reactive_energy_75: number;
+  f2_reactive_energy_75: number;
+  f3_reactive_energy_75: number;
+  loss_perc_rate: number;
+  vat_perc_rate: number;
+}

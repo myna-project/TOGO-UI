@@ -1,0 +1,225 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container" *ngIf="widget">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/dashboard" routerLinkActive="active">Dashboard</mat-chip-option>
+      <mat-chip-option *ngIf="!widget.id" disabled>{{ 'DASHBOARDWIDGET.NEW' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="widget.id" disabled>{{ widget.title ? widget.title : ('DASHBOARDWIDGET.EDITTITLE' | translate) }}</mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  <h4>
+    {{ (widget.id ? 'DASHBOARDWIDGET.EDITTITLE' : 'DASHBOARDWIDGET.CREATETITLE') | translate }}
+    <button *ngIf="!costsWidget && (widget.widget_type !== 'ALERT')" mat-raised-button class="costs-widget-button" (click)="setCostsWidget()">{{ 'DASHBOARDWIDGET.SETCOSTSWIDGET' | translate }}</button>
+    <button *ngIf="costsWidget" mat-raised-button class="costs-widget-button" (click)="disableCostsWidget()">{{ 'DASHBOARDWIDGET.DISABLECOSTSWIDGET' | translate }}</button>
+  </h4>
+  <form class="togo-form" [formGroup]="widgetForm">
+    <h5 *ngIf="costsWidget">
+      {{ 'DASHBOARDWIDGET.COST' | translate }}{{ costsDrain ? ': ' + costsDrain.full_name : '' }}
+      <button *ngIf="!isLoading" mat-raised-button class="togo-form-button adddrains-button" (click)="selectCostDrain()">{{ 'DASHBOARDWIDGET.SELECTCOST' | translate }}</button>
+    </h5>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.WIDGETTYPE' | translate }}</mat-label>
+        <mat-select *ngIf="!costsWidget" [formControl]="widget_type" required>
+          <mat-option *ngFor="let type of widgetTypes" [value]="type.id">{{type.description}}</mat-option>
+        </mat-select>
+        <mat-select *ngIf="costsWidget" [formControl]="widget_type" required>
+          <mat-option *ngFor="let type of costsWidgetTypes" [value]="type.id">{{type.description}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="widget_type.invalid && (widget_type.dirty || widget_type.touched) && widget_type.errors.required">{{ 'DASHBOARDWIDGET.MISSINGWIDGETTYPE' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.TITLE' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DASHBOARDWIDGET.TITLE' | translate }}" [formControl]="title">
+      </mat-form-field>
+    </div>
+    <div *ngIf="widget.widget_type === 'GAUGE'" class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.BACKGROUNDCOLOR' | translate }}</mat-label>
+        <input matInput [ngxMatColorPicker]="bgColor" [formControl]="background_color">
+        <ngx-mat-color-toggle matSuffix [for]="bgColor"></ngx-mat-color-toggle>
+        <ngx-mat-color-picker #bgColor></ngx-mat-color-picker>
+      </mat-form-field>
+    </div>
+    <div *ngIf="widget.widget_type === 'HEATMAP'" class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.COLOR' | translate }} 1 (0%)</mat-label>
+        <input matInput [ngxMatColorPicker]="c1" [formControl]="color1">
+        <ngx-mat-color-toggle matSuffix [for]="c1"></ngx-mat-color-toggle>
+        <ngx-mat-color-picker #c1></ngx-mat-color-picker>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.COLOR' | translate }} 2 (50%)</mat-label>
+        <input matInput [ngxMatColorPicker]="c2" [formControl]="color2">
+        <ngx-mat-color-toggle matSuffix [for]="c2"></ngx-mat-color-toggle>
+        <ngx-mat-color-picker #c2></ngx-mat-color-picker>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.COLOR' | translate }} 3 (90%)</mat-label>
+        <input matInput [ngxMatColorPicker]="c3" [formControl]="color3">
+        <ngx-mat-color-toggle matSuffix [for]="c3"></ngx-mat-color-toggle>
+        <ngx-mat-color-picker #c3></ngx-mat-color-picker>
+      </mat-form-field>
+    </div>
+    <div *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP')" class="togo-form-field-group">
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle color="primary" [formControl]="legend">{{ 'DASHBOARDWIDGET.LEGEND' | translate }}</mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+    </div>
+    <div *ngIf="widget.legend" class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.LEGENDPOSITION' | translate }}</mat-label>
+        <mat-select [formControlName]="'legend_position'" required>
+          <mat-option *ngFor="let p of legendPositions" [value]="p.id">{{p.description}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.LEGENDLAYOUT' | translate }}</mat-label>
+        <mat-select [formControlName]="'legend_layout'" required>
+          <mat-option *ngFor="let l of legendLayouts" [value]="l.id">{{l.description}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP')" class="togo-form-field-group">
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle color="primary" [formControl]="navigator">{{ 'DASHBOARDWIDGET.NAVIGATOR' | translate }}</mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.INTERVALSECONDS' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DASHBOARDWIDGET.INTERVALSECONDS' | translate }}" [formControl]="interval_seconds">
+      </mat-form-field>
+    </div>
+    <div *ngIf="widget.widget_type !== 'ALERT'" class="togo-form-field-group">
+      <div *ngIf="relativeTime" class="togo-form-field-group">
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'DASHBOARDWIDGET.LASTPERIODS' | translate }}</mat-label>
+          <input type="number" matInput placeholder="{{ 'DASHBOARDWIDGET.LASTPERIODS' | translate }}" [formControl]="number_periods" required>
+          <mat-error *ngIf="number_period_missing">{{ 'DASHBOARDWIDGET.MISSINGLASTPERIODS' | translate }}</mat-error>
+        </mat-form-field>
+        <mat-form-field class="short-form-field">
+          <mat-select [formControlName]="'period'" required>
+            <mat-option *ngFor="let p of periods" [value]="p.id">{{p.description}}</mat-option>
+          </mat-select>
+          <mat-error *ngIf="period_missing">{{ 'DASHBOARDWIDGET.MISSINGLASTPERIODS' | translate }}</mat-error>
+        </mat-form-field>
+        <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="changeRelativeTime(false)">{{ 'DASHBOARDWIDGET.SETTIME' | translate }}</button>
+      </div>
+      <div *ngIf="!relativeTime" class="togo-form-field-group">
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'DASHBOARDWIDGET.STARTTIME' | translate }}</mat-label>
+          <input matInput [ngxMatDatetimePicker]="startpicker" placeholder="{{ 'DASHBOARDWIDGET.STARTTIME' | translate }}" [formControl]="start_time" required>
+          <mat-datepicker-toggle matSuffix [for]="startpicker"></mat-datepicker-toggle>
+          <ngx-mat-datetime-picker #startpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
+          <mat-error *ngIf="start_time_missing">{{ 'DASHBOARDWIDGET.MISSINGSTARTTIME' | translate }}</mat-error>
+        </mat-form-field>
+        <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="changeRelativeTime(true)">{{ 'DASHBOARDWIDGET.SETRELATIVEPERIOD' | translate }}</button>
+      </div>
+    </div>
+    <fieldset class="togo-form-fieldset">
+      <legend>{{ 'DASHBOARDWIDGET.DETAILS' | translate }}</legend>
+      <button *ngIf="widget.widget_type === 'ALERT'" mat-raised-button class="togo-form-button adddraincontrols-button" (click)="addControl()">{{ 'DASHBOARDWIDGET.ADDCONTROL' | translate }}</button>
+      <button *ngIf="widget.widget_type !== 'ALERT'" mat-raised-button class="togo-form-button adddrains-button" [disabled]="costsWidget && !costsDrain" (click)="addDrains()">{{ 'DASHBOARDWIDGET.ADDDRAINS' | translate }}</button>
+      <button *ngIf="widget.widget_type !== 'ALERT'" mat-raised-button class="togo-form-button loadformulas-button" [disabled]="costsWidget && !costsDrain" (click)="loadFormulas()">{{ 'DASHBOARDWIDGET.ADDFORMULAS' | translate }}</button>
+      <button *ngIf="(widget.widget_type !== 'ALERT') && (widget.widget_type !== 'PIE') && !costsWidget" mat-raised-button class="togo-form-button addindices-button" (click)="addIndices()">{{ 'DASHBOARDWIDGET.ADDINDICES' | translate }}</button>
+      <div class="togo-list">
+        <div *ngFor="let d of widget.details; let i = index" class="togo-list-item drain">
+          <div *ngIf="d.visible" class="togo-form-field-group">
+            <div class="togo-list-item-title">
+              <button mat-icon-button class="togo-list-item-title-icon" (click)="confirmRemoveDetail(i)" >
+                <mat-icon class="togo-list-item-title-icon error" title="{{ 'DASHBOARDWIDGET.DELETEDETAIL' | translate }}">remove_circle</mat-icon>
+              </button>
+              {{d.full_name}}
+            </div>
+            <div *ngIf="d.drain_id" class="togo-list-item-right togo-list-item-right-form-field">
+              <mat-form-field *ngIf="!costsWidget" class="short-form-field">
+                <mat-label>{{ 'DASHBOARDWIDGET.AGGREGATION' | translate }}</mat-label>
+                <mat-select [formControlName]="'aggregation_' + i" required>
+                  <mat-option *ngFor="let aggregation of d.aggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+                </mat-select>
+                <mat-error *ngIf="widgetForm.get('aggregation_' + i).invalid && (widgetForm.get('aggregation_' + i).dirty || widgetForm.get('aggregation_' + i).touched) && widgetForm.get('aggregation_' + i).errors.required">{{ 'DASHBOARDWIDGET.MISSINGAGGREGATION' | translate }}</mat-error>
+              </mat-form-field>
+              <mat-form-field class="short-form-field">
+                <mat-label>{{ 'DASHBOARDWIDGET.OPERATION' | translate }}</mat-label>
+                <mat-select [formControlName]="'operator_' + i" required>
+                  <mat-option *ngFor="let operator of d.operators" [value]="operator.id">{{operator.description}}</mat-option>
+                </mat-select>
+                <mat-error *ngIf="widgetForm.get('operator_' + i).invalid && (widgetForm.get('operator_' + i).dirty || widgetForm.get('operator_' + i).touched) && widgetForm.get('operator_' + i).errors.required">{{ 'DASHBOARDWIDGET.MISSINGAGGREGATION' | translate }}</mat-error>
+              </mat-form-field>
+            </div>
+            <mat-divider *ngIf="d.divider" class="togo-list-item-divider"></mat-divider>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+    <div class="togo-form-field-group">
+      <mat-form-field *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM')" class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.TIMEAGGREGATION' | translate }}</mat-label>
+        <mat-select *ngIf="!costsWidget" [formControlName]="'time_aggregation'" required>
+          <mat-option *ngFor="let aggregation of timeAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+        </mat-select>
+        <mat-select *ngIf="costsWidget" [formControlName]="'time_aggregation'" required>
+          <mat-option *ngFor="let aggregation of costsTimeAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="time_aggregation.invalid && (time_aggregation.dirty || time_aggregation.touched) && time_aggregation.errors.required">{{ 'DASHBOARDWIDGET.MISSINGTIMEAGGREGATION' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field *ngIf="(widget.widget_type === 'PIE')" class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.TIMEAGGREGATION' | translate }}</mat-label>
+        <mat-select [formControlName]="'time_aggregation'" required>
+          <mat-option *ngFor="let aggregation of pieTimeAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="time_aggregation.invalid && (time_aggregation.dirty || time_aggregation.touched) && time_aggregation.errors.required">{{ 'DASHBOARDWIDGET.MISSINGTIMEAGGREGATION' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field *ngIf="(widget.widget_type === 'HEATMAP')" class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.TIMEAGGREGATION' | translate }}</mat-label>
+        <mat-select [formControlName]="'time_aggregation'" required>
+          <mat-option *ngFor="let aggregation of heatmapTimeAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="time_aggregation.invalid && (time_aggregation.dirty || time_aggregation.touched) && time_aggregation.errors.required">{{ 'DASHBOARDWIDGET.MISSINGTIMEAGGREGATION' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field *ngIf="costsWidget" class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.AGGREGATION' | translate }}</mat-label>
+        <mat-select [formControl]="costs_aggregation" required>
+          <mat-option *ngFor="let aggregation of measuresAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="costs_aggregation.invalid && (costs_aggregation.dirty || costs_aggregation.touched) && costs_aggregation.errors.required">{{ 'DASHBOARDWIDGET.MISSINGAGGREGATION' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div *ngIf="widget.widget_type === 'GAUGE'" class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.MINVALUE' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DASHBOARDWIDGET.MINVALUE' | translate }}" [formControl]="min_value">
+        <mat-icon matSuffix matTooltip="{{ 'DASHBOARDWIDGET.MINVALUEINFO' | translate }}">info_outline</mat-icon>
+        <mat-error *ngIf="min_value.invalid && (min_value.dirty || min_value.touched) && min_value.errors.pattern">{{ 'DASHBOARDWIDGET.INVALIDMINVALUE' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.MAXVALUE' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DASHBOARDWIDGET.MAXVALUE' | translate }}" [formControl]="max_value">
+        <mat-icon matSuffix matTooltip="{{ 'DASHBOARDWIDGET.MAXVALUEINFO' | translate }}">info_outline</mat-icon>
+        <mat-error *ngIf="max_value.invalid && (max_value.dirty || max_value.touched) && max_value.errors.pattern">{{ 'DASHBOARDWIDGET.INVALIDMAXVALUE' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div *ngIf="(widget.widget_type !== 'ALERT') && (widget.widget_type !== 'PIE') && (widget.widget_type !== 'HEATMAP')" class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.WARNINGVALUE' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DASHBOARDWIDGET.WARNINGVALUE' | translate }}" [formControl]="warning_value">
+        <mat-error *ngIf="warning_value.invalid && (warning_value.dirty || warning_value.touched) && warning_value.errors.pattern">{{ 'DASHBOARDWIDGET.INVALIDWARNINGVALUE' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'DASHBOARDWIDGET.ALARMVALUE' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DASHBOARDWIDGET.ALARMVALUE' | translate }}" [formControl]="alarm_value">
+        <mat-error *ngIf="alarm_value.invalid && (alarm_value.dirty || alarm_value.touched) && alarm_value.errors.pattern">{{ 'DASHBOARDWIDGET.INVALIDWARNINGVALUE' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || widgetForm.invalid || !visibleDetails || period_missing || number_period_missing || start_time_missing">{{ 'DASHBOARDWIDGET.SAVE' | translate }}</button>
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>
+  

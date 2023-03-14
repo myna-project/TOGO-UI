@@ -1,0 +1,206 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/organizations" routerLinkActive="active">{{ 'MENU.ORGS' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}" routerLinkActive="active">{{org.name}}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}/clients" routerLinkActive="active">{{ 'MENU.CLIENTS' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id && client.id" routerLink="/organization/{{org.id}}/client/{{client.id}}" routerLinkActive="active">{{client.name}}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id && client.id" routerLink="/organization/{{org.id}}/client/{{client.id}}/drains" routerLinkActive="active">{{ 'CLIENT.DRAINLIST' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id && client.id && feed.id" routerLink="/organization/{{org.id}}/client/{{client.id}}/feed/{{feed.id}}" routerLinkActive="active">{{feed.description}}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id && client.id && drain.id" routerLink="/organization/{{org.id}}/client/{{client.id}}/drain/{{drain.id}}" routerLinkActive="active">{{drain.name}}</mat-chip-option>
+      <mat-chip-option routerLink="/itemskwh" routerLinkActive="active">{{ 'MENU.ITEMKWH' | translate }}</mat-chip-option>
+      <mat-chip-option disabled>{{ invoiceItemkWh.id ? invoiceItemkWh.vendor_name + ' ' + invoiceItemkWh.year + '-' + invoiceItemkWh.month : ('ITEMKWH.NEW' | translate) }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="invoiceItemkWh.id" mat-flat-button color="warn" [disabled]="isDeleting" (click)="delete()">{{ 'ITEMKWH.DELETE' | translate }}</button>
+    </div>
+  </div>
+  <h4>
+     {{ (invoiceItemkWh.id ? 'ITEMKWH.EDITTITLE' : 'ITEMKWH.CREATETITLE') | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="itemkwhForm">
+    <h5>
+      {{ 'ITEMKWH.COSTSDRAIN' | translate }}{{ costsDrain ? ': ' + costsDrain.full_name : '' }}
+      <button *ngIf="!isLoading" mat-raised-button class="togo-form-button adddrains-button" (click)="selectCostDrain()">{{ 'ITEMKWH.SELECTCOST' | translate }}</button>
+    </h5>
+    <mat-form-field>
+      <mat-label>{{ 'ITEMKWH.CHOOSEVENDOR' | translate }}</mat-label>
+      <mat-select [formControl]="vendor" [compareWith]="compareObjects" required>
+        <mat-option *ngFor="let v of allVendors" [value]="v">{{v.name}}</mat-option>
+      </mat-select>
+      <mat-error *ngIf="vendor.invalid && (vendor.dirty || vendor.touched) && vendor.errors.required">{{ 'ITEMKWH.MISSINGVENDOR' | translate }}</mat-error>
+    </mat-form-field>
+    <div class="togo-form-field-group">
+      <mat-form-field class="very-short-form-field">
+        <mat-label>{{ 'ITEMKWH.YEAR'| translate }}</mat-label>
+        <input matInput [formControl]="year"/>
+        <mat-error *ngIf="year.invalid && (year.dirty || year.touched) && year.errors.required">{{ 'ITEMKWH.MISSINGYEAR' | translate }}</mat-error>
+        <mat-error *ngIf="year.invalid && (year.dirty || year.touched) && (year.errors.pattern || year.errors['minlength'] || year.errors['maxlength'])">{{ ('ITEMKWH.INVALIDYEAR' | translate) + ' (yyyy)' }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="very-short-form-field">
+        <mat-label>{{ 'ITEMKWH.MONTH'| translate }}</mat-label>
+        <mat-select [formControl]="month" required>
+          <mat-option [value]="1">{{ 'MONTH.JANUARY' | translate }}</mat-option>
+          <mat-option [value]="2">{{ 'MONTH.FEBRUARY' | translate }}</mat-option>
+          <mat-option [value]="3">{{ 'MONTH.MARCH' | translate }}</mat-option>
+          <mat-option [value]="4">{{ 'MONTH.APRIL' | translate }}</mat-option>
+          <mat-option [value]="5">{{ 'MONTH.MAY' | translate }}</mat-option>
+          <mat-option [value]="6">{{ 'MONTH.JUNE' | translate }}</mat-option>
+          <mat-option [value]="7">{{ 'MONTH.JULY' | translate }}</mat-option>
+          <mat-option [value]="8">{{ 'MONTH.AUGUST' | translate }}</mat-option>
+          <mat-option [value]="9">{{ 'MONTH.SEPTEMBER' | translate }}</mat-option>
+          <mat-option [value]="10">{{ 'MONTH.OCTOBER' | translate }}</mat-option>
+          <mat-option [value]="11">{{ 'MONTH.NOVEMBER' | translate }}</mat-option>
+          <mat-option [value]="12">{{ 'MONTH.DECEMBER' | translate }}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="month.invalid && (month.dirty || month.touched) && month.errors.required">{{ 'ITEMKWH.MISSINGMONTH' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F1ENERGY'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="f1_energy"/>
+        <mat-error *ngIf="f1_energy.invalid && (f1_energy.dirty || f1_energy.touched) && f1_energy.errors.required">{{ 'ITEMKWH.MISSINGF1ENERGY' | translate }}</mat-error>
+        <mat-error *ngIf="f1_energy.invalid && (f1_energy.dirty || f1_energy.touched) && f1_energy.errors.pattern">{{ 'ITEMKWH.INVALIDF1ENERGY' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F2ENERGY'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="f2_energy"/>
+        <mat-error *ngIf="f2_energy.invalid && (f2_energy.dirty || f2_energy.touched) && f2_energy.errors.required">{{ 'ITEMKWH.MISSINGF2ENERGY' | translate }}</mat-error>
+        <mat-error *ngIf="f2_energy.invalid && (f2_energy.dirty || f2_energy.touched) && f2_energy.errors.pattern">{{ 'ITEMKWH.INVALIDF2ENERGY' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F3ENERGY'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="f3_energy"/>
+        <mat-error *ngIf="f3_energy.invalid && (f3_energy.dirty || f3_energy.touched) && f3_energy.errors.required">{{ 'ITEMKWH.MISSINGF3ENERGY' | translate }}</mat-error>
+        <mat-error *ngIf="f3_energy.invalid && (f3_energy.dirty || f3_energy.touched) && f3_energy.errors.pattern">{{ 'ITEMKWH.INVALIDF3ENERGY' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.INTERRUPTIBILITYREMUNERATION'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="interruptibility_remuneration"/>
+        <mat-error *ngIf="interruptibility_remuneration.invalid && (interruptibility_remuneration.dirty || interruptibility_remuneration.touched) && interruptibility_remuneration.errors.pattern">{{ 'ITEMKWH.INVALIDINTERRUPTIBILITYREMUNERATION' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.PRODUCTIONCAPACITYAVAILABILITY'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="production_capacity_availability"/>
+        <mat-error *ngIf="production_capacity_availability.invalid && (production_capacity_availability.dirty || production_capacity_availability.touched) && production_capacity_availability.errors.pattern">{{ 'ITEMKWH.INVALIDPRODUCTIONCAPACITYAVAILABILITY' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.GRTNOPERATINGCOSTS'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="grtn_operating_costs"/>
+        <mat-error *ngIf="grtn_operating_costs.invalid && (grtn_operating_costs.dirty || grtn_operating_costs.touched) && grtn_operating_costs.errors.pattern">{{ 'ITEMKWH.INVALIDGRTNOPERATINGCOSTS' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.PROCUREMENTDISPATCHINGRESOURCES'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="procurement_dispatching_resources"/>
+        <mat-error *ngIf="procurement_dispatching_resources.invalid && (procurement_dispatching_resources.dirty || procurement_dispatching_resources.touched) && procurement_dispatching_resources.errors.pattern">{{ 'ITEMKWH.INVALIDGRTNOPERATINGCOSTS' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.REINTEGRATIONTEMPORARYSAFEGUARD'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="reintegration_temporary_safeguard"/>
+        <mat-error *ngIf="reintegration_temporary_safeguard.invalid && (reintegration_temporary_safeguard.dirty || reintegration_temporary_safeguard.touched) && reintegration_temporary_safeguard.errors.pattern">{{ 'ITEMKWH.INVALIDREINTEGRATIONTEMPORARYSAFEGUARD' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F1UNITSAFETYCOSTS'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="f1_unit_safety_costs"/>
+        <mat-error *ngIf="f1_unit_safety_costs.invalid && (f1_unit_safety_costs.dirty || f1_unit_safety_costs.touched) && f1_unit_safety_costs.errors.pattern">{{ 'ITEMKWH.INVALIDF1UNITSAFETYCOSTS' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F2UNITSAFETYCOSTS'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="f2_unit_safety_costs"/>
+        <mat-error *ngIf="f2_unit_safety_costs.invalid && (f2_unit_safety_costs.dirty || f2_unit_safety_costs.touched) && f2_unit_safety_costs.errors.pattern">{{ 'ITEMKWH.INVALIDF2UNITSAFETYCOSTS' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F3UNITSAFETYCOSTS'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="f3_unit_safety_costs"/>
+        <mat-error *ngIf="f3_unit_safety_costs.invalid && (f3_unit_safety_costs.dirty || f3_unit_safety_costs.touched) && f3_unit_safety_costs.errors.pattern">{{ 'ITEMKWH.INVALIDF3UNITSAFETYCOSTS' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.TRANSPORTENERGY'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="transport_energy"/>
+        <mat-error *ngIf="transport_energy.invalid && (transport_energy.dirty || transport_energy.touched) && transport_energy.errors.pattern">{{ 'ITEMKWH.INVALIDTRANSPORTENERGY' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.TRANSPORTENERGYEQUALIZATION'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="transport_energy_equalization"/>
+        <mat-error *ngIf="transport_energy_equalization.invalid && (transport_energy_equalization.dirty || transport_energy_equalization.touched) && transport_energy_equalization.errors.pattern">{{ 'ITEMKWH.INVALIDTRANSPORTENERGYEQUALIZATION' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.SYSTEMCHARGEENERGY'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="system_charges_energy"/>
+        <mat-error *ngIf="system_charges_energy.invalid && (system_charges_energy.dirty || system_charges_energy.touched) && system_charges_energy.errors.pattern">{{ 'ITEMKWH.INVALIDSYSTEMCHARGEENERGY' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.DUTYEXCISE1'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="duty_excise_1"/>
+        <mat-error *ngIf="duty_excise_1.invalid && (duty_excise_1.dirty || duty_excise_1.touched) && duty_excise_1.errors.pattern">{{ 'ITEMKWH.INVALIDDUTYEXCISE1' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.DUTYEXCISE2'| translate) + ' (€/kWh)' }}</mat-label>
+        <input matInput [formControl]="duty_excise_2"/>
+        <mat-error *ngIf="duty_excise_2.invalid && (duty_excise_2.dirty || duty_excise_2.touched) && duty_excise_2.errors.pattern">{{ 'ITEMKWH.INVALIDDUTYEXCISE2' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F1REACTIVEENERGY33'| translate) + ' (€/kVarh)' }}</mat-label>
+        <input matInput [formControl]="f1_reactive_energy_33"/>
+        <mat-error *ngIf="f1_reactive_energy_33.invalid && (f1_reactive_energy_33.dirty || f1_reactive_energy_33.touched) && f1_reactive_energy_33.errors.pattern">{{ 'ITEMKWH.INVALIDF1REACTIVEENERGY33' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F2REACTIVEENERGY33'| translate) + ' (€/kVarh)' }}</mat-label>
+        <input matInput [formControl]="f2_reactive_energy_33"/>
+        <mat-error *ngIf="f2_reactive_energy_33.invalid && (f2_reactive_energy_33.dirty || f2_reactive_energy_33.touched) && f2_reactive_energy_33.errors.pattern">{{ 'ITEMKWH.INVALIDF2REACTIVEENERGY33' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F3REACTIVEENERGY33'| translate) + ' (€/kVarh)' }}</mat-label>
+        <input matInput [formControl]="f3_reactive_energy_33"/>
+        <mat-error *ngIf="f3_reactive_energy_33.invalid && (f3_reactive_energy_33.dirty || f3_reactive_energy_33.touched) && f3_reactive_energy_33.errors.pattern">{{ 'ITEMKWH.INVALIDF3REACTIVEENERGY33' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F1REACTIVEENERGY75'| translate) + ' (€/kVarh)' }}</mat-label>
+        <input matInput [formControl]="f1_reactive_energy_75"/>
+        <mat-error *ngIf="f1_reactive_energy_75.invalid && (f1_reactive_energy_75.dirty || f1_reactive_energy_75.touched) && f1_reactive_energy_75.errors.pattern">{{ 'ITEMKWH.INVALIDF1REACTIVEENERGY75' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F2REACTIVEENERGY75'| translate) + ' (€/kVarh)' }}</mat-label>
+        <input matInput [formControl]="f2_reactive_energy_75"/>
+        <mat-error *ngIf="f2_reactive_energy_75.invalid && (f2_reactive_energy_75.dirty || f2_reactive_energy_75.touched) && f2_reactive_energy_75.errors.pattern">{{ 'ITEMKWH.INVALIDF2REACTIVEENERGY75' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ ('ITEMKWH.F3REACTIVEENERGY75'| translate) + ' (€/kVarh)' }}</mat-label>
+        <input matInput [formControl]="f3_reactive_energy_75"/>
+        <mat-error *ngIf="f3_reactive_energy_75.invalid && (f3_reactive_energy_75.dirty || f3_reactive_energy_75.touched) && f3_reactive_energy_75.errors.pattern">{{ 'ITEMKWH.INVALIDF3REACTIVEENERGY75' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{'ITEMKWH.LOSSPERCRATE'| translate}}</mat-label>
+        <input matInput [formControl]="loss_perc_rate"/>
+        <mat-icon matSuffix>%</mat-icon>
+        <mat-error *ngIf="loss_perc_rate.invalid && (loss_perc_rate.dirty || loss_perc_rate.touched) && loss_perc_rate.errors.pattern">{{ 'ITEMKWH.INVALIDLOSSPERCRATE' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{'ITEMKWH.VATPERCRATE'| translate}}</mat-label>
+        <input matInput [formControl]="vat_perc_rate"/>
+        <mat-icon matSuffix>%</mat-icon>
+        <mat-error *ngIf="vat_perc_rate.invalid && (vat_perc_rate.dirty || vat_perc_rate.touched) && vat_perc_rate.errors.pattern">{{ 'ITEMKWH.INVALIDVATPERCRATE' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button *ngIf="!isLoading" (click)="save()" class="load-button" color="primary" [disabled]="isSaving || itemkwhForm.invalid || !costsDrain">{{ 'ITEMKWH.SAVE' | translate }}</button>
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

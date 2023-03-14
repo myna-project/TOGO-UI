@@ -1,0 +1,105 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container" *ngIf="client">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option *ngIf="!org.id" routerLink="/clients" routerLinkActive="active">{{ 'MENU.CLIENTS' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organizations" routerLinkActive="active">{{ 'MENU.ORGS' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}" routerLinkActive="active">{{org.name}}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}/clients" routerLinkActive="active">{{ 'MENU.CLIENTS' | translate }}</mat-chip-option>
+      <mat-chip-option disabled>{{ client.id ? client.name : ('CLIENT.NEW' | translate) }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="org.id && client.id" mat-flat-button color="primary" routerLink="/organization/{{org.id}}/client/{{client.id}}/drains" routerLinkActive="active">{{ 'CLIENT.DRAINLIST' | translate }}</button>
+      <button *ngIf="client.id" mat-flat-button color="warn" [disabled]="isDeleting" (click)="delete()">{{ 'CLIENT.DELETE' | translate }}</button>
+    </div>
+  </div>
+  <h4>
+    {{ (client.id ? 'CLIENT.EDITTITLE' : 'CLIENT.CREATETITLE') | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="clientForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'CLIENT.ORG' | translate }}</mat-label>
+        <mat-select [formControl]="organization" [compareWith]="compareObjects" required>
+          <mat-option *ngFor="let org of allOrgs" [value]="org">{{org.name}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="organization.invalid && (organization.dirty || organization.touched) && organization.errors.required">{{ 'CLIENT.MISSINGORG' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'CLIENT.NAME' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'CLIENT.NAME' | translate }}" [formControl]="name" required>
+        <mat-error *ngIf="name.invalid && (name.dirty || name.touched) && name.errors.required">{{ 'CLIENT.MISSINGNAME' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'CLIENT.CATEGORY' | translate }}</mat-label>
+        <mat-select [formControl]="category" [compareWith]="compareObjects">
+          <mat-option *ngFor="let c of allCategories" [value]="c">{{c.description}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle color="primary" [formControl]="energy_client">{{ 'CLIENT.ENERGYCLIENT' | translate }}</mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle color="primary" [formControl]="computer_client">{{ 'CLIENT.COMPUTERCLIENT' | translate }}</mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field *ngIf="client.energy_client" class="medium-form-field">
+        <mat-label>{{ 'CLIENT.PARENT' | translate }}</mat-label>
+        <mat-select [formControl]="parent" [compareWith]="compareObjects">
+          <mat-option value=""> -- </mat-option>
+          <mat-option *ngFor="let c of parentClients" [value]="c">{{c.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field *ngIf="client.computer_client" class="medium-form-field">
+        <mat-label>{{ 'CLIENT.CONTROLLER' | translate }}</mat-label>
+        <mat-select [formControl]="controller" [compareWith]="compareObjects">
+          <mat-option value=""> -- </mat-option>
+          <mat-option *ngFor="let c of controllerClients" [value]="c">{{c.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'CLIENT.DEVICEID' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'CLIENT.DEVICEID' | translate }}" [formControl]="device_id" required>
+        <mat-error *ngIf="device_id.invalid && (device_id.dirty || device_id.touched) && device_id.errors.required">{{ 'CLIENT.MISSINGDEVICEID' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'CLIENT.TYPE' | translate }}</mat-label>
+        <mat-select [formControl]="type" required>
+          <mat-option *ngFor="let t of clientTypes" [value]="t">{{t}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="type.invalid && (type.dirty || type.touched) && type.errors.required">{{ 'CLIENT.MISSINGTYPE' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="style-label">{{ 'CLIENT.IMAGE' | translate }}</div>
+    <div class="togo-form-field-group">
+      <label class="client-img-label" for="imageInput">
+        <img class="client-img" [src]="client_image_show">
+        <div class="client-img-label-text">{{ 'CLIENTCATEGORY.CHANGEIMAGE' | translate }}</div>
+        <div class="client-img-background"></div>
+      </label>
+      <br>
+      <input id="imageInput" type='file' accept="image/*" (change)="onSelectImage($event)">
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle color="primary" [formControl]="active">{{ 'CLIENT.ACTIVE' | translate }}</mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || clientForm.invalid">{{ 'CLIENT.SAVE' | translate }}</button>
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

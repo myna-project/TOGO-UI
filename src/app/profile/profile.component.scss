@@ -1,0 +1,82 @@
+.change-pwd-button {
+  margin-bottom: 10px;
+}
+
+.style-label {
+  margin-top: 20px;
+}
+
+.style-buttons {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.style-buttons .btn {
+  margin: 10px 10px;
+}
+
+.btn-blue {
+  background-color: #3F51B5 !important;
+}
+
+.btn-purple {
+  background-color: #673ab7 !important;
+}
+
+.btn-pink {
+  background-color: #E91E63 !important;
+}
+
+.btn-deep-orange {
+  background-color: #FF5722 !important;
+}
+
+.avatar-img {
+  height: 100%;
+  width: 100%;
+  border-radius: 50%;
+}
+
+.avatar-label {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  height: 200px;
+  width: 200px;
+  border: 5px solid #000;
+  border-radius: 50%;
+}
+
+.avatar-label .avatar-label-text {
+  position: absolute;
+  display: none;
+  top: 50%;
+  left:  50%;
+  transform: translate(-50%,-50%);
+  z-index: 2;
+}
+
+.avatar-label .avatar-background {
+  position: absolute;
+  display: none;
+  top: 0;
+  left:  0;
+  bottom: 0;
+  right: 0;
+  background-color:rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.avatar-label:hover .avatar-label-text {
+  display: block;
+}
+
+.avatar-label:hover .avatar-background {
+  display: block;
+}
+
+#imageInput {
+  display: none;
+}

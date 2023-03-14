@@ -1,0 +1,65 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option disabled>{{ 'MENU.ACCOUNTINGDATA' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  <h4>
+    {{ 'ACCOUNTINGDATA.TITLE' | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="accountingdataForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'ACCOUNTINGDATA.YEAR' | translate }}</mat-label>
+        <input type="number" matInput placeholder="{{ 'ACCOUNTINGDATA.YEAR' | translate }}" [formControl]="year" required>
+        <mat-error *ngIf="year.invalid && (year.dirty || year.touched) && year.errors.required">{{ 'ACCOUNTINGDATA.MISSINGYEAR' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'ACCOUNTINGDATA.MONTH' | translate }}</mat-label>
+        <mat-select [formControl]="month" required>
+          <mat-option [value]="1">{{ 'MONTH.JANUARY' | translate }}</mat-option>
+          <mat-option [value]="2">{{ 'MONTH.FEBRUARY' | translate }}</mat-option>
+          <mat-option [value]="3">{{ 'MONTH.MARCH' | translate }}</mat-option>
+          <mat-option [value]="4">{{ 'MONTH.APRIL' | translate }}</mat-option>
+          <mat-option [value]="5">{{ 'MONTH.MAY' | translate }}</mat-option>
+          <mat-option [value]="6">{{ 'MONTH.JUNE' | translate }}</mat-option>
+          <mat-option [value]="7">{{ 'MONTH.JULY' | translate }}</mat-option>
+          <mat-option [value]="8">{{ 'MONTH.AUGUST' | translate }}</mat-option>
+          <mat-option [value]="9">{{ 'MONTH.SEPTEMBER' | translate }}</mat-option>
+          <mat-option [value]="10">{{ 'MONTH.OCTOBER' | translate }}</mat-option>
+          <mat-option [value]="11">{{ 'MONTH.NOVEMBER' | translate }}</mat-option>
+          <mat-option [value]="12">{{ 'MONTH.DECEMBER' | translate }}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="month.invalid && (month.dirty || month.touched) && month.errors.required">{{ 'ACCOUNTINGDATA.MISSINGMONTH' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <fieldset class="togo-form-fieldset">
+      <legend>{{ 'ACCOUNTINGDATA.DRAINS' | translate }}</legend>
+      <button mat-raised-button class="togo-form-button adddrains-button" (click)="addDrains()">{{ 'ACCOUNTINGDATA.ADDDRAINS' | translate }}</button>
+      <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
+        <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+          <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node)">
+            <button *ngIf="hasChild(node.id, node)" mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id" >
+              <mat-icon class="mat-icon-rtl-mirror">{{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}</mat-icon>
+            </button>
+            <div class="mat-tree-node-title" [class.mat-tree-node-bold-title]="node.type === 'organization'" [class.mat-tree-node-underlined-title]="node.type === 'client'" [class.mat-tree-node-italic-title]="node.type === 'feed'">
+              {{node.item}}
+            </div>
+            <div *ngIf="(node.type === 'drain')" class="accounting-form-field-group mat-tree-node-right">
+              <mat-form-field class="short-form-field">
+                <mat-label>{{ 'ACCOUNTINGDATA.VALUE' | translate }}</mat-label>
+                <input matInput placeholder="{{ 'ACCOUNTINGDATA.VALUE' | translate }}" [formControlName]="'value_' + node.id">
+                <mat-error *ngIf="accountingdataForm.get('value_' + node.id).invalid && (accountingdataForm.get('value_' + node.id).dirty || accountingdataForm.get('value_' + node.id).touched) && accountingdataForm.get('value_' + node.id).errors.pattern">{{ 'ACCOUNTINGDATA.INVALIDVALUE' | translate }}</mat-error>
+              </mat-form-field>
+            </div>
+            <mat-divider class="mat-tree-node-divider"></mat-divider>
+          </div>
+        </mat-tree-node>
+      </mat-tree>
+    </fieldset>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || accountingdataForm.invalid">{{ 'ACCOUNTINGDATA.SAVE' | translate }}</button>
+  </div>
+</div>

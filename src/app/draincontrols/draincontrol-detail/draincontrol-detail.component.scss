@@ -1,0 +1,33 @@
+.togo-cron-select {
+  margin-left: 4px;
+  margin-right: 4px;
+  border: 1px solid black;
+}
+
+.togo-cron-select-short {
+  width: 50px;
+}
+
+.all-details-fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.togo-form .details-form-field-group {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+  margin-top: 15px;
+  position: relative;
+}
+
+.detail-form-field {
+  margin-right: 12px;
+}
+
+.clear-button-color {
+  background-color: #ce5c00;
+  color: white;
+}

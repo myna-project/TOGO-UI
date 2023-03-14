@@ -1,0 +1,529 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container" *ngIf="control">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/draincontrols" routerLinkActive="active">{{ 'MENU.DRAINCONTROLS' | translate }}</mat-chip-option>
+      <mat-chip-option disabled>{{ control.id ? control.name : ('DRAINCONTROL.NEW' | translate) }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="control.id" mat-flat-button color="warn" [disabled]="isDeleting" (click)="delete()">{{ 'DRAINCONTROL.DELETE' | translate }}</button>
+    </div>
+  </div>
+  <h4>
+    {{ (control.id ? 'DRAINCONTROL.EDITTITLE' : 'DRAINCONTROL.CREATETITLE') | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="controlForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAINCONTROL.ORG' | translate }}</mat-label>
+        <mat-select [formControl]="organization" [compareWith]="compareObjects" required>
+          <mat-option *ngFor="let org of allOrgs" [value]="org">{{org.name}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="organization.invalid && (organization.dirty || organization.touched) && organization.errors.required">{{ 'DRAINCONTROL.MISSINGORG' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAINCONTROL.NAME' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAINCONTROL.NAME' | translate }}" [formControl]="name" required>
+        <mat-error *ngIf="name.invalid && (name.dirty || name.touched) && name.errors.required">{{ 'DRAINCONTROL.MISSINGNAME' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAINCONTROL.TYPE' | translate }}</mat-label>
+        <mat-select [formControl]="type" required>
+          <mat-option *ngFor="let t of allTypes" [value]="t">{{ ((t == 'MISSING') ? 'DRAINCONTROL.TYPEMISSING' : ((t == 'MEASUREDIFF') ? 'DRAINCONTROL.TYPEMEASUREDIFF' : 'DRAINCONTROL.TYPETHRESHOLD')) | translate }}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="type.invalid && (type.dirty || type.touched) && type.errors.required">{{ 'DRAINCONTROL.MISSINGORG' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAINCONTROL.MAILRECEIVERS' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAINCONTROL.MAILRECEIVERS' | translate }}" [formControl]="mail_receivers" required>
+        <mat-icon matSuffix matTooltip="{{ 'DRAINCONTROL.MAILRECEIVERSINFO' | translate }}">info_outline</mat-icon>
+        <mat-error *ngIf="mail_receivers.invalid && (mail_receivers.dirty || mail_receivers.touched) && mail_receivers.errors.required">{{ 'DRAINCONTROL.MISSINGMAILRECEIVERS' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <fieldset class="togo-form-fieldset">
+      <legend>{{ 'DRAINCONTROL.EXECUTEEVERY' | translate }}</legend>
+      <fieldset class="togo-form-fieldset">
+        <legend>{{ 'DRAINCONTROL.SECONDS' | translate }}</legend>
+        <mat-radio-group [formControl]="cron_second">
+          <div class="togo-radio-button">
+            <mat-radio-button value="/">
+              {{ 'DRAINCONTROL.EVERY' | translate }}
+              <mat-select [formControl]="every_second" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everySecondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.STARTINGSECOND' | translate }}
+              <mat-select [formControl]="starting_second" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of secondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingEverySecond">{{ 'DRAINCONTROL.MISSINGEVERYSECOND' | translate }}</mat-error>
+            <mat-error *ngIf="missingStartingSecond">{{ 'DRAINCONTROL.MISSINGSTARTINGSECOND' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="n">
+              {{ 'DRAINCONTROL.SELECTEDSECONDS' | translate }}
+              <mat-select [formControl]="selected_seconds" class="togo-cron-select" multiple>
+                <mat-option *ngFor="let i of secondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingSelectedSeconds">{{ 'DRAINCONTROL.MISSINGSELECTEDSECONDS' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="-">
+              {{ 'DRAINCONTROL.FROMSECOND' | translate }}
+              <mat-select [formControl]="from_second" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of secondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.TOSECOND' | translate }}
+              <mat-select [formControl]="to_second" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of secondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              <mat-icon class="vertical-middle" matTooltip="{{ 'DRAINCONTROL.SECONDSINFO' | translate }}">info_outline</mat-icon>
+            </mat-radio-button>
+            <mat-error *ngIf="missingFromSecond">{{ 'DRAINCONTROL.MISSINGFROMSECOND' | translate }}</mat-error>
+            <mat-error *ngIf="missingToSecond">{{ 'DRAINCONTROL.MISSINGTOSECOND' | translate }}</mat-error>
+            <mat-error *ngIf="endSecondGreater">{{'DRAINCONTROL.SECONDSINFO' | translate }}</mat-error>
+          </div>
+        </mat-radio-group>
+      </fieldset>
+      <fieldset class="togo-form-fieldset">
+        <legend>{{ 'DRAINCONTROL.MINUTES' | translate }}</legend>
+        <mat-radio-group [formControl]="cron_minute">
+          <div class="togo-radio-button">
+            <mat-radio-button value="*">
+              {{ 'DRAINCONTROL.EVERYMINUTE' | translate }}
+            </mat-radio-button>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="/">
+              {{ 'DRAINCONTROL.EVERY' | translate }}
+              <mat-select [formControl]="every_minute" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everySecondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.STARTINGMINUTE' | translate }}
+              <mat-select [formControl]="starting_minute" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of secondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingEveryMinute">{{ 'DRAINCONTROL.MISSINGEVERYMINUTE' | translate }}</mat-error>
+            <mat-error *ngIf="missingStartingMinute">{{ 'DRAINCONTROL.MISSINGSTARTINGMINUTE' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="n">
+              {{ 'DRAINCONTROL.SELECTEDMINUTES' | translate }}
+              <mat-select [formControl]="selected_minutes" class="togo-cron-select" multiple>
+                <mat-option *ngFor="let i of secondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingSelectedMinutes">{{ 'DRAINCONTROL.MISSINGSELECTEDMINUTES' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="-">
+              {{ 'DRAINCONTROL.FROMMINUTE' | translate }}
+              <mat-select [formControl]="from_minute" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of secondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.TOMINUTE' | translate }}
+              <mat-select [formControl]="to_minute" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of secondsMinutes" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              <mat-icon class="vertical-middle" matTooltip="{{ 'DRAINCONTROL.MINUTESINFO' | translate }}">info_outline</mat-icon>
+            </mat-radio-button>
+            <mat-error *ngIf="missingFromMinute">{{ 'DRAINCONTROL.MISSINGFROMMINUTE' | translate }}</mat-error>
+            <mat-error *ngIf="missingToMinute">{{ 'DRAINCONTROL.MISSINGTOMINUTE' | translate }}</mat-error>
+            <mat-error *ngIf="endMinuteGreater">{{ 'DRAINCONTROL.MINUTESINFO' | translate }}</mat-error>
+          </div>
+        </mat-radio-group>
+      </fieldset>
+      <fieldset class="togo-form-fieldset">
+        <legend>{{ 'DRAINCONTROL.HOURS' | translate }}</legend>
+        <mat-radio-group [formControl]="cron_hour">
+          <div class="togo-radio-button">
+            <mat-radio-button value="*">
+              {{ 'DRAINCONTROL.EVERYHOUR' | translate }}
+            </mat-radio-button>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="/">
+              {{ 'DRAINCONTROL.EVERY' | translate }}
+              <mat-select [formControl]="every_hour" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everyHours" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.STARTINGHOUR' | translate }}
+              <mat-select [formControl]="starting_hour" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of hours" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingEveryHour">{{ 'DRAINCONTROL.MISSINGEVERYHOUR' | translate }}</mat-error>
+            <mat-error *ngIf="missingStartingHour">{{ 'DRAINCONTROL.MISSINGSTARTINGHOUR' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="n">
+              {{ 'DRAINCONTROL.SELECTEDHOURS' | translate }}
+              <mat-select [formControl]="selected_hours" class="togo-cron-select" multiple>
+                <mat-option *ngFor="let i of hours" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingSelectedHours">{{ 'DRAINCONTROL.MISSINGSELECTEDHOURS' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="-">
+              {{ 'DRAINCONTROL.FROMHOUR' | translate }}
+              <mat-select [formControl]="from_hour" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of hours" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.TOHOUR' | translate }}
+              <mat-select [formControl]="to_hour" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of hours" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              <mat-icon class="vertical-middle" matTooltip="{{ 'DRAINCONTROL.HOURSINFO' | translate }}">info_outline</mat-icon>
+            </mat-radio-button>
+            <mat-error *ngIf="missingFromHour">{{ 'DRAINCONTROL.MISSINGFROMHOUR' | translate }}</mat-error>
+            <mat-error *ngIf="missingToHour">{{ 'DRAINCONTROL.MISSINGTOHOUR' | translate }}</mat-error>
+            <mat-error *ngIf="endHourGreater">{{ 'DRAINCONTROL.HOURSINFO' | translate }}</mat-error>
+          </div>
+        </mat-radio-group>
+      </fieldset>
+      <fieldset class="togo-form-fieldset">
+        <legend>{{ 'DRAINCONTROL.DAYS' | translate }}</legend>
+        <mat-radio-group [formControl]="cron_day">
+          <div class="togo-radio-button">
+            <mat-radio-button value="*">
+              {{ 'DRAINCONTROL.EVERYDAY' | translate }}
+            </mat-radio-button>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="W/">
+              {{ 'DRAINCONTROL.EVERY' | translate }}
+              <mat-select [formControl]="every_day_week" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everyWeekDays" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.STARTINGDAY' | translate }}
+              <mat-select [formControl]="starting_day_week" class="togo-cron-select">
+                <mat-option value="2">{{ 'DAY.MONDAY' | translate }}</mat-option>
+                <mat-option value="3">{{ 'DAY.TUESDAY' | translate }}</mat-option>
+                <mat-option value="4">{{ 'DAY.WEDNESDAY' | translate }}</mat-option>
+                <mat-option value="5">{{ 'DAY.THURSDAY' | translate }}</mat-option>
+                <mat-option value="6">{{ 'DAY.FRIDAY' | translate }}</mat-option>
+                <mat-option value="7">{{ 'DAY.SATURDAY' | translate }}</mat-option>
+                <mat-option value="1">{{ 'DAY.SUNDAY' | translate }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingEveryDayWeek">{{ 'DRAINCONTROL.MISSINGEVERYDAY' | translate }}</mat-error>
+            <mat-error *ngIf="missingStartingDayWeek">{{ 'DRAINCONTROL.MISSINGSTARTINGDAY' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="M/">
+              {{ 'DRAINCONTROL.EVERY' | translate }}
+              <mat-select [formControl]="every_day_month" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everyMonthDays" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.STARTINGDAY' | translate }}
+              <mat-select [formControl]="starting_day_month" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everyMonthDays" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.OFMONTH' | translate }}
+            </mat-radio-button>
+            <mat-error *ngIf="missingEveryDayMonth">{{ 'DRAINCONTROL.MISSINGEVERYDAY' | translate }}</mat-error>
+            <mat-error *ngIf="missingStartingDayMonth">{{ 'DRAINCONTROL.MISSINGSTARTINGDAY' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="Wn">
+              {{ 'DRAINCONTROL.SELECTEDWEEKDAYS' | translate }}
+              <mat-select [formControl]="selected_days_week" class="togo-cron-select" multiple>
+                <mat-option value="MON">{{ 'DAY.MONDAY' | translate }}</mat-option>
+                <mat-option value="TUE">{{ 'DAY.TUESDAY' | translate }}</mat-option>
+                <mat-option value="WED">{{ 'DAY.WEDNESDAY' | translate }}</mat-option>
+                <mat-option value="THU">{{ 'DAY.THURSDAY' | translate }}</mat-option>
+                <mat-option value="FRI">{{ 'DAY.FRIDAY' | translate }}</mat-option>
+                <mat-option value="SAT">{{ 'DAY.SATURDAY' | translate }}</mat-option>
+                <mat-option value="SUN">{{ 'DAY.SUNDAY' | translate }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingSelectedDaysWeek">{{ 'DRAINCONTROL.MISSINGSELECTEDDAYS' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="Mn">
+              {{ 'DRAINCONTROL.SELECTEDMONTHDAYS' | translate }}
+              <mat-select [formControl]="selected_days_month" class="togo-cron-select" multiple>
+                <mat-option *ngFor="let i of everyMonthDays" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingSelectedDaysMonth">{{ 'DRAINCONTROL.MISSINGSELECTEDDAYS' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="LW">
+              {{ 'DRAINCONTROL.LASTWEEKDAY' | translate }}
+            </mat-radio-button>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="L">
+              {{ 'DRAINCONTROL.LASTMONTHDAY' | translate }}
+            </mat-radio-button>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="nL">
+              {{ 'DRAINCONTROL.ONLAST' | translate }}
+              <mat-select [formControl]="last_weekday" class="togo-cron-select">
+                <mat-option value="2">{{ 'DAY.MONDAY' | translate }}</mat-option>
+                <mat-option value="3">{{ 'DAY.TUESDAY' | translate }}</mat-option>
+                <mat-option value="4">{{ 'DAY.WEDNESDAY' | translate }}</mat-option>
+                <mat-option value="5">{{ 'DAY.THURSDAY' | translate }}</mat-option>
+                <mat-option value="6">{{ 'DAY.FRIDAY' | translate }}</mat-option>
+                <mat-option value="7">{{ 'DAY.SATURDAY' | translate }}</mat-option>
+                <mat-option value="1">{{ 'DAY.SUNDAY' | translate }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.OFMONTH' | translate }}
+            </mat-radio-button>
+            <mat-error *ngIf="missingLastDayWeek">{{ 'DRAINCONTROL.MISSINGLASTDAY' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="-">
+              <mat-select [formControl]="days_before" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everyMonthDays" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.BEFOREDAYS' | translate }}
+            </mat-radio-button>
+            <mat-error *ngIf="missingBeforeDays">{{ 'DRAINCONTROL.MISSINGBEFOREDAYS' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="W">
+              {{ 'DRAINCONTROL.NEARESTWEEKDAY' | translate }}
+              <mat-select [formControl]="nearest_day" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everyMonthDays" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.OFMONTH' | translate }}
+            </mat-radio-button>
+            <mat-error *ngIf="missingNearestDay">{{ 'DRAINCONTROL.MISSINGNEARESTDAY' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="#">
+              {{ 'DRAINCONTROL.ONTHE' | translate }}
+              <mat-select [formControl]="day_counter" class="togo-cron-select">
+                <mat-option value="1">{{ 'DAY.FIRST' | translate }}</mat-option>
+                <mat-option value="2">{{ 'DAY.SECOND' | translate }}</mat-option>
+                <mat-option value="3">{{ 'DAY.THIRD' | translate }}</mat-option>
+                <mat-option value="4">{{ 'DAY.FOURTH' | translate }}</mat-option>
+                <mat-option value="5">{{ 'DAY.FIFTH' | translate }}</mat-option>
+              </mat-select>
+              <mat-select [formControl]="weekday_counter" class="togo-cron-select">
+                <mat-option value="2">{{ 'DAY.MONDAY' | translate }}</mat-option>
+                <mat-option value="3">{{ 'DAY.TUESDAY' | translate }}</mat-option>
+                <mat-option value="4">{{ 'DAY.WEDNESDAY' | translate }}</mat-option>
+                <mat-option value="5">{{ 'DAY.THURSDAY' | translate }}</mat-option>
+                <mat-option value="6">{{ 'DAY.FRIDAY' | translate }}</mat-option>
+                <mat-option value="7">{{ 'DAY.SATURDAY' | translate }}</mat-option>
+                <mat-option value="1">{{ 'DAY.SUNDAY' | translate }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.OFMONTH' | translate }}
+            </mat-radio-button>
+            <mat-error *ngIf="missingDayCounter">{{ 'DRAINCONTROL.MISSINGDAYCOUNTER' | translate }}</mat-error>
+            <mat-error *ngIf="missingWeekdayCounter">{{ 'DRAINCONTROL.MISSINGWEEKDAYCOUNTER' | translate }}</mat-error>
+          </div>
+        </mat-radio-group>
+      </fieldset>
+      <fieldset class="togo-form-fieldset">
+        <legend>{{ 'DRAINCONTROL.MONTHS' | translate }}</legend>
+        <mat-radio-group [formControl]="cron_month">
+          <div class="togo-radio-button">
+            <mat-radio-button value="*">
+              {{ 'DRAINCONTROL.EVERYMONTH' | translate }}
+            </mat-radio-button>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="/">
+              {{ 'DRAINCONTROL.EVERY' | translate }}
+              <mat-select [formControl]="every_month" class="togo-cron-select togo-cron-select-short">
+                <mat-option *ngFor="let i of everyMonths" [value]="i">{{ i }}</mat-option>
+              </mat-select>
+              {{ 'DRAINCONTROL.STARTINGMONTH' | translate }}
+              <mat-select [formControl]="starting_month" class="togo-cron-select">
+                <mat-option value="1">{{ 'MONTH.JANUARY' | translate }}</mat-option>
+                <mat-option value="2">{{ 'MONTH.FEBRUARY' | translate }}</mat-option>
+                <mat-option value="3">{{ 'MONTH.MARCH' | translate }}</mat-option>
+                <mat-option value="4">{{ 'MONTH.APRIL' | translate }}</mat-option>
+                <mat-option value="5">{{ 'MONTH.MAY' | translate }}</mat-option>
+                <mat-option value="6">{{ 'MONTH.JUNE' | translate }}</mat-option>
+                <mat-option value="7">{{ 'MONTH.JULY' | translate }}</mat-option>
+                <mat-option value="8">{{ 'MONTH.AUGUST' | translate }}</mat-option>
+                <mat-option value="9">{{ 'MONTH.SEPTEMBER' | translate }}</mat-option>
+                <mat-option value="10">{{ 'MONTH.OCTOBER' | translate }}</mat-option>
+                <mat-option value="11">{{ 'MONTH.NOVEMBER' | translate }}</mat-option>
+                <mat-option value="12">{{ 'MONTH.DECEMBER' | translate }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingEveryMonth">{{ 'DRAINCONTROL.MISSINGEVERYMONTH' | translate }}</mat-error>
+            <mat-error *ngIf="missingStartingMonth">{{ 'DRAINCONTROL.MISSINGSTARTINGMONTH' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="n">
+              {{ 'DRAINCONTROL.SELECTEDMONTHS' | translate }}
+              <mat-select [formControl]="selected_months" class="togo-cron-select" multiple>
+                <mat-option value="JAN">{{ 'MONTH.JANUARY' | translate }}</mat-option>
+                <mat-option value="FEB">{{ 'MONTH.FEBRUARY' | translate }}</mat-option>
+                <mat-option value="MAR">{{ 'MONTH.MARCH' | translate }}</mat-option>
+                <mat-option value="APR">{{ 'MONTH.APRIL' | translate }}</mat-option>
+                <mat-option value="MAY">{{ 'MONTH.MAY' | translate }}</mat-option>
+                <mat-option value="JUN">{{ 'MONTH.JUNE' | translate }}</mat-option>
+                <mat-option value="JUL">{{ 'MONTH.JULY' | translate }}</mat-option>
+                <mat-option value="AUG">{{ 'MONTH.AUGUST' | translate }}</mat-option>
+                <mat-option value="SEP">{{ 'MONTH.SEPTEMBER' | translate }}</mat-option>
+                <mat-option value="OCT">{{ 'MONTH.OCTOBER' | translate }}</mat-option>
+                <mat-option value="NOV">{{ 'MONTH.NOVEMBER' | translate }}</mat-option>
+                <mat-option value="DEC">{{ 'MONTH.DECEMBER' | translate }}</mat-option>
+              </mat-select>
+            </mat-radio-button>
+            <mat-error *ngIf="missingSelectedMonths">{{ 'DRAINCONTROL.MISSINGSELECTEDMONTHS' | translate }}</mat-error>
+          </div>
+          <div class="togo-radio-button">
+            <mat-radio-button value="-">
+              {{ 'DRAINCONTROL.FROMMONTH' | translate }}
+              <mat-select [formControl]="from_month" class="togo-cron-select">
+                <mat-option value="1">{{ 'MONTH.JANUARY' | translate }}</mat-option>
+                <mat-option value="2">{{ 'MONTH.FEBRUARY' | translate }}</mat-option>
+                <mat-option value="3">{{ 'MONTH.MARCH' | translate }}</mat-option>
+                <mat-option value="4">{{ 'MONTH.APRIL' | translate }}</mat-option>
+                <mat-option value="5">{{ 'MONTH.MAY' | translate }}</mat-option>
+                <mat-option value="6">{{ 'MONTH.JUNE' | translate }}</mat-option>
+                <mat-option value="7">{{ 'MONTH.JULY' | translate }}</mat-option>
+                <mat-option value="8">{{ 'MONTH.AUGUST' | translate }}</mat-option>
+                <mat-option value="9">{{ 'MONTH.SEPTEMBER' | translate }}</mat-option>
+                <mat-option value="10">{{ 'MONTH.OCTOBER' | translate }}</mat-option>
+                <mat-option value="11">{{ 'MONTH.NOVEMBER' | translate }}</mat-option>
+                <mat-option value="12">{{ 'MONTH.DECEMBER' | translate }}</mat-option>
+               </mat-select>
+              {{ 'DRAINCONTROL.TOMONTH' | translate }}
+              <mat-select [formControl]="to_month" class="togo-cron-select">
+                <mat-option value="1">{{ 'MONTH.JANUARY' | translate }}</mat-option>
+                <mat-option value="2">{{ 'MONTH.FEBRUARY' | translate }}</mat-option>
+                <mat-option value="3">{{ 'MONTH.MARCH' | translate }}</mat-option>
+                <mat-option value="4">{{ 'MONTH.APRIL' | translate }}</mat-option>
+                <mat-option value="5">{{ 'MONTH.MAY' | translate }}</mat-option>
+                <mat-option value="6">{{ 'MONTH.JUNE' | translate }}</mat-option>
+                <mat-option value="7">{{ 'MONTH.JULY' | translate }}</mat-option>
+                <mat-option value="8">{{ 'MONTH.AUGUST' | translate }}</mat-option>
+                <mat-option value="9">{{ 'MONTH.SEPTEMBER' | translate }}</mat-option>
+                <mat-option value="10">{{ 'MONTH.OCTOBER' | translate }}</mat-option>
+                <mat-option value="11">{{ 'MONTH.NOVEMBER' | translate }}</mat-option>
+                <mat-option value="12">{{ 'MONTH.DECEMBER' | translate }}</mat-option>
+              </mat-select>
+              <mat-icon class="vertical-middle" matTooltip="{{ 'DRAINCONTROL.MONTHSINFO' | translate }}">info_outline</mat-icon>
+            </mat-radio-button>
+            <mat-error *ngIf="missingFromMonth">{{ 'DRAINCONTROL.MISSINGFROMMONTH' | translate }}</mat-error>
+            <mat-error *ngIf="missingToMonth">{{ 'DRAINCONTROL.MISSINGTOMONTH' | translate }}</mat-error>
+            <mat-error *ngIf="endMonthGreater">{{ 'DRAINCONTROL.MONTHSINFO' | translate }}</mat-error>
+          </div>
+        </mat-radio-group>
+      </fieldset>
+    </fieldset>
+    <fieldset *ngIf="control.id" class="togo-form-fieldset">
+      <legend>{{ 'DRAINCONTROL.DETAILS' | translate }}</legend>
+      <button mat-raised-button class="togo-form-button adddrains-button" (click)="addDrains()">{{ 'DRAINCONTROL.ADDDRAINS' | translate }}</button>
+      <button *ngIf="control.type === 'THRESHOLD'" mat-raised-button class="togo-form-button loadformulas-button" (click)="addFormulas()">{{ 'DRAINCONTROL.ADDFORMULAS' | translate }}</button>
+      <button *ngIf="control.type === 'MEASUREDIFF'" mat-raised-button class="togo-form-button clear-button clear-button-color" (click)="clearWaitingMeasures(undefined, '')">{{ 'DRAINCONTROL.CLEARWAITINGMEASURES' | translate }}</button>
+      <fieldset class="togo-form-fieldset all-details-fieldset">
+        <legend>{{ 'DRAINCONTROL.SETALLDETAILS' | translate }}</legend>
+        <div class="togo-form-field-group">
+          <mat-form-field class="detail-form-field">
+            <mat-label>{{ 'DRAINCONTROL.LASTMINUTES' | translate }}</mat-label>
+            <input matInput placeholder="{{ 'DRAINCONTROL.LASTMINUTES' | translate }}" [formControl]="last_minutes">
+            <mat-error *ngIf="last_minutes.invalid && (last_minutes.dirty || last_minutes.touched) && last_minutes.errors.pattern">{{ 'DRAINCONTROL.INVALIDLASTMINUTES' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field *ngIf="control.type === 'MEASUREDIFF'" class="detail-form-field">
+            <mat-label>{{ 'DRAINCONTROL.DELTA' | translate }}</mat-label>
+            <input matInput placeholder="{{ 'DRAINCONTROL.DELTA' | translate }}" [formControl]="delta">
+            <mat-icon matSuffix>%</mat-icon>
+            <mat-error *ngIf="delta.invalid && (delta.dirty || delta.touched) && delta.errors.pattern">{{ 'DRAINCONTROL.INVALIDDELTA' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field *ngIf="control.type === 'THRESHOLD'" class="detail-form-field">
+            <mat-label>{{ 'DRAINCONTROL.AGGREGATION' | translate }}</mat-label>
+            <mat-select [formControl]="aggregation">
+              <mat-option *ngFor="let aggr of measuresAggregations" [value]="aggr.id">{{aggr.description}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field *ngIf="control.type === 'THRESHOLD'" class="detail-form-field">
+            <mat-label>{{ 'DRAINCONTROL.LOWTHRESHOLD' | translate }}</mat-label>
+            <input matInput placeholder="{{ 'DRAINCONTROL.LOWTHRESHOLD' | translate }}" [formControl]="low_threshold">
+            <mat-error *ngIf="low_threshold.invalid && (low_threshold.dirty || low_threshold.touched) && low_threshold.errors.pattern">{{ 'DRAINCONTROL.INVALIDTHRESHOLD' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field *ngIf="control.type === 'THRESHOLD'" class="detail-form-field">
+            <mat-label>{{ 'DRAINCONTROL.HIGHTHRESHOLD' | translate }}</mat-label>
+            <input matInput placeholder="{{ 'DRAINCONTROL.HIGHTHRESHOLD' | translate }}" [formControl]="high_threshold">
+            <mat-error *ngIf="high_threshold.invalid && (high_threshold.dirty || high_threshold.touched) && high_threshold.errors.pattern">{{ 'DRAINCONTROL.INVALIDTHRESHOLD' | translate }}</mat-error>
+          </mat-form-field>
+          <mat-form-field class="detail-form-field" floatLabel="always" appearance="none">
+            <mat-slide-toggle color="primary" [formControl]="active">{{ 'DRAINCONTROL.ACTIVE' | translate }}</mat-slide-toggle>
+            <textarea matInput hidden></textarea>
+          </mat-form-field>
+        </div>
+      </fieldset>
+      <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
+        <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+          <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node)">
+            <button *ngIf="hasChild(node.id, node)" mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id" >
+              <mat-icon class="mat-icon-rtl-mirror">{{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}</mat-icon>
+            </button>
+            <div class="mat-tree-node-title" [class.mat-tree-node-bold-title]="node.type === 'organization'" [class.mat-tree-node-underlined-title]="(node.type === 'formulas') || (node.type === 'client')" [class.mat-tree-node-italic-title]="(node.type === 'formulas') || (node.type === 'feed')">
+              <mat-icon *ngIf="(node.type === 'drain') || (node.type === 'formula')" class="mat-tree-node-title-icon error clickable" title="{{ 'DRAINCONTROL.REMOVEDETAIL' | translate }}" (click)="(node.type === 'drain') ? removeDrain(node.id) : removeFormula(node.id)">remove_circle</mat-icon>
+              {{node.item}}
+              <div *ngIf="(((node.type === 'drain') && waitingMeasures['d_' + node.id]) || ((node.type === 'formula') && waitingMeasures['d_' + node.id])) && (control.type === 'MEASUREDIFF')">
+                [ {{(node.type === 'drain') ? waitingMeasures['d_' + node.id] : waitingMeasures['f_' + node.id]}}
+                <button mat-icon-button (click)="clearWaitingMeasures(node.id, node.type)">
+                  <mat-icon class="mat-tree-node-title-icon-after clear-button-color" title="{{ 'DRAINCONTROL.CLEARWAITINGMEASURES' | translate }}">restore</mat-icon>
+                </button>
+                ]
+              </div>
+            </div>
+            <div *ngIf="(node.type === 'drain') || (node.type === 'formula')" class="details-form-field-group mat-tree-node-right">
+              <mat-form-field class="detail-form-field">
+                <mat-label>{{ 'DRAINCONTROL.LASTMINUTES' | translate }}</mat-label>
+                <input matInput placeholder="{{ 'DRAINCONTROL.LASTMINUTES' | translate }}" [formControlName]="'last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id" required>
+                <mat-error *ngIf="controlForm.get('last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).invalid && (controlForm.get('last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).dirty || controlForm.get('last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).touched) && controlForm.get('last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).errors.required">{{ 'DRAINCONTROL.MISSINGLASTMINUTES' | translate }}</mat-error>
+                <mat-error *ngIf="controlForm.get('last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).invalid && (controlForm.get('last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).dirty || controlForm.get('last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).touched) && controlForm.get('last_minutes_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).errors.pattern">{{ 'DRAINCONTROL.INVALIDLASTMINUTES' | translate }}</mat-error>
+              </mat-form-field>
+              <mat-form-field *ngIf="control.type === 'MEASUREDIFF'" class="detail-form-field">
+                <mat-label>{{ 'DRAINCONTROL.DELTA' | translate }}</mat-label>
+                <input matInput placeholder="{{ 'DRAINCONTROL.DELTA' | translate }}" [formControlName]="'delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id" required>
+                <mat-icon matSuffix>%</mat-icon>
+                <mat-error *ngIf="controlForm.get('delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).invalid && (controlForm.get('delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).dirty || controlForm.get('delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).touched) && controlForm.get('delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).errors.required">{{ 'DRAINCONTROL.MISSINGDELTA' | translate }}</mat-error>
+                <mat-error *ngIf="controlForm.get('delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).invalid && (controlForm.get('delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).dirty || controlForm.get('delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).touched) && controlForm.get('delta_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).errors.pattern">{{ 'DRAINCONTROL.INVALIDDELTA' | translate }}</mat-error>
+              </mat-form-field>
+              <mat-form-field *ngIf="control.type === 'THRESHOLD'" class="detail-form-field">
+                <mat-label>{{ 'DRAINCONTROL.AGGREGATION' | translate }}</mat-label>
+                <mat-select [formControlName]="'aggregation_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id" required>
+                  <mat-option *ngFor="let aggregation of measuresAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+                </mat-select>
+                <mat-error *ngIf="controlForm.get('aggregation_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).invalid && (controlForm.get('aggregation_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).dirty || controlForm.get('aggregation_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).touched) && controlForm.get('aggregation_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).errors.required">{{ 'DRAINCONTROL.MISSINGAGGREGATION' | translate }}</mat-error>
+              </mat-form-field>
+              <mat-form-field *ngIf="control.type === 'THRESHOLD'" class="detail-form-field">
+                <mat-label>{{ 'DRAINCONTROL.LOWTHRESHOLD' | translate }}</mat-label>
+                <input matInput placeholder="{{ 'DRAINCONTROL.LOWTHRESHOLD' | translate }}" [formControlName]="'low_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id">
+                <mat-error *ngIf="controlForm.get('low_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).invalid && (controlForm.get('low_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).dirty || controlForm.get('low_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).touched) && controlForm.get('low_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).errors.pattern">{{ 'DRAINCONTROL.INVALIDTHRESHOLD' | translate }}</mat-error>
+              </mat-form-field>
+              <mat-form-field *ngIf="control.type === 'THRESHOLD'" class="detail-form-field">
+                <mat-label>{{ 'DRAINCONTROL.HIGHTHRESHOLD' | translate }}</mat-label>
+                <input matInput placeholder="{{ 'DRAINCONTROL.HIGHTHRESHOLD' | translate }}" [formControlName]="'high_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id">
+                <mat-error *ngIf="controlForm.get('high_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).invalid && (controlForm.get('high_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).dirty || controlForm.get('high_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).touched) && controlForm.get('high_threshold_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id).errors.pattern">{{ 'DRAINCONTROL.INVALIDTHRESHOLD' | translate }}</mat-error>
+              </mat-form-field>
+              <mat-form-field class="detail-form-field" floatLabel="always" appearance="none">
+                <mat-slide-toggle color="primary" [formControlName]="'active_' + ((node.type === 'drain') ? 'd_' : 'f_') + node.id">{{ 'DRAINCONTROL.ACTIVE' | translate }}</mat-slide-toggle>
+                <textarea matInput hidden></textarea>
+              </mat-form-field>
+            </div>
+            <mat-divider class="mat-tree-node-divider"></mat-divider>
+          </div>
+        </mat-tree-node>
+      </mat-tree>
+    </fieldset>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || invalidCron || controlForm.invalid">{{ 'DRAINCONTROL.SAVE' | translate }}</button>
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

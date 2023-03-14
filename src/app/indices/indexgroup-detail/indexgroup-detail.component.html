@@ -1,0 +1,38 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container" *ngIf="indexgroup">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/indices" routerLinkActive="active">{{ 'MENU.INDICES' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}" routerLinkActive="active">{{org.name}}</mat-chip-option>
+      <mat-chip-option disabled>{{ indexgroup.id ? indexgroup.name : ('INDEXGROUP.NEW' | translate) }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="indexgroup.id" mat-flat-button color="warn" [disabled]="isDeleting" (click)="delete()">{{ 'INDEXGROUP.DELETE' | translate }}</button>
+    </div>
+  </div>
+  <h4>
+    {{ (indexgroup.id ? 'INDEXGROUP.EDITTITLE' : 'INDEXGROUP.CREATETITLE') | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="indexgroupForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'INDEXGROUP.ORG' | translate }}</mat-label>
+        <mat-select [formControl]="organization" [compareWith]="compareObjects" required>
+          <mat-option *ngFor="let org of allOrgs" [value]="org">{{org.name}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="organization.invalid && (organization.dirty || organization.touched) && organization.errors.required">{{ 'INDEXGROUP.MISSINGORG' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'INDEXGROUP.NAME' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'INDEXGROUP.NAME' | translate }}" [formControl]="name" required>
+        <mat-error *ngIf="name.invalid && (name.dirty || name.touched) && name.errors.required">{{ 'INDEXGROUP.MISSINGNAME' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || indexgroupForm.invalid">{{ 'INDEXGROUP.SAVE' | translate }}</button>
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

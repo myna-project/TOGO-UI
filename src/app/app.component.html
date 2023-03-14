@@ -1,0 +1,108 @@
+<div class="my-container" [ngClass]="style" [class.my-is-mobile]="mobileQuery.matches">
+  <mat-toolbar color="primary" class="my-toolbar">
+    <button mat-icon-button (click)="snav.toggle()" *ngIf="currentUser && currentUser.is_logged"><mat-icon>menu</mat-icon></button>
+    <h1 class="my-app-name" [class.my-is-mobile]="mobileQuery.matches">Togo Web Interface</h1>
+    <h1 class="my-app-name small-screen-text" [class.my-is-large-screen]="!mobileQuery.matches">Togo</h1>
+    <span class="fill-remaining-space"></span>
+    <button mat-icon-button [class.avatar-button]="currentUser && !currentUser.avatar" *ngIf="currentUser && currentUser.is_logged" [matMenuTriggerFor]="user" dir="rtl">
+      <span *ngIf="!currentUser.avatar">{{ currentUser.username.charAt(0).toUpperCase() }}</span>
+      <img *ngIf="currentUser.avatar" id="user-avatar" class="user-avatar" [src]="user_avatar" />
+    </button>
+  </mat-toolbar>
+
+  <mat-menu class="user-menu" #user="matMenu" xPosition="before">
+    <button mat-menu-item routerLink="/profile">{{ 'LOGIN.PROFILE' | translate }}</button>
+    <button mat-menu-item [matMenuTriggerFor]="lang"><img class="selected-lang-flag" src="assets/img/{{selectedLang}}-flag-icon-16.png"/>:{{ 'LOGIN.LANG' | translate }}</button>
+    <button mat-menu-item (click)="logout()">Logout</button>
+  </mat-menu>
+
+  <mat-menu #lang="matMenu" xPosition="after" yPosition="below">
+    <button mat-menu-item *ngFor="let lang of translate.getLangs()" (click)="changeLanguage(lang)"><img class="available-lang-flag" src="assets/img/{{lang}}-flag-icon-16.png"/>{{langName[lang]}}</button>
+  </mat-menu>
+
+  <mat-sidenav-container class="my-sidenav-container">
+    <mat-sidenav #snav class="my-sidenav" [mode]="mobileQuery.matches ? 'over' : 'push'" [fixedInViewport]="mobileQuery.matches">
+      <mat-nav-list>
+        <div class="dashboard-org">
+          <a mat-list-item routerLink="dashboard" routerLinkActive="active" (click)="closeSideNav()" [disabled]="isLoading">
+            <mat-icon class="my-sidenav-icon">home</mat-icon>
+            <span class="nav-caption">{{ 'MENU.DASHBOARD' | translate }}</span>
+          </a>
+          <a routerLinkActive="active" mat-menu-item class="my-sidenav-right" [matMenuTriggerFor]="(orgs.length > 1) ? menuOrg : menuDashboard" [disabled]="isLoading">
+            <mat-icon class="my-sidenav-icon-right">keyboard_arrow_down</mat-icon>
+          </a>
+          <mat-menu #menuDashboard="matMenu">
+            <button *ngFor="let dashboard of dashboards" mat-menu-item (click)="showDashboard(dashboard.id)" [disabled]="isLoading">
+              {{dashboard.name}}
+            </button>
+            <button mat-menu-item (click)="addDashboard()">
+              <mat-icon class="my-sidenav-icon">add_circle</mat-icon><span>{{ 'DASHBOARD.ADDDASHBOARD' | translate }}</span>
+            </button>
+          </mat-menu>
+          <mat-menu #menuOrg="matMenu">
+            <button *ngFor="let org of orgs" mat-menu-item routerLinkActive="active" [matMenuTriggerFor]="menuOrgDashboard">
+              {{org.name}}
+              <mat-menu #menuOrgDashboard="matMenu" xPosition="after" yPosition="below">
+                <span *ngFor="let dashboard of dashboards">
+                  <button mat-menu-item *ngIf="dashboard.org_id === org.id" (click)="showDashboard(dashboard.id)" [disabled]="isLoading">
+                    {{dashboard.name}}
+                  </button>
+                </span>
+              </mat-menu>
+            </button>
+            <button mat-menu-item (click)="addDashboard()">
+              <mat-icon class="my-sidenav-icon">add_circle</mat-icon><span>{{ 'DASHBOARD.ADDDASHBOARD' | translate }}</span>
+            </button>
+          </mat-menu>
+        </div>
+        <a *ngIf="synopticDashboard" mat-list-item routerLink="synopticdashboard" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">home_work</mat-icon> <span class="nav-caption">{{ 'MENU.SYNOPTICDASHBOARD' | translate }}</span>
+        </a>
+        <a mat-list-item routerLink="organizations" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">device_hub</mat-icon> <span class="nav-caption">{{ 'MENU.ORGS' | translate }}</span>
+        </a>
+        <a mat-list-item routerLink="clients" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">settings_input_component</mat-icon> <span class="nav-caption">{{ 'MENU.CLIENTS' | translate }}</span>
+        </a>
+        <a mat-list-item routerLink="measures" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">timeline</mat-icon><span class="nav-caption">{{ 'MENU.MEASURES' | translate }}</span>
+        </a>
+        <a mat-list-item routerLink="costs" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">euro_symbol</mat-icon><span class="nav-caption">{{ 'MENU.COSTS' | translate }}</span>
+        </a>
+        <a mat-list-item routerLink="indices" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">trending_up</mat-icon><span class="nav-caption">{{ 'MENU.INDICES' | translate }}</span>
+        </a>
+        <a *ngIf="accountingData" mat-list-item routerLink="accountingdata" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">addchart</mat-icon><span class="nav-caption">{{ 'MENU.ACCOUNTINGDATA' | translate }}</span>
+        </a>
+        <a mat-list-item routerLink="draincontrols" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">alarm</mat-icon><span class="nav-caption">{{ 'MENU.DRAINCONTROLS' | translate }}</span>
+        </a>
+        <a *ngIf="currentUser && currentUser.is_admin" mat-list-item routerLink="itemskwh" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">receipt</mat-icon><span class="nav-caption">{{ 'MENU.ITEMKWH' | translate }}</span>
+        </a>
+        <a *ngIf="currentUser && currentUser.is_admin" mat-list-item routerLink="clientcategories" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">tag</mat-icon><span class="nav-caption">{{ 'MENU.CLIENTCATEGORIES' | translate }}</span>
+        </a>
+        <a *ngIf="currentUser && currentUser.is_admin" mat-list-item routerLink="jobs" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">assignment</mat-icon><span class="nav-caption">{{ 'MENU.JOBS' | translate }}</span>
+        </a>
+        <a *ngIf="currentUser && currentUser.is_admin" mat-list-item routerLink="users" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">security</mat-icon><span class="nav-caption">{{ 'MENU.USERS' | translate }}</span>
+        </a>
+        <a *ngIf="currentUser && currentUser.is_admin" mat-list-item routerLink="about" routerLinkActive="active" (click)="closeSideNav()">
+          <mat-icon class="my-sidenav-icon">help</mat-icon><span class="nav-caption">{{ 'MENU.ABOUT' | translate }}</span>
+        </a>
+      </mat-nav-list>
+    </mat-sidenav>
+    <mat-sidenav-content #content>
+      <main>
+        <router-outlet (activate)="onActivate($event)"></router-outlet>
+        <button mat-icon-button color="primary" class="scroll-to-top" *ngIf="isReturnToTopShow" (click)="scrollToTop();">
+          <mat-icon>keyboard_arrow_up</mat-icon>
+        </button>
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

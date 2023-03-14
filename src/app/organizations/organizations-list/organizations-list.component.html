@@ -1,0 +1,46 @@
+<mat-progress-bar *ngIf="(dataSource.data.length === 0) && isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option disabled>{{ (orgsForClients ? 'MENU.CLIENTS' : 'MENU.ORGS') | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="!orgsForClients" mat-flat-button color="primary" routerLink="/organization" routerLinkActive="active">{{ 'ORG.CREATE' | translate }}</button>
+      <button *ngIf="orgsForClients" mat-flat-button color="primary" routerLink="/client" routerLinkActive="active">{{ 'CLIENT.CREATE' | translate }}</button>
+    </div>
+  </div>
+  <div class="no-data-div" *ngIf="(dataSource.data.length === 0) && !isLoading && !isFiltering">
+    <span>{{ 'ORG.NOORGS' | translate }}</span>
+  </div>
+  <div *ngIf="(dataSource.data.length > 0) || isFiltering">
+    <mat-form-field class="search-box">
+      <mat-label>{{ 'ORG.SEARCHORG' | translate }}</mat-label>
+      <input matInput #searchOrg placeholder="{{ 'ORG.SEARCHORG' | translate }}" (input)="filterChanged($event.target.value, 'organization');">
+    </mat-form-field>
+  </div>
+  <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+      <span class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node)">
+        <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id">
+          <mat-icon class="mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
+            {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+          </mat-icon>
+        </button>
+        <span class="mat-tree-node-title">{{node.item}}</span>
+        <span class="mat-tree-node-buttons button-row-right">
+          <button *ngIf="node.id !== 0" mat-stroked-button color="primary" (click)="showClients(node.id)">
+            <mat-icon>settings_input_component</mat-icon>
+            {{ 'ORG.SHOWCLIENTS' | translate }}
+          </button>
+          <button *ngIf="!orgsForClients && (node.id !== 0)" mat-stroked-button color="primary" (click)="edit(node.id)">
+            <mat-icon>edit</mat-icon>
+            {{ 'ORG.EDIT' | translate }}
+          </button>
+        </span>
+        <span class="mat-tree-node-divider">
+          <mat-divider></mat-divider>
+        </span>
+      </span>
+    </mat-tree-node>
+  </mat-tree>
+</div>

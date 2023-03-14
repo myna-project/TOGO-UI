@@ -1,0 +1,29 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option disabled>{{ 'MENU.CLIENTCATEGORIES' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  <div class="button-row-right breadcrumb-right">
+    <button mat-flat-button color="primary" routerLink="/clientcategory" routerLinkActive="active">{{ 'CLIENTCATEGORY.CREATE' | translate }}</button>
+  </div>
+  <div>
+    <mat-form-field class="search-box">
+      <mat-label>{{ 'CLIENTCATEGORY.SEARCH' | translate }}</mat-label>
+      <input matInput #searchBox placeholder="{{ 'CLIENTCATEGORY.SEARCH' | translate }}" (input)="search(searchBox.value)">
+    </mat-form-field>
+  </div>
+  <div class="togo-list">
+    <div *ngFor="let category of filteredCategories" class="togo-list-item">
+      <div class="togo-list-item-title togo-list-item-title-bold">{{category.description}}</div>
+      <div class="togo-list-item-right">
+        <button mat-stroked-button color="primary" (click)="edit(category.id)">
+          <mat-icon>edit</mat-icon>
+          {{ 'CLIENTCATEGORY.EDIT' | translate }}
+        </button>
+      </div>
+      <mat-divider class="togo-list-item-divider"></mat-divider>
+    </div>
+  </div>
+</div>

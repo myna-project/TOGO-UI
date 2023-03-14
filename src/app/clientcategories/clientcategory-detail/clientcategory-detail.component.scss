@@ -1,0 +1,50 @@
+.style-label {
+  margin-top: 20px;
+}
+
+.clientcategory-img {
+  height: 100%;
+  width: 100%;
+}
+
+.clientcategory-img-label {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  height: 100px;
+  width: 100px;
+  border: 5px solid #000;
+}
+
+.clientcategory-img-label .clientcategory-img-label-text {
+  position: absolute;
+  display: none;
+  top: 50%;
+  left:  50%;
+  transform: translate(-50%,-50%);
+  z-index: 2;
+}
+
+.clientcategory-img-label .clientcategory-img-background {
+  position: absolute;
+  display: none;
+  top: 0;
+  left:  0;
+  bottom: 0;
+  right: 0;
+  background-color:rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.clientcategory-img-label:hover .clientcategory-img-label-text {
+  display: block;
+}
+
+.clientcategory-img-label:hover .clientcategory-img-background {
+  display: block;
+}
+
+#imageInput {
+  display: none;
+}

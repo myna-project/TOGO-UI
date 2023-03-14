@@ -1,0 +1,73 @@
+<mat-progress-bar *ngIf="(dataSource.data.length === 0) && isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/organizations" routerLinkActive="active">{{ 'MENU.ORGS' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}" routerLinkActive="active">{{org.name}}</mat-chip-option>
+      <mat-chip-option disabled>{{ 'MENU.CLIENTS' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="org.id" mat-flat-button color="primary" routerLink="/organization/{{org.id}}/client" routerLinkActive="active">{{ 'CLIENT.CREATE' | translate }}</button>
+    </div>
+  </div>
+  <div class="no-data-div" *ngIf="(clientsForView.length === 0) && !isLoading">
+    <span>{{ (controllerView ? 'ORG.NOCOMPUTERCLIENTS' : 'ORG.NOENERGYCLIENTS') | translate }}</span>
+  </div>
+  <div id="toggle" *ngIf="(allClients != null) && (allClients.length > 0)">
+    <mat-button-toggle-group #group="matButtonToggleGroup" class="matButtonToggleGroup" value="{{selectedView}}" (change)="toggleChange($event)">
+      <mat-button-toggle class="matButtonToggleLabel" value="vertical">
+        <mat-icon title="{{ 'CLIENT.HORIZONTALTREE' | translate }}">account_tree</mat-icon>
+      </mat-button-toggle>
+      <mat-button-toggle class="matButtonToggleLabel" value="horizontal">
+        <mat-icon class="vertical-tree" title="{{ 'CLIENT.VERTICALTREE' | translate }}">account_tree</mat-icon>
+      </mat-button-toggle>
+      <mat-button-toggle class="matButtonToggleLabel" value="list">
+        <mat-icon title="{{ 'CLIENT.LIST' | translate }}">list</mat-icon>
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+    <div id="slide">
+      <mat-slide-toggle (change)="slideChange()" [checked]="controllerView"><mat-icon class="vertical-middle" matTooltip="{{ 'CLIENT.INFO' | translate }}">info_outline</mat-icon></mat-slide-toggle>
+    </div>
+  </div>
+  <div [hidden]="(selectedView === 'list') || (clientsForView.length === 0)" (window:resize)="onResize($event)" id="{{client_mitch_graph_id}}" class="mitch-graph"></div>
+  <div *ngIf="(selectedView === 'list') && (clientsForView.length > 0)" class="clients-tree-div">
+    <div *ngIf="(dataSource.data.length > 0) || isFiltering">
+      <mat-form-field class="search-box">
+        <mat-label>{{ 'CLIENT.SEARCHCLIENT' | translate }}</mat-label>
+        <input matInput #searchClient placeholder="{{ 'CLIENT.SEARCHCLIENT' | translate }}" (input)="filterChanged($event.target.value, 'client');">
+      </mat-form-field>
+    </div>
+    <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
+      <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+        <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node)">
+          <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id">
+            <mat-icon class="mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
+              {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+            </mat-icon>
+          </button>
+          <div class="mat-tree-node-title">
+            {{node.item}}
+            <mat-icon class="mat-tree-node-title-icon mat-tree-node-title-icon-after error" *ngIf="node.alert" title="{{ 'DRAIN.ALERT' | translate }}">notification_important</mat-icon>
+            <mat-icon class="mat-tree-node-title-icon mat-tree-node-title-icon-after error" *ngIf="node.alarm" title="{{ 'DRAIN.ALARM' | translate }}">error</mat-icon>
+            <mat-icon class="mat-tree-node-title-icon mat-tree-node-title-icon-after warning" *ngIf="node.warning" title="{{ 'DRAIN.WARNING' | translate }}">warning</mat-icon>
+          </div>
+          <div class="mat-tree-node-buttons button-row-right">
+            <button *ngIf="node.id !== 0 && (node.default_drain_ids && (node.default_drain_ids.length > 0))" mat-stroked-button color="primary" (click)="measures(node.default_drain_ids)">
+              <mat-icon>timeline</mat-icon>
+              {{ 'CLIENT.VIEWMEASURES' | translate }}
+            </button>
+            <button *ngIf="node.id !== 0" mat-stroked-button color="primary" (click)="drains(node.id)">
+              <mat-icon>list</mat-icon>
+              {{ 'CLIENT.DRAINLIST' | translate }}
+            </button>
+            <button *ngIf="node.id !== 0" mat-stroked-button color="primary" (click)="edit(node.id)">
+              <mat-icon>edit</mat-icon>
+              {{ 'CLIENT.EDIT' | translate }}
+            </button>
+          </div>
+          <mat-divider class="mat-tree-node-divider"></mat-divider>
+        </div>
+      </mat-tree-node>
+    </mat-tree>
+  </div>
+</div>

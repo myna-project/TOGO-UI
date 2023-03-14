@@ -1,0 +1,48 @@
+<mat-progress-bar *ngIf="(dataSource.data.length === 0) && isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option disabled>{{ 'MENU.DRAINCONTROLS' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button mat-flat-button color="primary" routerLink="/draincontrol" routerLinkActive="active">{{ 'DRAINCONTROL.CREATE' | translate }}</button>
+    </div>
+  </div>
+  <div class="no-data-div" *ngIf="(dataSource.data.length === 0) && !isLoading && !isFiltering">
+    <span>{{ 'DRAINCONTROL.NOCONTROLS' | translate }}</span>
+    <div class="button-row-right">
+      <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+    </div>
+  </div>
+  <div *ngIf="(dataSource.data.length > 0) || isFiltering">
+    <mat-form-field class="search-box">
+      <mat-label>{{ 'DRAINCONTROL.SEARCHORG' | translate }}</mat-label>
+      <input matInput #searchOrg placeholder="{{ 'DRAINCONTROL.SEARCHORG' | translate }}" (input)="searchControl.value='';filterChanged($event.target.value, 'organization');">
+    </mat-form-field>
+    <mat-form-field class="search-box">
+      <mat-label>{{ 'DRAINCONTROL.SEARCHCONTROL' | translate }}</mat-label>
+      <input matInput #searchControl placeholder="{{ 'DRAINCONTROL.SEARCHCONTROL' | translate }}" (input)="searchOrg.value='';filterChanged($event.target.value, 'draincontrol');">
+    </mat-form-field>
+  </div>
+  <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+      <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node)">
+        <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id">
+          <mat-icon class="mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
+            {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+          </mat-icon>
+        </button>
+        <div class="mat-tree-node-title" [class.mat-tree-node-bold-title]="node.type === 'organization'">
+          {{node.item}}
+        </div>
+        <div class="mat-tree-node-buttons button-row-right">
+          <button *ngIf="(node.id !== 0) && (node.type !== 'organization')" mat-stroked-button color="primary" (click)="edit(node.id)">
+            <mat-icon>edit</mat-icon>
+            {{ 'DRAINCONTROL.EDIT' | translate }}
+          </button>
+        </div>
+        <mat-divider class="mat-tree-node-divider"></mat-divider>
+      </div>
+    </mat-tree-node>
+  </mat-tree>
+</div>

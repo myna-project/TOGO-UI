@@ -1,0 +1,59 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$my-primary: mat.define-palette(mat.$deep-purple-palette, 500);
+$my-accent: mat.define-palette(mat.$amber-palette, A200, A100, A400);
+
+$my-theme: mat.define-light-theme((
+ color: (
+   primary: $my-primary,
+   accent: $my-accent,
+ ),
+ typography: mat.define-typography-config(),
+ density: 0
+));
+
+@include mat.all-component-themes($my-theme);
+
+.pink {
+  $pink-primary: mat.define-palette(mat.$pink-palette);
+  $pink-accent: mat.define-palette(mat.$yellow-palette);
+  $my-pink-theme: mat.define-light-theme((
+     color: (
+       primary: $pink-primary,
+       accent: $pink-accent,
+     ),
+     typography: mat.define-typography-config(),
+     density: 0)
+  );
+  @include mat.all-component-colors($my-pink-theme);
+}
+
+.deep-orange {
+  $deep-orange-primary: mat.define-palette(mat.$deep-orange-palette);
+  $deep-orange-accent: mat.define-palette(mat.$teal-palette, A100);
+  $my-deep-orange-theme: mat.define-light-theme((
+     color: (
+       primary: $deep-orange-primary,
+       accent: $deep-orange-accent,
+     ),
+     typography: mat.define-typography-config(),
+     density: 0)
+  );
+  @include mat.all-component-colors($my-deep-orange-theme);
+}
+
+.blue {
+  $blue-primary: mat.define-palette(mat.$indigo-palette);
+  $blue-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+  $my-blue-theme: mat.define-light-theme((
+     color: (
+       primary: $blue-primary,
+       accent: $blue-accent,
+     ),
+     typography: mat.define-typography-config(),
+     density: 0)
+  );
+  @include mat.all-component-colors($my-blue-theme);
+}

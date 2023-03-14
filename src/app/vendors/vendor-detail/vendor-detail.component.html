@@ -1,0 +1,29 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left" *ngIf="vendor">
+      <mat-chip-option routerLink="/vendors" routerLinkActive="active">{{ 'MENU.VENDORS' | translate }}</mat-chip-option>
+      <mat-chip-option disabled>{{ vendor.id ? vendor.name : ('VENDOR.NEW' | translate) }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button *ngIf="vendor.id" mat-flat-button color="warn" [disabled]="isDeleting" (click)="delete()">{{ 'VENDOR.DELETE' | translate }}</button>
+    </div>
+  </div>
+  <h4 *ngIf="!isLoading">
+    {{ (vendor.id ? 'VENDOR.EDITTITLE' : 'VENDOR.CREATETITLE') | translate }}
+  </h4>
+  <form class="togo-form" [formGroup]="vendorForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{'VENDOR.NAME' | translate}}</mat-label>
+        <input matInput [formControl]="name">
+        <mat-error *ngIf="name.invalid && (name.dirty || name.touched) && name.errors.required">{{ 'VENDOR.MISSINGNAME' | translate }}</mat-error>
+        <mat-error *ngIf="name.invalid && (name.dirty || name.touched) && name.errors.minlength">{{ 'VENDOR.INVALIDNAME' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+  </form>
+  <div class="button-row-right">
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || vendorForm.invalid">{{ 'VENDOR.SAVE' | translate }}</button>
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

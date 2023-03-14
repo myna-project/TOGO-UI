@@ -1,0 +1,49 @@
+.main-container {
+  margin: 1%;
+}
+
+.mitch-graph {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+.matButtonToggleGroup {
+  margin: 15px;
+}
+
+.matButtonToggleLabel {
+  line-height: 26px;
+  padding: 0 7px;
+}
+
+#visualization {
+  position: absolute;
+}
+
+#toggle {
+  position: absolute;
+  width: 94.5%;
+}
+
+.clients-tree {
+  margin-top: 20px;
+}
+
+.clients-tree-invisible {
+  display: none;
+}
+
+.clients-tree-div {
+  margin-top: 130px;
+}
+
+#slide {
+  float: right;
+  padding-top: 30px;
+  position: inline;
+}
+
+.vertical-tree {
+  transform: rotate(90deg);
+}

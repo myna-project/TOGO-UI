@@ -1,0 +1,11 @@
+<div mat-dialog-content>
+  <mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+  <div #chartDiv [chart]="chart"></div>
+  <div class="no-data-div" *ngIf="!isLoading && (chartSeries.length === 0)">
+    <span>{{ 'MEASURES.NOMEASURES' | translate }}</span>
+  </div>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="goToMeasures()">{{ 'MEASURES.GO' | translate }}</button>
+  <button mat-raised-button [mat-dialog-close]="">{{ 'MEASURES.CLOSE' | translate }}</button>
+</div>

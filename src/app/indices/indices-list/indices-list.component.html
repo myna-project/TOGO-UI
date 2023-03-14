@@ -1,0 +1,57 @@
+<mat-progress-bar *ngIf="(dataSource.data.length === 0) && isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option disabled>{{ 'MENU.INDICES' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button mat-flat-button color="primary" routerLink="/indexgroup" routerLinkActive="active">{{ 'INDEXGROUP.CREATE' | translate }}</button>
+      <button mat-flat-button color="primary" routerLink="/index" routerLinkActive="active">{{ 'INDEX.CREATE' | translate }}</button>
+    </div>
+  </div>
+  <div class="no-data-div" *ngIf="(dataSource.data.length === 0) && !isLoading && !isFiltering">
+    <span>{{ 'INDEX.NOINDICES' | translate }}</span>
+    <div class="button-row-right">
+      <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+    </div>
+  </div>
+  <div *ngIf="(dataSource.data.length > 0) || isFiltering">
+    <mat-form-field class="search-box">
+      <mat-label>{{ 'INDEX.SEARCHORG' | translate }}</mat-label>
+      <input matInput #searchOrg placeholder="{{ 'INDEX.SEARCHORG' | translate }}" (input)="searchGroup.value='';searchIndex.value='';filterChanged($event.target.value, 'organization');">
+    </mat-form-field>
+    <mat-form-field class="search-box">
+      <mat-label>{{ 'INDEX.SEARCHGROUP' | translate }}</mat-label>
+      <input matInput #searchGroup placeholder="{{ 'INDEX.SEARCHGROUP' | translate }}" (input)="searchOrg.value='';searchIndex.value='';filterChanged($event.target.value, 'indexgroup');">
+    </mat-form-field>
+    <mat-form-field class="search-box">
+      <mat-label>{{ 'INDEX.SEARCHINDEX' | translate }}</mat-label>
+      <input matInput #searchIndex placeholder="{{ 'INDEX.SEARCHINDEX' | translate }}" (input)="searchOrg.value='';searchGroup.value='';filterChanged($event.target.value, 'index');">
+    </mat-form-field>
+  </div>
+  <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+      <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node)">
+        <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id">
+          <mat-icon class="mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
+            {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+          </mat-icon>
+        </button>
+        <div class="mat-tree-node-title" [class.mat-tree-node-bold-title]="node.type === 'organization'" [class.mat-tree-node-italic-title]="node.type === 'indexgroup'">
+          {{node.item}}
+        </div>
+        <div class="mat-tree-node-buttons button-row-right">
+          <button *ngIf="(node.id !== 0) && (node.type === 'index')" mat-stroked-button color="primary" (click)="view(node.id)">
+            <mat-icon>leaderboard</mat-icon>
+            {{ 'INDEX.VIEW' | translate }}
+          </button>
+          <button *ngIf="(node.id !== 0) && (node.type !== 'organization')" mat-stroked-button color="primary" (click)="edit(node.id, node.type)">
+            <mat-icon>edit</mat-icon>
+            {{ ((node.type === 'indexgroup') ? 'INDEXGROUP.EDIT' : 'INDEX.EDIT') | translate }}
+          </button>
+        </div>
+        <mat-divider class="mat-tree-node-divider"></mat-divider>
+      </div>
+    </mat-tree-node>
+  </mat-tree>
+</div>

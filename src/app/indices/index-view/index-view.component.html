@@ -1,0 +1,47 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container" *ngIf="index">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option routerLink="/indices" routerLinkActive="active">{{ 'MENU.INDICES' | translate }}</mat-chip-option>
+      <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}" routerLinkActive="active">{{org.name}}</mat-chip-option>
+      <mat-chip-option *ngIf="grp.id" routerLink="/indexgroup/{{grp.id}}" routerLinkActive="active">{{grp.name}}</mat-chip-option>
+      <mat-chip-option *ngIf="index.id" routerLink="/index/{{index.id}}" routerLinkActive="active">{{index.name}}</mat-chip-option>
+      <mat-chip-option disabled>{{ 'INDEX.VIEW' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+  </div>
+  <h4>
+    {{index.name}}
+  </h4>
+  <div class="gauges">
+    <div #currentGaugeDiv [chart]="currentGauge"></div>
+    <div #lastGaugeDiv [chart]="lastGauge"></div>
+  </div>
+  <form class="togo-form" [formGroup]="indexForm">
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'INDEX.LASTPERIODS' | translate }}</mat-label>
+        <input type="number" matInput placeholder="{{ 'INDEX.LASTPERIODS' | translate }}" [formControl]="number_periods" required>
+        <mat-error *ngIf="number_periods.invalid && (number_periods.dirty || number_periods.touched) && (number_periods.errors.pattern || number_periods.errors.required)">{{ 'INDEX.INVALIDLASTPERIODS' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-select [formControlName]="'period'" required>
+          <mat-option *ngFor="let p of periods" [value]="p.id">{{p.description}}</mat-option>
+        </mat-select>
+        <mat-error *ngIf="period.invalid && (period.dirty || period.touched) && period.errors.required">{{ 'INDEX.MISSINGLASTPERIODS' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <button type="submit" mat-raised-button class="load-button" color="primary" (click)="loadIndex()" [disabled]="indexForm.invalid">{{ 'INDEX.LOADINDEX' | translate }}</button>
+      <mat-spinner class="measures-loading-spinner" *ngIf="isLoadingIndex" diameter="30"></mat-spinner>
+    </div>
+  </form>
+  <div #chartDiv [chart]="chart"></div>
+  <!--
+  <div *ngIf="loadFlag">
+    <highcharts-chart style="width: 100%; display: block" [Highcharts]="Highstock" [constructorType]="'stockChart'" [options]="chartOptions" [(update)]="updateFlag" [oneToOne]="true"></highcharts-chart>
+  </div>
+  -->
+  <div class="button-row-right">
+    <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
+  </div>
+</div>

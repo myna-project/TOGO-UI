@@ -1,0 +1,29 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<div class="main-container">
+  <div class="breadcrumb">
+    <mat-chip-listbox class="breadcrumb-left">
+      <mat-chip-option disabled>{{ 'MENU.USERS' | translate }}</mat-chip-option>
+    </mat-chip-listbox>
+    <div class="breadcrumb-right">
+      <button mat-flat-button color="primary" routerLink="/user" routerLinkActive="active">{{ 'USER.CREATE' | translate }}</button>
+    </div>
+  </div>
+  <div>
+    <mat-form-field class="search-box">
+      <mat-label>{{ 'USER.SEARCH' | translate }}</mat-label>
+      <input matInput #searchBox placeholder="{{ 'USER.SEARCH' | translate }}" (input)="search(searchBox.value)">
+    </mat-form-field>
+  </div>
+  <div class="togo-list">
+    <div *ngFor="let user of filteredUsers" class="togo-list-item">
+      <div class="togo-list-item-title"><span class="togo-list-item-title-bold">{{user.username}}</span> <em>{{user.main_role}} [{{user.email}}]</em></div>
+      <div class="togo-list-item-right">
+        <button mat-stroked-button color="primary" (click)="edit(user.id)">
+          <mat-icon>edit</mat-icon>
+          {{ 'USER.EDIT' | translate }}
+        </button>
+      </div>
+      <mat-divider class="togo-list-item-divider"></mat-divider>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<mat-card>
+  <mat-card-content>
+    <form [formGroup]="loginForm" (ngSubmit)="login()">
+      <h2>{{ 'LOGIN.TITLE' | translate }}</h2>
+      <mat-error *ngIf="loginError">
+        {{ 'LOGIN.INVALID' | translate }}
+      </mat-error>
+      <mat-form-field class="login-mat-form-field">
+        <mat-label>Username</mat-label>
+        <input matInput placeholder="Username" [formControl]="username">
+        <mat-error *ngIf="username.invalid && (username.dirty || username.touched) && username.errors.required">
+          {{ 'LOGIN.MISSINGUSER' | translate }}
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field class="login-mat-form-field">
+        <mat-label>Password</mat-label>
+        <input matInput type="password" placeholder="Password" [formControl]="password">
+        <mat-error *ngIf="password.invalid && (password.dirty || password.touched) && password.errors.required">
+          {{ 'LOGIN.MISSINGPWD' | translate }}
+        </mat-error>
+      </mat-form-field>
+      <button mat-raised-button color="primary">Login</button>
+    </form>
+  </mat-card-content>
+</mat-card>

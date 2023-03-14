@@ -1,0 +1,48 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate"></mat-progress-bar>
+<gridster [options]="options">
+  <gridster-item [item]="item" *ngFor="let item of dashboard">
+    <mat-progress-bar *ngIf="item.is_loading_drain || item.is_loading_index || item.is_loading_control" mode="indeterminate"></mat-progress-bar>
+    <div class="item-content">
+      <div *ngIf="item.widget_type === 'ALERT'" class="item-title">
+        <span>{{item.title}}</span>
+      </div>
+      <div *ngIf="!item.error && item.details && ((item.widget_type === 'SPLINE') || (item.widget_type === 'HISTOGRAM') || (item.widget_type === 'PIE') || (item.widget_type === 'HEATMAP'))" [chart]="item.chart"></div>
+      <div *ngIf="!item.error && item.details && (item.widget_type === 'GAUGE')" [chart]="item.gauge"></div>
+      <div *ngIf="item.widget_type === 'ALERT'">
+        <mat-icon color="primary" class="clickable" (click)="goToControl($event, item)" title="{{ 'DASHBOARD.GOTOCONTROL' | translate }}">visibility</mat-icon>
+        <mat-icon *ngIf="((item.alert_n || 0) + (item.warning_n || 0) + (item.ok_n || 0)) === 1" color="primary" class="go-to-measures clickable" (click)="goToControlMeasures($event, item)" title="{{ 'DASHBOARD.GOTOMEASURES' | translate }}">timeline</mat-icon>
+      </div>
+      <div *ngIf="item.widget_type === 'ALERT'" class="lights">
+        <div *ngIf="item.alert_n !== undefined" class="light" [ngClass]="{'alert-light': item.alert_n > 0, 'alert-blink': item.alert_n > 0, 'alert-light-empty': item.alert_n === 0, 'clickable': item.alert_n > 0 }" (click)="viewControlDetail($event, item, true)">
+          <span *ngIf="((item.alert_n || 0) + (item.warning_n || 0) + (item.ok_n || 0)) > 1">
+            {{item.alert_n}}
+          </span>
+        </div>
+        <div *ngIf="item.warning_n !== undefined" class="light" [ngClass]="{'warning-light': item.warning_n > 0, 'warning-blink': item.warning_n > 0, 'warning-light-empty': item.warning_n === 0, 'clickable': item.warning_n > 0 }" (click)="viewControlDetail($event, item, true)">
+          <span *ngIf="((item.alert_n || 0) + (item.warning_n || 0) + (item.ok_n || 0)) > 1">
+            {{item.warning_n}}
+          </span>
+        </div>
+        <div *ngIf="item.ok_n !== undefined" class="light" [ngClass]="{'ok-light': item.ok_n > 0, 'ok-light-empty': item.ok_n === 0, 'clickable': item.ok_n > 0 }" (click)="viewControlDetail($event, item, false)">
+          <span *ngIf="((item.alert_n || 0) + (item.warning_n || 0) + (item.ok_n || 0)) > 1">
+            {{item.ok_n}}
+          </span>
+        </div>
+      </div>
+      <mat-icon class="setting-button" (click)="settingWidget($event, item)" title="{{ 'DASHBOARD.SETTINGS' | translate }}">settings</mat-icon>
+      <mat-icon class="remove-button" (click)="removeWidget($event, item)" title="{{ 'DASHBOARD.DELETE' | translate }}">delete</mat-icon>
+      <mat-icon *ngIf="!item.error && item.drains && ((item.widget_type === 'SPLINE') || (item.widget_type === 'HISTOGRAM') || (item.widget_type === 'HEATMAP'))" class="view-button" (click)="goToMeasures($event, item)" title="{{ 'DASHBOARD.GOTOMEASURES' | translate }}">visibility</mat-icon>
+      <span *ngIf="item.error" class="">{{item.error}}</span>
+      <span *ngIf="item.last_updated" class="last-updated">{{ 'DASHBOARD.LASTUPDATED' | translate }}: {{item.last_updated}}</span>
+    </div>
+  </gridster-item>
+</gridster>
+<button class="dashboard-add-item" mat-mini-fab color="primary" title="{{ 'DASHBOARD.ADDWIDGET' | translate }}" (click)="addWidget()">
+  <mat-icon>add</mat-icon>
+</button>
+<button class="dashboard-save" mat-mini-fab color="primary" [disabled]="dashboardId === undefined" title="{{ 'DASHBOARD.SAVE' | translate }}" (click)="saveDashboard(0)">
+  <mat-icon>save</mat-icon>
+</button>
+<button class="dashboard-detail" mat-mini-fab color="primary" [disabled]="dashboardId === undefined" title="{{ 'DASHBOARD.DETAIL' | translate }}" (click)="detailDashboard()">
+  <mat-icon>settings</mat-icon>
+</button>

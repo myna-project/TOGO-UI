@@ -1,0 +1,29 @@
+<h1 mat-dialog-title>{{ 'INDICESTREE.CHOOSEINDEX' | translate }}</h1>
+<div mat-dialog-content>
+  <div *ngIf="!isLoading && ((dataSource.data.length > 0) || !isFiltering)">
+    <mat-form-field class="search-box">
+      <input matInput #searchGroup placeholder="{{ 'INDICESTREE.SEARCHGROUP' | translate }}" (input)="searchIndex.value='';filterChanged($event.target.value, 'indexgroup');">
+    </mat-form-field>
+    <mat-form-field class="search-box">
+      <input matInput #searchIndex placeholder="{{ 'INDICESTREE.SEARCHINDEX' | translate }}" (input)="searchGroup.value='';filterChanged($event.target.value, 'index');">
+    </mat-form-field>
+  </div>
+  <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+      <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node) || (node.type === 'index')" [class.index-selected]="(node.type === 'index') && checkSelectedIndices(node)" (click)="selectIndex(node)">
+        <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id" >
+          <mat-icon class="mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
+            {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+          </mat-icon>
+        </button>
+        <div class="mat-tree-node-title" [class.mat-tree-node-bold-title]="node.type === 'organization'" [class.mat-tree-node-underlined-title]="node.type === 'indexgroup'">
+          {{node.item}}
+        </div>
+        <mat-divider class="mat-tree-node-divider"></mat-divider>
+      </div>
+    </mat-tree-node>
+  </mat-tree>
+</div>
+<div mat-dialog-actions>
+  <button mat-raised-button [mat-dialog-close]="selectedIndices">{{ 'INDICESTREE.CLOSE' | translate }}</button>
+</div>
