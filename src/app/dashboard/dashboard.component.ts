@@ -494,31 +494,47 @@ export class DashboardComponent implements OnInit, OnDestroy {
         return;
       }
       if (widget.drains != '') {
-        if (widget.costs_drain_id) {
-          this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(moment().toISOString()), true), widget.time_aggregation).subscribe(
-            (measures: any) => {
-              this.loadMeasuresInChart(widget, measures);
-            },
-            (error: any) => {
-              if (error.status !== 404) {
-                this.setError(widget, error);
-                return;
-              }
-            }
-          );
-        } else {
-          this.measuresService.getMeasures(widget.drains, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(moment().toISOString()), true), widget.time_aggregation).subscribe(
-            (measures: any) => {
-              this.loadMeasuresInChart(widget, measures);
-            },
-            (error: any) => {
-              if (error.status !== 404) {
-                this.setError(widget, error);
-                return;
-              }
-            }
-          );
+        let requests: any[] = [];
+        let start_time = new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString());
+        let end_time = new Date(new Date(moment().toISOString()));
+        if (end_time < start_time) {
+          this.setError(widget, { status: 8499 });
+          return;
         }
+        if ((start_time.getFullYear() === end_time.getFullYear()) || (widget.time_aggregation === 'ALL')) {
+          if (widget.costs_drain_id)
+            requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
+          else
+            requests.push(this.measuresService.getMeasures(widget.drains, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
+        } else {
+           let start = moment(start_time);
+           let end = moment(end_time);
+           while (moment(start_time) < end) {
+             start = (start_time.getFullYear() === new Date(end.toISOString()).getFullYear()) ? moment(start_time) : moment(end).startOf('year');
+             if (widget.costs_drain_id)
+               requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
+             else
+               requests.push(this.measuresService.getMeasures(widget.drains, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
+             end = moment(start).add(-1, 'second');
+           }
+        }
+        forkJoin(requests).subscribe(
+          (results: any) => {
+            let measures: any = results[results.length - 1];
+            for (let i = results.length - 2; i >= 0; i--) {
+              for (let j = 0; j < measures.length; j++) {
+                measures[j].measures = measures[j].measures.concat(results[i][j].measures);
+              }
+            }
+            this.loadMeasuresInChart(widget, measures);
+          },
+          (error: any) => {
+            if (error.status !== 404) {
+              this.setError(widget, error);
+              return;
+            }
+          }
+        );
       }
     }
   }
