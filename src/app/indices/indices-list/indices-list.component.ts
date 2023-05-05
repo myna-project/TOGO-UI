@@ -98,10 +98,6 @@ export class IndicesComponent implements OnInit {
     this.router.navigate([type + '/' + id]);
   }
 
-  view(id: number): void {
-    this.router.navigate(['index/' + id + '/view']);
-  }
-
   goBack(): void {
     this.location.back();
   }

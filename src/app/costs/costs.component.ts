@@ -484,7 +484,7 @@ export class CostsComponent implements OnInit {
       let i = 0;
       this.costs.forEach(m => {
         let drainColumnName = (((this.seriesNames.length > i) && this.seriesNames[i]) ? this.seriesNames[i] : m.drain_name) + ((m.unit && (m.unit !== '?')) ? ' (' + m.unit + ')' : '');
-        if (!m.decimals)
+        if (!m.decimals && m.decimals !== 0)
           m.decimals = 2;
         if (m.measures) {
           if (this.costsForm.get('chartType').value === 'pie') {
@@ -548,94 +548,15 @@ export class CostsComponent implements OnInit {
   }
 
   exportCsv(): void {
-    let csvData = [];
-    let csvHeaders = ['Time'];
-    let csvValues = [];
-    let j = 0;
-    this.costs.forEach(m => {
-      let drainColumnName = m.drain_name + (m.unit ? ' (' + m.unit + ')' : '');
-      if (!m.decimals)
-        m.decimals = 2;
-      csvHeaders.push(drainColumnName);
-      if (m.measures) {
-        m.measures.forEach(measure => {
-          if ((measure.value !== null) && (measure.value !== undefined) && !Number.isNaN(parseFloat(measure.value.toString()))) {
-            let found = false;
-            csvValues.forEach(tv => {
-              if (tv.time === measure.time) {
-                tv.measures.push({ key: j, value: parseFloat(parseFloat(measure.value.toString()).toFixed(m.decimals)) });
-                found = true;
-              }
-            });
-            if (!found)
-              csvValues.push({ time: measure.time, measures: [{ key: j, value: parseFloat(parseFloat(measure.value.toString()).toFixed(m.decimals)) }]});
-          }
-        });
-      }
-      j++;
-    });
-    csvData[0] = csvHeaders;
-    csvValues.sort((a, b) => a.time < b.time ? -1 : a.time > b.time ? 1 : 0);
-    csvValues.forEach(tv => {
-      let csvRow = [this.httpUtils.getLocaleDateTimeString(tv.time)];
-      for (let i = 0; i < j; i++) {
-        let m = tv['measures'].find((v: any) => v.key === i);
-        csvRow.push(m !== undefined ? m.value : '');
-      }
-      csvData.push(csvRow);
-    });
-
-    let csvContent = 'data:text/csv;charset=utf-8,';
-    csvData.forEach(line => {
-      csvContent += line.join(";") + "\n";
-    });
-
     const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = 'drain_data.csv';
+    link.href = this.httpUtils.createCsvContent(this.costs, this.seriesNames, null);
+    link.download = 'costs_data.csv';
     link.click();
   }
 
   shareLink(): void {
-    let queryParams: string = '';
     let dataDrain: any = this.saveLoad();
-    if (this.costsDrain)
-      queryParams += 'costsDrain=' + this.costsDrain.id + '&';
-    if (dataDrain && dataDrain.drainIds)
-      queryParams += 'drainIds=' + dataDrain.drainIds.toString() + '&';
-    if (dataDrain && dataDrain.aggregations)
-      queryParams += 'aggregations=' + dataDrain.aggregations.toString() + '&';
-    if (dataDrain && dataDrain.operations)
-      queryParams += 'operations=' + dataDrain.operations.toString() + '&';
-    if (dataDrain && dataDrain.legends)
-      queryParams += 'legends=' + dataDrain.legends.toString() + '&';
-    let start_time = new Date(moment(this.costsForm.get('startTime').value).toISOString());
-    if (start_time)
-      queryParams += 'startTime=' + this.httpUtils.getDateTimeForUrl(new Date(start_time), true) + '&';
-    let end_time = new Date(moment(this.costsForm.get('endTime').value).toISOString());
-    if (end_time)
-      queryParams += 'endTime=' + this.httpUtils.getDateTimeForUrl(new Date(end_time), true) + '&';
-    if (this.costsForm.get('timeAggregation').value)
-      queryParams += 'timeAggregation=' + this.costsForm.get('timeAggregation').value + '&';
-    if (this.costsForm.get('costsAggregation').value)
-      queryParams += 'costsAggregation=' + this.costsForm.get('costsAggregation').value + '&';
-    if (this.costsForm.get('chartType').value)
-      queryParams += 'chartType=' + this.costsForm.get('chartType').value + '&';
-    if (this.costsForm.get('showMarkers').value)
-      queryParams += 'showMarkers=' + this.costsForm.get('showMarkers').value + '&';
-    if (this.costsForm.get('chartAggregation').value)
-      queryParams += 'chartAggregation=' + this.costsForm.get('chartAggregation').value + '&';
-    if (this.costsForm.get('color1').value)
-      queryParams += 'color1=' + this.costsForm.get('color1').value.replace('#', '%23') + '&';
-    if (this.costsForm.get('color2').value)
-      queryParams += 'color2=' + this.costsForm.get('color2').value.replace('#', '%23') + '&';
-    if (this.costsForm.get('color3').value)
-      queryParams += 'color3=' + this.costsForm.get('color3').value.replace('#', '%23') + '&';
-    if (this.costsForm.get('warningValue').value)
-      queryParams += 'warningValue=' + this.costsForm.get('warningValue').value + '&';
-    if (this.costsForm.get('alarmValue').value)
-      queryParams += 'alarmValue=' + this.costsForm.get('alarmValue').value + '&';
-    this.clipboard.copy(window.location.protocol + '//' + window.location.host + window.location.pathname + '#/costs?' + queryParams);
+    this.clipboard.copy(this.httpUtils.createLinkToShare(this.costsDrain, dataDrain, null, this.costsForm));
     this.httpUtils.successSnackbar(this.translate.instant('COSTS.LINKCOPIED'));
   }
 

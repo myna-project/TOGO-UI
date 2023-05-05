@@ -14,6 +14,7 @@ import { Client } from '../_models/client';
 import { Drain } from '../_models/drain';
 import { Feed } from '../_models/feed';
 import { Formula } from '../_models/formula';
+import { Index } from '../_models/index';
 import { Organization } from '../_models/organization';
 import { Measure } from '../_models/measure';
 import { Measures } from '../_models/measures';
@@ -22,6 +23,7 @@ import { ClientsService } from '../_services/clients.service';
 import { DrainsService } from '../_services/drains.service';
 import { FeedsService } from '../_services/feeds.service';
 import { FormulasService } from '../_services/formulas.service';
+import { IndicesService } from '../_services/indices.service';
 import { OrganizationsService } from '../_services/organizations.service';
 import { MeasuresService } from '../_services/measures.service';
 
@@ -29,6 +31,7 @@ import { PieChart } from '../_utils/chart/pie-chart';
 import { TimeChart } from '../_utils/chart/time-chart';
 import { DrainsTreeDialogComponent } from '../_utils/drains-tree-dialog/drains-tree-dialog.component';
 import { FormulasTreeDialogComponent } from '../_utils/formulas-tree-dialog/formulas-tree-dialog.component';
+import { IndicesTreeDialogComponent } from "../_utils/indices-tree-dialog/indices-tree-dialog.component";
 import { HttpUtils } from '../_utils/http.utils';
 import { OrganizationsTree } from '../_utils/tree/organizations-tree';
 
@@ -48,9 +51,12 @@ export class MeasuresComponent implements OnInit {
   allFeeds: Feed[] = [];
   allDrains: Drain[] = [];
   allFormulas: Formula[] = [];
+  allIndices: Index[] = [];
   timeAggregations: any[] = [];
+  indices: Index[] = [];
   drains: any[] = [];
   measures: Measures[];
+  indexResults: Index[];
   chartTypes: any[] = [];
   visibleChartTypes: any[] = [];
   isSplineChart: boolean = true;
@@ -70,7 +76,7 @@ export class MeasuresComponent implements OnInit {
   seriesNames: string[] = [];
   backRoute: string = 'dashboard';
 
-  constructor(private orgsService: OrganizationsService, private clientsService: ClientsService, private feedsService: FeedsService, private drainsService: DrainsService, private formulasService: FormulasService, private measuresService: MeasuresService, private organizationsTree: OrganizationsTree, private timeChart: TimeChart, private pieChart: PieChart, private route: ActivatedRoute, private router: Router, private location: Location, private clipboard: Clipboard, private dialog: MatDialog, private httpUtils: HttpUtils, private translate: TranslateService) {}
+  constructor(private orgsService: OrganizationsService, private clientsService: ClientsService, private feedsService: FeedsService, private drainsService: DrainsService, private formulasService: FormulasService, private indicesService: IndicesService, private measuresService: MeasuresService, private organizationsTree: OrganizationsTree, private timeChart: TimeChart, private pieChart: PieChart, private route: ActivatedRoute, private router: Router, private location: Location, private clipboard: Clipboard, private dialog: MatDialog, private httpUtils: HttpUtils, private translate: TranslateService) {}
 
   ngOnInit(): void {
     this.chartAggregations = this.httpUtils.getChartAggregations();
@@ -114,7 +120,7 @@ export class MeasuresComponent implements OnInit {
     this.route.queryParams.subscribe((params: any) => {
       this.params = params;
       this.createMeasuresForm();
-      forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas()).subscribe(
+      forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.indicesService.getIndices()).subscribe(
         (results: any) => {
           this.allOrgs = results[0];
           this.allOrgs.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
@@ -123,7 +129,16 @@ export class MeasuresComponent implements OnInit {
           this.allFeeds = results[2];
           this.allDrains = results[3];
           this.allFormulas = results[4];
-          if (this.params.drainIds || this.params.formulaIds) {
+          this.allIndices = results[5];
+          if (this.params.indexIds || this.params.drainIds || this.params.formulaIds) {
+            if (this.params.indexIds) {
+              var indexIds = this.params.indexIds.split(',');
+              indexIds.forEach((indexId: string) => {
+                let index = this.allIndices.find(i => i.id === parseInt(indexId));
+                if (index && (!this.indices.find((i: Index) => i.id === index.id)))
+                  this.indices.push(index);
+              });
+            }
             if (this.params.drainIds) {
               var drainIds = this.params.drainIds.split(',');
               var drainAggregations = this.params.aggregations ? this.params.aggregations.split(',') : [];
@@ -270,8 +285,7 @@ export class MeasuresComponent implements OnInit {
       if (timeAggr) {
         if ((timeAggr.order > 2) && (timeAggr.order < 6)) {
           let visibleDrains: any[] = this.drains.filter(d => d.visible);
-          if ((visibleDrains.length <= 1) || (visibleDrains.filter(d => d.operation === 'SEMICOLON').length <= 1))
-            visible = true;
+          visible = ((this.indices.length == 0) && ((visibleDrains.length <= 1) || (visibleDrains.filter(d => d.operation === 'SEMICOLON').length <= 1)) || ((this.indices.length == 1) && (visibleDrains.length === 0)));
         }
       }
       this.chartTypes.find(c => c.id === 'pie').visible = (this.measuresForm.get('timeAggregation').value === 'ALL');
@@ -280,6 +294,24 @@ export class MeasuresComponent implements OnInit {
     this.visibleChartTypes = this.chartTypes.filter(t => t.visible);
     if (((this.measuresForm.get('chartType').value === 'heatmap') && !visible) || ((this.measuresForm.get('chartType').value === 'pie') && (this.measuresForm.get('timeAggregation').value !== 'ALL')))
       this.measuresForm.patchValue({ chartType: 'spline' });
+  }
+
+  addIndices(): void {
+    const dialogRef = this.dialog.open(IndicesTreeDialogComponent, { width: '75%', data: { orgs: this.allOrgs, indices: this.allIndices } });
+    dialogRef.afterClosed().subscribe((result: any[]) => {
+      if (result) {
+        let component = this;
+        result.forEach(function (index: Index) {
+          if (!component.indices.find((i: Index) => i.id === index.id))
+            component.indices.push(index);
+          component.setChartTypesVisible();
+        });
+      }
+    });
+  }
+
+  removeIndex(index: Index): void {
+    this.indices = this.indices.filter((i: Index) => i.id !== index.id);
   }
 
   addDrains(): void {
@@ -410,13 +442,17 @@ export class MeasuresComponent implements OnInit {
     this.isLoadingMeasures = true;
     this.measuresLoaded = false;
     let dataDrain: any = this.saveLoad();
-    if (dataDrain.drainIds !== '') {
-      if (!dataDrain.lastSemicolon) {
+    if ((dataDrain.drainIds.length > 0) || (this.indices.length > 0)) {
+      if ((dataDrain.drainIds.length > 0) && !dataDrain.lastSemicolon) {
         this.httpUtils.errorDialog({ status: 499, error: { errorCode: 8499 } });
         this.isLoadingMeasures = false;
         return;
       }
       let requests: any[] = [];
+      let indexRequests: any[] = [];
+      this.indices.forEach((_index: Index) => {
+        indexRequests.push([]);
+      });
       let start_time = new Date(moment(this.measuresForm.get('startTime').value).toISOString());
       let end_time = new Date(moment(this.measuresForm.get('endTime').value).toISOString());
       if (end_time < start_time) {
@@ -424,27 +460,67 @@ export class MeasuresComponent implements OnInit {
         this.isLoadingMeasures = false;
         return;
       }
+      let years: number = 0;
       if ((start_time.getFullYear() === end_time.getFullYear()) || (this.measuresForm.get('timeAggregation').value === 'ALL')) {
-        requests.push(this.measuresService.getMeasures(dataDrain.drainIds.toString(), dataDrain.aggregations.toString(), dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
+        if (dataDrain.drainIds.length > 0)
+          requests.push(this.measuresService.getMeasures(dataDrain.drainIds.toString(), dataDrain.aggregations.toString(), dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
+        let i = 0;
+        this.indices.forEach((index: Index) => {
+          indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
+          i++;
+        });
+        years++;
       } else {
          let start = moment(start_time);
          let end = moment(end_time);
          while (moment(start_time) < end) {
            start = (start_time.getFullYear() === new Date(end.toISOString()).getFullYear()) ? moment(start_time) : moment(end).startOf('year');
-           requests.push(this.measuresService.getMeasures(dataDrain.drainIds.toString(), dataDrain.aggregations.toString(), dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
+           if (dataDrain.drainIds.length > 0)
+             requests.push(this.measuresService.getMeasures(dataDrain.drainIds.toString(), dataDrain.aggregations.toString(), dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
+           let i = 0;
+           this.indices.forEach((index: Index) => {
+             indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
+             i++;
+           });
            end = moment(start).add(-1, 'second');
+           years++;
          }
       }
+      let drainRequests = requests.length;
+      indexRequests.forEach((irs: any[]) => {
+        irs.forEach((request: any) => {
+          requests.push(request);
+        });
+      });
+      let totalRequests = requests.length;
       forkJoin(requests).subscribe(
         (results: any) => {
-          this.measures = results[results.length - 1];
-          for (let i = results.length - 2; i >= 0; i--) {
+          this.measures = results[drainRequests - 1];
+          for (let i = drainRequests - 2; i >= 0; i--) {
             for (let j = 0; j < this.measures.length; j++) {
               if (this.measures[j])
                 this.measures[j].measures = this.measures[j].measures.concat(results[i][j].measures);
               else
                 this.measures[j].measures = results[i][j].measures;
             }
+          }
+          this.indexResults = [];
+          let i: number = totalRequests - 1;
+          let k: number = 0;
+          while (i >= drainRequests) {
+            for (let j = 0; j < years; j++) {
+              if (j == 0) {
+                this.indexResults.push(results[i]);
+              } else {
+                if (results[i].result)
+                  if (this.indexResults[k] && this.indexResults[k].result)
+                    this.indexResults[k].result = this.indexResults[k].result.concat(results[i].result);
+                  else
+                    this.indexResults[k].result = results[i].result;
+              }
+              i--;
+            }
+            k++;
           }
           this.isLoadingMeasures = false;
           this.measuresLoaded = true;
@@ -511,11 +587,43 @@ export class MeasuresComponent implements OnInit {
     this.chartLabels = [];
     this.chartSeries = [];
     let unitArray = [];
+    if (this.indexResults && (this.indexResults.length > 0)) {
+      this.indexResults.forEach((index: Index) => {
+        if (!index.decimals && (index.decimals !== 0))
+          index.decimals = 2;
+        if (index.result) {
+          let indexName = index.name + (index.measure_unit ? ' (' + index.measure_unit + ')' : '');
+          if (this.measuresForm.get('chartType').value === 'pie') {
+            index.result.forEach((measure: any) => {
+              if (!Number.isNaN(parseFloat(measure.value)))
+                this.chartSeries.push(this.pieChart.createSerie(parseFloat(measure.value), indexName, index.decimals));
+            });
+          } else {
+            let yAxisIndex: number;
+            if ((unitArray.length > 0) && (unitArray.includes(index.measure_unit))) {
+              yAxisIndex = unitArray.indexOf(index.measure_unit);
+            } else {
+              unitArray.push(index.measure_unit);
+              yAxisIndex = unitArray.length - 1;
+              this.chartLabels[yAxisIndex] = this.timeChart.createYAxis(index.measure_unit, unitArray.length, this.measuresForm.get('alarmValue').value, this.measuresForm.get('warningValue').value, undefined, undefined, this.isHeatmapChart, 'f', this.measuresForm.get('timeAggregation').value);
+            }
+            let data_array: any[] = [];
+            let component = this;
+            index.result.forEach((measure: any) => {
+              if (!Number.isNaN(parseFloat(measure.value)))
+                  data_array.push(component.timeChart.createData(new Date(measure.at), measure.value.toString(), index.decimals, this.isHeatmapChart, this.measuresForm.get('timeAggregation').value));
+            });
+            if (data_array.length > 0)
+              this.chartSeries.push(this.timeChart.createSerie(data_array, indexName, yAxisIndex, index.decimals, this.isHeatmapChart, 'f', this.measuresForm.get('timeAggregation').value));
+          }
+        }
+      });
+    }
     if (this.measures) {
       let i = 0;
       this.measures.forEach((m: Measures) => {
         let drainColumnName = (((this.seriesNames.length > i) && this.seriesNames[i]) ? this.seriesNames[i] : m.drain_name) + ((m.unit && (m.unit !== '?')) ? ' (' + m.unit + ')' : '');
-        if (!m.decimals && m.decimals !== 0)
+        if (!m.decimals && (m.decimals !== 0))
           m.decimals = 2;
         if (m.measures) {
           if (this.measuresForm.get('chartType').value === 'pie') {
@@ -557,7 +665,7 @@ export class MeasuresComponent implements OnInit {
         options['legend'] = true;
         options['legend_layout'] = (this.isHeatmapChart) ? 'h' : 'v';
         if (this.isHeatmapChart) {
-          let isBoolean: boolean = ((this.measures.length === 1) && (this.measures[0].measure_type === 'c'));
+          let isBoolean: boolean = (this.measures && (this.measures.length === 1) && (this.measures[0].measure_type === 'c'));
           let colors: any[] = isBoolean ? [ [0, '#FF0000'], [1, '#00FF00'] ] : [ [0, '#00FF00'], [0.5, '#FFFF00'], [0.9, '#FF0000'] ];
           if (this.measuresForm.get('color1').value || this.measuresForm.get('color2').value || this.measuresForm.get('color3').value) {
             colors = [];
@@ -580,90 +688,15 @@ export class MeasuresComponent implements OnInit {
   }
 
   exportCsv(): void {
-    let csvData = [];
-    let csvHeaders = ['Time'];
-    let csvValues = [];
-    let j = 0;
-    this.measures.forEach(m => {
-      let drainColumnName = m.drain_name + (m.unit ? ' (' + m.unit + ')' : '');
-      if (!m.decimals)
-        m.decimals = 2;
-      csvHeaders.push(drainColumnName);
-      if (m.measures) {
-        m.measures.forEach(measure => {
-          if ((measure.value !== null) && (measure.value !== undefined) && !Number.isNaN(parseFloat(measure.value.toString()))) {
-            let found = false;
-            csvValues.forEach(tv => {
-              if (tv.time === measure.time) {
-                tv.measures.push({ key: j, value: parseFloat(parseFloat(measure.value.toString()).toFixed(m.decimals)) });
-                found = true;
-              }
-            });
-            if (!found)
-              csvValues.push({ time: measure.time, measures: [{ key: j, value: parseFloat(parseFloat(measure.value.toString()).toFixed(m.decimals)) }]});
-          }
-        });
-      }
-      j++;
-    });
-    csvData[0] = csvHeaders;
-    csvValues.sort((a, b) => a.time < b.time ? -1 : a.time > b.time ? 1 : 0);
-    csvValues.forEach(tv => {
-      let csvRow = [this.httpUtils.getLocaleDateTimeString(tv.time)];
-      for (let i = 0; i < j; i++) {
-        let m = tv['measures'].find((v: any) => v.key === i);
-        csvRow.push(m !== undefined ? m.value : '');
-      }
-      csvData.push(csvRow);
-    });
-
-    let csvContent = 'data:text/csv;charset=utf-8,';
-    csvData.forEach(line => {
-      csvContent += line.join(";") + "\n";
-    });
-
     const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
+    link.href = this.httpUtils.createCsvContent(this.measures, this.seriesNames, this.indexResults);
     link.download = 'drain_data.csv';
     link.click();
   }
 
   shareLink(): void {
-    let queryParams: string = '';
     let dataDrain: any = this.saveLoad();
-    if (dataDrain && dataDrain.drainIds)
-      queryParams += 'drainIds=' + dataDrain.drainIds.toString() + '&';
-    if (dataDrain && dataDrain.aggregations)
-      queryParams += 'aggregations=' + dataDrain.aggregations.toString() + '&';
-    if (dataDrain && dataDrain.operations)
-      queryParams += 'operations=' + dataDrain.operations.toString() + '&';
-    if (dataDrain && dataDrain.legends)
-      queryParams += 'legends=' + dataDrain.legends.toString() + '&';
-    let start_time = new Date(moment(this.measuresForm.get('startTime').value).toISOString());
-    if (start_time)
-      queryParams += 'startTime=' + this.httpUtils.getDateTimeForUrl(new Date(start_time), true) + '&';
-    let end_time = new Date(moment(this.measuresForm.get('endTime').value).toISOString());
-    if (end_time)
-      queryParams += 'endTime=' + this.httpUtils.getDateTimeForUrl(new Date(end_time), true) + '&';
-    if (this.measuresForm.get('timeAggregation').value)
-      queryParams += 'timeAggregation=' + this.measuresForm.get('timeAggregation').value + '&';
-    if (this.measuresForm.get('chartType').value)
-      queryParams += 'chartType=' + this.measuresForm.get('chartType').value + '&';
-    if (this.measuresForm.get('showMarkers').value)
-      queryParams += 'showMarkers=' + this.measuresForm.get('showMarkers').value + '&';
-    if (this.measuresForm.get('chartAggregation').value)
-      queryParams += 'chartAggregation=' + this.measuresForm.get('chartAggregation').value + '&';
-    if (this.measuresForm.get('color1').value)
-      queryParams += 'color1=' + this.measuresForm.get('color1').value.replace('#', '%23') + '&';
-    if (this.measuresForm.get('color2').value)
-      queryParams += 'color2=' + this.measuresForm.get('color2').value.replace('#', '%23') + '&';
-    if (this.measuresForm.get('color3').value)
-      queryParams += 'color3=' + this.measuresForm.get('color3').value.replace('#', '%23') + '&';
-    if (this.measuresForm.get('warningValue').value)
-      queryParams += 'warningValue=' + this.measuresForm.get('warningValue').value + '&';
-    if (this.measuresForm.get('alarmValue').value)
-      queryParams += 'alarmValue=' + this.measuresForm.get('alarmValue').value + '&';
-    this.clipboard.copy(window.location.protocol + '//' + window.location.host + window.location.pathname + '#/measures?' + queryParams);
+    this.clipboard.copy(this.httpUtils.createLinkToShare(null, dataDrain, this.indices, this.measuresForm));
     this.httpUtils.successSnackbar(this.translate.instant('MEASURES.LINKCOPIED'));
   }
 

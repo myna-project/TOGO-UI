@@ -18,7 +18,6 @@ import { DrainsComponent } from './drains/drains-list/drains-list.component';
 import { FeedComponent } from './feeds/feed-detail/feed-detail.component';
 import { IndexComponent } from './indices/index-detail/index-detail.component';
 import { IndexGroupComponent } from './indices/indexgroup-detail/indexgroup-detail.component';
-import { IndexViewComponent } from './indices/index-view/index-view.component';
 import { IndicesComponent } from './indices/indices-list/indices-list.component';
 import { ItemkwhComponent } from './itemkwh/itemkhw-detail/itemkwh-detail.component';
 import { ItemskwhComponent } from './itemkwh/itemkwh-list/itemkwh-list.component';
@@ -160,11 +159,6 @@ const routes: Routes = [
   {
     path: 'index/:id',
     component: IndexComponent,
-    canActivate: [ AuthGuard ]
-  },
-  {
-    path: 'index/:id/view',
-    component: IndexViewComponent,
     canActivate: [ AuthGuard ]
   },
   {

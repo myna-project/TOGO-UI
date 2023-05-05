@@ -75,6 +75,7 @@ export class DashboardWidgetComponent implements OnInit {
   number_period_missing: boolean = false;
   start_time_missing: boolean = false;
   visibleDetails: boolean = false;
+  lastSemicolon: boolean = true;
   widget: DashboardWidget = new DashboardWidget();
   dashboardId: number;
   widgetForm: FormGroup;
@@ -204,25 +205,23 @@ export class DashboardWidgetComponent implements OnInit {
                 }
                 this.relativeTime = (this.widget.start_time === undefined);
                 this.createForm();
+                widget.drain_details = widget.details.filter(d => d.drain_id !== undefined);
+                widget.details = widget.details.filter(d => d.drain_id === undefined);
                 if (widget.details) {
                   let i: number = 0;
                   widget.details.forEach(detail => {
                     if (detail.index_id) {
                       let index = this.allIndices.find(i => i.id === detail.index_id);
                       if (index)
-                        this.createDetailControl(detail, undefined, undefined, index, undefined, i);
-                    } else if (detail.drain_id) {
-                      let drain = this.allDrains.find(d => d.id === detail.drain_id);
-                      if (drain)
-                        this.createDetailControl(detail, drain.id, undefined, undefined, undefined, i);
+                        this.createDetailControl(detail, undefined, index, undefined);
                     } else if (detail.formula_id) {
                       let formula = this.allFormulas.find(f => f.id === detail.formula_id);
                       if (formula)
-                        this.createDetailControl(detail, undefined, formula, undefined, undefined, i);
+                        this.createDetailControl(detail, formula, undefined, undefined);
                     } else if (detail.drain_control_id) {
                       let control = this.allControls.find(c => c.id === detail.drain_control_id);
                       if (control)
-                        this.createDetailControl(detail, undefined, undefined, undefined, control, i);
+                        this.createDetailControl(detail, undefined, undefined, control);
                     }
                     i++;
                   });
@@ -230,6 +229,19 @@ export class DashboardWidgetComponent implements OnInit {
                     this.visibleDetails = true;
                 } else {
                   widget.details = [];
+                }
+                if (widget.drain_details) {
+                  let i: number = 0;
+                  widget.drain_details.forEach(detail => {
+                    let drain = this.allDrains.find(d => d.id === detail.drain_id);
+                    if (drain)
+                      this.createDrainDetailControl(detail, drain.id, i);
+                    i++;
+                  });
+                  if (i > 0)
+                    this.visibleDetails = true;
+                } else {
+                  widget.drain_details = [];
                 }
                 this.isLoading = false;
               },
@@ -319,7 +331,12 @@ export class DashboardWidgetComponent implements OnInit {
               let i: number = 0;
               this.widget.details.forEach((detail: any) => {
                 if (detail.index_id != undefined)
-                  this.removeDetail(i);
+                  this.removeDetail(i, false);
+                i++
+              });
+              this.widget.drain_details.forEach((detail: any) => {
+                if (detail.index_id != undefined)
+                  this.removeDetail(i, true);
                 i++
               });
             }
@@ -408,6 +425,11 @@ export class DashboardWidgetComponent implements OnInit {
         d.visible = false;
       });
     }
+    if (this.widget.drain_details) {
+      this.widget.drain_details.forEach(d => {
+        d.visible = false;
+      });
+    }
     this.visibleDetails = false;
   }
 
@@ -423,7 +445,7 @@ export class DashboardWidgetComponent implements OnInit {
     this.start_time_missing = (!relative && ((this.start_time.value === undefined) || (this.start_time.value === null)));
   }
 
-  createDetailControl(detail: DashboardWidgetDetail, drain_id: number, formula: Formula, index: Index, control: DrainControl, i: number) {
+  createDrainDetailControl(detail: DashboardWidgetDetail, drain_id: number, i: number) {
     if (drain_id) {
       let drain = this.allDrains.find(d => d.id === drain_id);
       if (drain) {
@@ -442,32 +464,36 @@ export class DashboardWidgetComponent implements OnInit {
           }
         }
       }
-    } else if (formula) {
+    }
+    detail.divider = (!detail.operator || (detail.operator === 'SEMICOLON'));
+    this.group['aggregation_' + i] = new FormControl(detail.aggregation, []);
+    this.group['operator_' + i] = new FormControl(detail.operator, []);
+    this.widgetForm.get('aggregation_' + i).valueChanges.subscribe((aggregation: string) => {
+      detail.aggregation = aggregation;
+    });
+    this.widgetForm.get('operator_' + i).valueChanges.subscribe((operator: string) => {
+      detail.operator = operator;
+      detail.divider = (!operator || (operator === 'SEMICOLON'));
+      this.checkLastSemicolon();
+    });
+  }
+
+  createDetailControl(detail: DashboardWidgetDetail, formula: Formula, index: Index, control: DrainControl) {
+    if (formula) {
       detail.formula_id = formula.id;
       let client = this.energyClients.find(c => (c.id === formula.client_id));
       detail.full_name = ((this.allOrgs.length > 1) ? this.allOrgs.find(o => o.id === formula.org_id).name + ' - ' : '') + (client ? client.name + ' - ' : '') + formula.name;
       detail.visible = true;
     } else if (index) {
       detail.index_id = index.id;
-      detail.full_name = ((this.allOrgs.length > 1) ? this.allOrgs.find(o => o.id === index.org_id).name + ' - ' : '') + (index.group ? index.group.name + ' - ' : '') + index.name;
+      detail.full_name = ((this.allOrgs.length > 1) ? this.allOrgs.find(o => o.id === index.org_id).name + ' - ' : '') + (index.group ? index.group.name + ' - ' : '') + index.name + (index.measure_unit ? ' (' + index.measure_unit + ')' : '');
       detail.visible = true;
     } else if (control) {
       detail.drain_control_id = control.id;
       detail.full_name = ((this.allOrgs.length > 1) ? this.allOrgs.find(o => o.id === control.org_id).name + ' - ' : '') + control.name;
       detail.visible = true;
     }
-    if (detail.drain_id || detail.index_id) {
-      detail.divider = (!detail.operator || (detail.operator === 'SEMICOLON'));
-      this.group['aggregation_' + i] = new FormControl(detail.aggregation, []);
-      this.group['operator_' + i] = new FormControl(detail.operator, []);
-      this.widgetForm.get('aggregation_' + i).valueChanges.subscribe((aggregation: string) => {
-        detail.aggregation = aggregation;
-      });
-      this.widgetForm.get('operator_' + i).valueChanges.subscribe((operator: string) => {
-        detail.operator = operator;
-        detail.divider = (!operator || (operator === 'SEMICOLON'));
-      });
-    }
+    detail.divider = true;
   }
 
   addDrainsForTree(data: any, drains: Drain[]): void {
@@ -501,13 +527,14 @@ export class DashboardWidgetComponent implements OnInit {
           if (!component.costsWidget)
             detail.aggregation = 'AVG';
           detail.operator = 'SEMICOLON';
-          component.createDetailControl(detail, drain.id, undefined, undefined, undefined, component.widget.details.length);
-          if (component.widget.details)
-            component.widget.details.push(detail);
+          component.createDrainDetailControl(detail, drain.id, component.widget.drain_details.length);
+          if (component.widget.drain_details)
+            component.widget.drain_details.push(detail);
           else
-            component.widget.details = [detail];
+            component.widget.drain_details = [detail];
           component.visibleDetails = true;
         });
+        this.checkLastSemicolon();
       }
     });
   }
@@ -524,7 +551,7 @@ export class DashboardWidgetComponent implements OnInit {
         let component = this;
         result.forEach(function (formula: Formula) {
           let detail: DashboardWidgetDetail = new DashboardWidgetDetail();
-          component.createDetailControl(detail, undefined, formula, undefined, undefined, component.widget.details.length);
+          component.createDetailControl(detail, formula, undefined, undefined);
           if (component.widget.details)
             component.widget.details.push(detail);
           else
@@ -542,7 +569,7 @@ export class DashboardWidgetComponent implements OnInit {
         let component = this;
         result.forEach(function (index: Index) {
           let detail: DashboardWidgetDetail = new DashboardWidgetDetail();
-          component.createDetailControl(detail, undefined, undefined, index, undefined, component.widget.details.length);
+          component.createDetailControl(detail, undefined, index, undefined);
           if (component.widget.details)
             component.widget.details.push(detail);
           else
@@ -559,7 +586,7 @@ export class DashboardWidgetComponent implements OnInit {
       if (control) {
         let component = this;
         let detail: DashboardWidgetDetail = new DashboardWidgetDetail();
-        component.createDetailControl(detail, undefined, undefined, undefined, control, component.widget.details.length);
+        component.createDetailControl(detail, undefined, undefined, control);
         if (component.widget.details)
           component.widget.details.push(detail);
         else
@@ -569,17 +596,27 @@ export class DashboardWidgetComponent implements OnInit {
     });
   }
 
-  confirmRemoveDetail(i: number): void {
+  confirmRemoveDetail(i: number, drain: boolean): void {
     const dialogRef = this.httpUtils.confirmDelete(this.translate.instant('DASHBOARDWIDGET.DELETEDETAILCONFIRM'));
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult)
-        this.removeDetail(i);
+        this.removeDetail(i, drain);
     });
   }
 
-  removeDetail(i: number): void {
-    this.widget.details[i].visible = false;
-    this.visibleDetails = (this.widget.details.filter(d => d.visible).length > 0);
+  removeDetail(i: number, drain: boolean): void {
+    if (drain) {
+      this.widget.drain_details[i].visible = false;
+      this.checkLastSemicolon();
+    } else {
+      this.widget.details[i].visible = false;
+    }
+    this.visibleDetails = (this.widget.details.filter(d => d.visible).length > 0) || (this.widget.drain_details.filter(d => d.visible).length > 0);
+  }
+
+  checkLastSemicolon(): void {
+    let visibleDrains = this.widget.drain_details.filter(d => d.visible);
+    this.lastSemicolon = ((visibleDrains.length === 0) || (visibleDrains.at(visibleDrains.length - 1).operator === 'SEMICOLON'));
   }
 
   save(): void {
@@ -612,6 +649,9 @@ export class DashboardWidgetComponent implements OnInit {
     this.widget.warning_value = this.warning_value.value;
     this.widget.alarm_value = this.alarm_value.value;
     this.widget.details = this.widget.details.filter(d => d.visible);
+    this.widget.drain_details.forEach((d: DashboardWidgetDetail) => {
+      this.widget.details.push(d);
+    });
     if (this.widget.id !== undefined) {
       this.dashboardWidgetsService.updateDashboardWidget(this.widget, this.dashboardId).subscribe(
         (_response: DashboardWidget) => {
@@ -622,6 +662,7 @@ export class DashboardWidgetComponent implements OnInit {
         (error: any) => {
           this.isSaving = false;
           this.httpUtils.errorDialog(error);
+          this.widget.details = this.widget.details.filter(d => (d.drain_id === undefined));
         }
       );
     } else {
@@ -634,6 +675,7 @@ export class DashboardWidgetComponent implements OnInit {
         (error: any) => {
           this.isSaving = false;
           this.httpUtils.errorDialog(error);
+          this.widget.details = this.widget.details.filter(d => (d.drain_id === undefined));
         }
       );
     }

@@ -1,8 +1,14 @@
 import { Injectable } from '@angular/core';
+import { FormGroup } from '@angular/forms';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateService } from '@ngx-translate/core';
 
+import * as moment from 'moment';
+
+import { Drain } from '../_models/drain';
+import { Index } from '../_models/index';
+import { Measures } from '../_models/measures';
 import { Organization } from '../_models/organization';
 import { User } from '../_models/user';
 
@@ -167,5 +173,119 @@ export class HttpUtils {
 
   public getChartAggregations(): any[] {
     return this.chartAggregations;
+  }
+
+  public createCsvContent(measures: Measures[], seriesNames: string[], indices: Index[]): string {
+    let csvData: any[] = [];
+    let csvHeaders: string[] = ['Time'];
+    let csvValues: any[] = [];
+    let i: number = 0;
+    if (indices && (indices.length > 0)) {
+      indices.forEach((index: Index) => {
+        if (index.result && (index.result.length > 0)) {
+          if (!index.decimals && (index.decimals !== 0))
+            index.decimals = 2;
+          csvHeaders.push(index.name);
+          index.result.forEach(measure => {
+            if (!Number.isNaN(parseFloat(measure.value))) {
+              let at = new Date(measure.at);
+              let tv = csvValues.find(v => v.time == at.getTime());
+              if (tv)
+                tv.measures.push({ key: i, value: parseFloat(parseFloat(measure.value.toString()).toFixed(index.decimals)) });
+              else
+                csvValues.push({ time: at.getTime(), measures: [{ key: i, value: parseFloat(parseFloat(measure.value.toString()).toFixed(index.decimals)) }]});
+            }
+          })
+        }
+        i++;
+      });
+    }
+    if (measures && (measures.length > 0)) {
+      measures.forEach(m => {
+        if (m.measures) {
+          let drainColumnName = (((seriesNames.length > i) && seriesNames[i]) ? seriesNames[i] : m.drain_name) + ((m.unit && (m.unit !== '?')) ? ' (' + m.unit + ')' : '');
+          if (!m.decimals && (m.decimals !== 0))
+            m.decimals = 2;
+          csvHeaders.push(drainColumnName);
+          m.measures.forEach(measure => {
+            if ((measure.value !== null) && (measure.value !== undefined) && !Number.isNaN(parseFloat(measure.value.toString()))) {
+              let time = new Date(measure.time);
+              let tv = csvValues.find(v => v.time == time.getTime());
+              if (tv)
+                tv.measures.push({ key: i, value: parseFloat(parseFloat(measure.value.toString()).toFixed(m.decimals)) });
+              else
+                csvValues.push({ time: time.getTime(), measures: [{ key: i, value: parseFloat(parseFloat(measure.value.toString()).toFixed(m.decimals)) }]});
+            }
+          });
+        }
+        i++;
+      });
+    }
+    csvData[0] = csvHeaders;
+    csvValues.sort((a, b) => a.time < b.time ? -1 : a.time > b.time ? 1 : 0);
+    csvValues.forEach(tv => {
+      let csvRow = [this.getLocaleDateTimeString(tv.time)];
+      for (let j = 0; j < i; j++) {
+        let m = tv['measures'].find((v: any) => v.key === j);
+        csvRow.push(m !== undefined ? m.value : '');
+      }
+      csvData.push(csvRow);
+    });
+
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    csvData.forEach(line => {
+      csvContent += encodeURIComponent(line.join(";") + "\n");
+    });
+
+    return csvContent;
+  }
+
+  public createLinkToShare(costsDrain: Drain, dataDrain: any, indices: Index[], form: FormGroup): string {
+    let queryParams: string = '';
+    if (costsDrain)
+      queryParams += 'costsDrain=' + costsDrain.id + '&';
+    if (dataDrain && dataDrain.drainIds)
+      queryParams += 'drainIds=' + dataDrain.drainIds.toString() + '&';
+    if (dataDrain && dataDrain.aggregations)
+      queryParams += 'aggregations=' + dataDrain.aggregations.toString() + '&';
+    if (dataDrain && dataDrain.operations)
+      queryParams += 'operations=' + dataDrain.operations.toString() + '&';
+    if (dataDrain && dataDrain.legends)
+      queryParams += 'legends=' + encodeURIComponent(dataDrain.legends.toString()) + '&';
+    if (indices && (indices.length > 0)) {
+      let indexIds: number[] = [];
+      indices.forEach((index: Index) => {
+        indexIds.push(index.id);
+      })
+      queryParams += 'indexIds=' + indexIds.toString() + '&';
+    }
+    let start_time = new Date(moment(form.get('startTime').value).toISOString());
+    if (start_time)
+      queryParams += 'startTime=' + this.getDateTimeForUrl(new Date(start_time), true) + '&';
+    let end_time = new Date(moment(form.get('endTime').value).toISOString());
+    if (end_time)
+      queryParams += 'endTime=' + this.getDateTimeForUrl(new Date(end_time), true) + '&';
+    if (form.get('timeAggregation') && form.get('timeAggregation').value)
+      queryParams += 'timeAggregation=' + form.get('timeAggregation').value + '&';
+    if (form.get('costsAggregation') && form.get('costsAggregation').value)
+      queryParams += 'costsAggregation=' + form.get('costsAggregation').value + '&';
+    if (form.get('chartType') && form.get('chartType').value)
+      queryParams += 'chartType=' + form.get('chartType').value + '&';
+    if (form.get('showMarkers') && form.get('showMarkers').value)
+      queryParams += 'showMarkers=' + form.get('showMarkers').value + '&';
+    if (form.get('chartAggregation') && form.get('chartAggregation').value)
+      queryParams += 'chartAggregation=' + form.get('chartAggregation').value + '&';
+    if (form.get('color1') && form.get('color1').value)
+      queryParams += 'color1=' + encodeURIComponent(form.get('color1').value) + '&';
+    if (form.get('color2') && form.get('color2').value)
+      queryParams += 'color2=' + encodeURIComponent(form.get('color2').value) + '&';
+    if (form.get('color3') && form.get('color3').value)
+      queryParams += 'color3=' + encodeURIComponent(form.get('color3').value) + '&';
+    if (form.get('warningValue') && form.get('warningValue').value)
+      queryParams += 'warningValue=' + form.get('warningValue').value + '&';
+    if (form.get('alarmValue') && form.get('alarmValue').value)
+      queryParams += 'alarmValue=' + form.get('alarmValue').value + '&';
+
+    return window.location.protocol + '//' + window.location.host + window.location.pathname + '#/' + (costsDrain ? 'costs' : 'measures') + '?' + queryParams;
   }
 }

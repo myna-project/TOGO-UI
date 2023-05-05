@@ -126,12 +126,25 @@
       <button *ngIf="widget.widget_type === 'ALERT'" mat-raised-button class="togo-form-button adddraincontrols-button" (click)="addControl()">{{ 'DASHBOARDWIDGET.ADDCONTROL' | translate }}</button>
       <button *ngIf="widget.widget_type !== 'ALERT'" mat-raised-button class="togo-form-button adddrains-button" [disabled]="costsWidget && !costsDrain" (click)="addDrains()">{{ 'DASHBOARDWIDGET.ADDDRAINS' | translate }}</button>
       <button *ngIf="widget.widget_type !== 'ALERT'" mat-raised-button class="togo-form-button loadformulas-button" [disabled]="costsWidget && !costsDrain" (click)="loadFormulas()">{{ 'DASHBOARDWIDGET.ADDFORMULAS' | translate }}</button>
-      <button *ngIf="(widget.widget_type !== 'ALERT') && (widget.widget_type !== 'PIE') && !costsWidget" mat-raised-button class="togo-form-button addindices-button" (click)="addIndices()">{{ 'DASHBOARDWIDGET.ADDINDICES' | translate }}</button>
+      <button *ngIf="(widget.widget_type !== 'ALERT') && !costsWidget" mat-raised-button class="togo-form-button addindices-button" (click)="addIndices()">{{ 'DASHBOARDWIDGET.ADDINDICES' | translate }}</button>
       <div class="togo-list">
         <div *ngFor="let d of widget.details; let i = index" class="togo-list-item drain">
           <div *ngIf="d.visible" class="togo-form-field-group">
             <div class="togo-list-item-title">
-              <button mat-icon-button class="togo-list-item-title-icon" (click)="confirmRemoveDetail(i)" >
+              <button mat-icon-button class="togo-list-item-title-icon" (click)="confirmRemoveDetail(i, false)" >
+                <mat-icon class="togo-list-item-title-icon error" title="{{ 'DASHBOARDWIDGET.DELETEDETAIL' | translate }}">remove_circle</mat-icon>
+              </button>
+              {{d.full_name}}
+            </div>
+            <mat-divider *ngIf="d.divider" class="togo-list-item-divider"></mat-divider>
+          </div>
+        </div>
+      </div>
+      <div class="togo-list">
+        <div *ngFor="let d of widget.drain_details; let i = index" class="togo-list-item drain">
+          <div *ngIf="d.visible" class="togo-form-field-group">
+            <div class="togo-list-item-title">
+              <button mat-icon-button class="togo-list-item-title-icon" (click)="confirmRemoveDetail(i, true)" >
                 <mat-icon class="togo-list-item-title-icon error" title="{{ 'DASHBOARDWIDGET.DELETEDETAIL' | translate }}">remove_circle</mat-icon>
               </button>
               {{d.full_name}}
@@ -218,8 +231,7 @@
     </div>
   </form>
   <div class="button-row-right">
-    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || widgetForm.invalid || !visibleDetails || period_missing || number_period_missing || start_time_missing">{{ 'DASHBOARDWIDGET.SAVE' | translate }}</button>
+    <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || widgetForm.invalid || !visibleDetails || !lastSemicolon || period_missing || number_period_missing || start_time_missing">{{ 'DASHBOARDWIDGET.SAVE' | translate }}</button>
     <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
   </div>
 </div>
-  

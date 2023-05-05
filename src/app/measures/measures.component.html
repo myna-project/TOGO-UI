@@ -43,6 +43,7 @@
         {{ 'MEASURES.DRAINS' | translate }}
         <button *ngIf="!isLoading" mat-raised-button class="togo-form-button adddrains-button" (click)="addDrains()">{{ 'MEASURES.ADDDRAINS' | translate }}</button>
         <button *ngIf="!isLoading" mat-raised-button class="togo-form-button loadformulas-button" (click)="addFormulas()">{{ 'MEASURES.LOADFORMULAS' | translate }}</button>
+        <button *ngIf="!isLoading" mat-raised-button class="togo-form-button addindices-button" (click)="addIndices()">{{ 'MEASURES.ADDINDICES' | translate }}</button>
       </h5>
       <div *ngIf="drains.length > 0" class="togo-form-field-group">
         <mat-form-field class="short-form-field">
@@ -63,6 +64,19 @@
         </mat-form-field>
         <button type="submit" class="togo-form-button" mat-raised-button (click)="createFormula()" color="primary" [disabled]="!visibleDrains || measuresForm.get('formulaName').value === '' || measuresForm.get('formulaName').value === undefined || measuresForm.get('organization').value === undefined">{{ 'FORMULASTREE.SAVE' | translate }}</button>
         <button class="togo-form-button" mat-raised-button (click)="updateFormula()" [disabled]="!formulaId || !visibleDrains || measuresForm.get('formulaName').value === '' || measuresForm.get('formulaName').value === undefined || measuresForm.get('organization').value === undefined">{{ 'FORMULASTREE.UPDATE' | translate }}</button>
+      </div>
+      <div class="togo-list">
+        <div *ngFor="let index of indices" class="togo-list-item drain">
+          <div class="togo-form-field-group">
+            <div class="togo-list-item-title">
+              <button mat-icon-button class="togo-list-item-title-icon" (click)="removeIndex(index)" >
+                <mat-icon class="togo-list-item-title-icon error" title="{{ 'MEASURES.REMOVEINDEX' | translate }}">remove_circle</mat-icon>
+              </button>
+              {{ index.name + (index.measure_unit ? ' (' + index.measure_unit + ')' : '') }}
+            </div>
+            <mat-divider class="togo-list-item-divider"></mat-divider>
+          </div>
+        </div>
       </div>
       <div class="togo-list">
         <div *ngFor="let d of drains; let i = index" class="togo-list-item drain">
@@ -102,7 +116,7 @@
       </div>
     </div>
     <div class="togo-form-field-group">
-      <button type="submit" mat-raised-button class="chart-load-button" color="primary" (click)="loadMeasures()" [disabled]="measuresForm.invalid || (drains.length == 0)">{{ 'MEASURES.LOADMEASURES' | translate }}</button>
+      <button type="submit" mat-raised-button class="chart-load-button" color="primary" (click)="loadMeasures()" [disabled]="measuresForm.invalid || ((drains.length == 0) && (indices.length == 0))">{{ 'MEASURES.LOADMEASURES' | translate }}</button>
       <mat-spinner class="chart-loading-spinner" *ngIf="isLoadingMeasures" diameter="30"></mat-spinner>
     </div>
     <div class="no-data-div" *ngIf="measuresLoaded && (chartSeries.length === 0)">

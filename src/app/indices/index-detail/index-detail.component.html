@@ -2,14 +2,14 @@
 <div class="main-container" *ngIf="index">
   <div class="breadcrumb">
     <mat-chip-listbox class="breadcrumb-left">
-      <mat-chip-option routerLink="/indices" routerLinkActive="active">{{ 'MENU.INDICES' | translate }}</mat-chip-option>
+      <mat-chip-option routerLink="/organizations" routerLinkActive="active">{{ 'MENU.ORGS' | translate }}</mat-chip-option>
       <mat-chip-option *ngIf="org.id" routerLink="/organization/{{org.id}}" routerLinkActive="active">{{org.name}}</mat-chip-option>
+      <mat-chip-option routerLink="/indices" routerLinkActive="active">{{ 'MENU.INDICES' | translate }}</mat-chip-option>
       <mat-chip-option *ngIf="grp.id" routerLink="/indexgroup/{{grp.id}}" routerLinkActive="active">{{grp.name}}</mat-chip-option>
       <mat-chip-option disabled>{{ index.id ? index.name : ('INDEX.NEW' | translate) }}</mat-chip-option>
     </mat-chip-listbox>
     <div class="breadcrumb-right">
       <button *ngIf="index.id" mat-flat-button color="warn" [disabled]="isDeleting" (click)="delete()">{{ 'INDEX.DELETE' | translate }}</button>
-      <button *ngIf="index.id" mat-flat-button color="primary" routerLink="/index/{{index.id}}/view" routerLinkActive="active">{{ 'INDEX.VIEW' | translate }}</button>
     </div>
   </div>
   <h4>
@@ -28,7 +28,7 @@
     <div class="togo-form-field-group">
       <mat-form-field class="long-form-field">
         <mat-label>{{ 'INDEX.NAME' | translate }}</mat-label>
-        <input matInput placeholder="{{ 'INDEX.NAME' | translate }}" [formControl]="name" required>
+        <input matInput [formControl]="name" required>
         <mat-error *ngIf="name.invalid && (name.dirty || name.touched) && name.errors.required">{{ 'INDEX.MISSINGNAME' | translate }}</mat-error>
       </mat-form-field>
     </div>
@@ -43,14 +43,30 @@
     </div>
     <div class="togo-form-field-group">
       <mat-form-field class="short-form-field">
+        <mat-label>{{ 'INDEX.COEFFICIENT' | translate }}</mat-label>
+        <input matInput [formControl]="coefficient">
+        <mat-error *ngIf="coefficient.invalid && (coefficient.dirty || coefficient.touched) && coefficient.errors.pattern">{{ 'INDEX.INVALIDCOEFFICIENT' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'INDEX.UNITOFMEASURE' | translate }}</mat-label>
+        <input matInput [formControl]="measure_unit">
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'INDEX.DECIMALS' | translate }}</mat-label>
+        <input matInput [formControl]="decimals">
+        <mat-error *ngIf="decimals.invalid && (decimals.dirty || decimals.touched) && decimals.errors.pattern">{{ 'INDEX.INVALIDDECIMALS' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field">
         <mat-label>{{ 'INDEX.MINVALUE' | translate }}</mat-label>
-        <input matInput placeholder="{{ 'INDEX.MINVALUE' | translate }}" [formControl]="min_value">
+        <input matInput [formControl]="min_value">
         <mat-icon matSuffix matTooltip="{{ 'INDEX.MINVALUEINFO' | translate }}">info_outline</mat-icon>
         <mat-error *ngIf="min_value.invalid && (min_value.dirty || min_value.touched) && min_value.errors.pattern">{{ 'INDEX.INVALIDMINVALUE' | translate }}</mat-error>
       </mat-form-field>
       <mat-form-field class="short-form-field">
         <mat-label>{{ 'INDEX.MAXVALUE' | translate }}</mat-label>
-        <input matInput placeholder="{{ 'INDEX.MAXVALUE' | translate }}" [formControl]="max_value">
+        <input matInput [formControl]="max_value">
         <mat-icon matSuffix matTooltip="{{ 'INDEX.MAXVALUEINFO' | translate }}">info_outline</mat-icon>
         <mat-error *ngIf="max_value.invalid && (max_value.dirty || max_value.touched) && max_value.errors.pattern">{{ 'INDEX.INVALIDMAXVALUE' | translate }}</mat-error>
       </mat-form-field>
@@ -58,12 +74,12 @@
     <div class="togo-form-field-group">
       <mat-form-field class="short-form-field">
         <mat-label>{{ 'INDEX.WARNINGVALUE' | translate }}</mat-label>
-        <input matInput placeholder="{{ 'INDEX.WARNINGVALUE' | translate }}" [formControl]="warning_value">
+        <input matInput [formControl]="warning_value">
         <mat-error *ngIf="warning_value.invalid && (warning_value.dirty || warning_value.touched) && warning_value.errors.pattern">{{ 'INDEX.INVALIDWARNINGVALUE' | translate }}</mat-error>
       </mat-form-field>
       <mat-form-field class="short-form-field">
         <mat-label>{{ 'INDEX.ALARMVALUE' | translate }}</mat-label>
-        <input matInput placeholder="{{ 'INDEX.ALARMVALUE' | translate }}" [formControl]="alarm_value">
+        <input matInput [formControl]="alarm_value">
         <mat-error *ngIf="alarm_value.invalid && (alarm_value.dirty || alarm_value.touched) && alarm_value.errors.pattern">{{ 'INDEX.INVALIDALARMVALUE' | translate }}</mat-error>
       </mat-form-field>
     </div>
@@ -83,39 +99,23 @@
             </mat-form-field>
           </div>
           <div class="togo-list-item index-component">
-            <mat-form-field class="short-form-field" *ngIf="timeRappresentation[i]">
-              <mat-label>{{ 'INDEX.STARTTIME' | translate }}</mat-label>
-              <input matInput [ngxMatDatetimePicker]="startpicker" placeholder="{{ 'INDEX.STARTTIME' | translate }}" [formControlName]="'startTime_' + i" required>
-              <mat-datepicker-toggle matSuffix [for]="startpicker"></mat-datepicker-toggle>
-              <ngx-mat-datetime-picker #startpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
-              <mat-error *ngIf="indexForm.get('startTime_' + i).invalid && (indexForm.get('startTime_' + i).dirty || indexForm.get('startTime_' + i).touched) && indexForm.get('startTime_' + i).errors.required">{{ 'INDEX.MISSINGSTARTDATE' | translate }}</mat-error>
-            </mat-form-field>
-            <mat-form-field class="short-form-field" *ngIf="timeRappresentation[i]">
-              <mat-label>{{ 'INDEX.ENDTIME' | translate }}</mat-label>
-              <input matInput [ngxMatDatetimePicker]="endpicker" placeholder="{{ 'INDEX.ENDTIME' | translate }}" [formControlName]="'endTime_' + i" required>
-              <mat-datepicker-toggle matSuffix [for]="endpicker"></mat-datepicker-toggle>
-              <ngx-mat-datetime-picker #endpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
-              <mat-error *ngIf="indexForm.get('endTime_' + i).invalid && (indexForm.get('endTime_' + i).dirty || indexForm.get('endTime_' + i).touched) && indexForm.get('endTime_' + i).errors.required">{{ 'INDEX.MISSINGENDDATE' | translate }}</mat-error>
-            </mat-form-field>
-            <mat-form-field class="short-form-field" *ngIf="!timeRappresentation[i]">
-              <mat-label>{{ 'INDEX.RELATIVETIME' | translate }}</mat-label>
-              <input type="number" matInput placeholder="Relative time" [formControlName]="'relativeTime_' + i" required>
+            <mat-form-field class="short-form-field">
+              <mat-label>{{ 'INDEX.NSKIP' | translate }}</mat-label>
+              <input type="number" matInput [formControlName]="'nSkip_' + i">
               <span matSuffix></span>
-              <mat-error *ngIf="indexForm.get('relativeTime_' + i).invalid && (indexForm.get('relativeTime_' + i).dirty || indexForm.get('relativeTime_' + i).touched) && indexForm.get('relativeTime_' + i).errors.required">{{ 'INDEX.MISSINGRELATIVETIME' | translate }}</mat-error>
-              <mat-error *ngIf="indexForm.get('relativeTime_' + i).invalid && (indexForm.get('relativeTime_' + i).dirty || indexForm.get('relativeTime_' + i).touched) && indexForm.get('relativeTime_' + i).errors.pattern">{{ 'INDEX.INVALIDRELATIVETIME' | translate }}</mat-error>
+              <mat-error *ngIf="indexForm.get('nSkip_' + i).invalid && (indexForm.get('nSkip_' + i).dirty || indexForm.get('nSkip_' + i).touched) && indexForm.get('nSkip_' + i).errors.pattern">{{ 'INDEX.INVALIDNSKIP' | translate }}</mat-error>
             </mat-form-field>
-            <mat-form-field class="short-form-field" *ngIf="!timeRappresentation[i]">
-              <mat-label>{{ 'INDEX.RELATIVEPERIOD' | translate }}</mat-label>
-              <mat-select [formControlName]="'relativePeriod_' + i" required>
+            <mat-form-field class="short-form-field">
+              <mat-label>{{ 'INDEX.SKIPPERIOD' | translate }}</mat-label>
+              <mat-select [formControlName]="'skipPeriod_' + i">
+                <mat-option value="">-</mat-option>
                 <mat-option value="m">{{ "INDEX.MINUTE" | translate }}</mat-option>
                 <mat-option value="h">{{ "INDEX.HOUR" | translate }}</mat-option>
                 <mat-option value="d">{{ "INDEX.DAY" | translate }}</mat-option>
                 <mat-option value="M">{{ "INDEX.MONTH" | translate }}</mat-option>
                 <mat-option value="Y">{{ "INDEX.YEAR" | translate }}</mat-option>
               </mat-select>
-              <mat-error *ngIf="indexForm.get('relativePeriod_' + i).invalid && (indexForm.get('relativePeriod_' + i).dirty || indexForm.get('relativePeriod_' + i).touched) && indexForm.get('relativePeriod_' + i).errors.required">{{ 'INDEX.MISSINGRELATIVEPERIOD' | translate }}</mat-error>
             </mat-form-field>
-            <button mat-raised-button class="togo-form-button darkmagenta-button change-representation-button" (click)="changeTimeRepresentation(i)" > {{ 'INDEX.CHANGETIMEREPRESENTATION' | translate }}</button>
           </div>
           <div class="togo-list-item index-component">
             <mat-form-field class="very-short-form-field">
@@ -123,9 +123,7 @@
               <mat-select [formControlName]="'operator_' + i" required>
                 <mat-option value='TIMES'>*</mat-option>
                 <mat-option value='DIVISION'>/</mat-option>
-                <mat-option *ngIf="timeRappresentation[i]" value='PLUS'>+</mat-option>
-                <mat-option *ngIf="timeRappresentation[i]" value='MINUS'>-</mat-option>
-                <mat-option *ngIf="!timeRappresentation[i]" value='PERCENTAGE'>%</mat-option>
+                <mat-option value='PERCENTAGE'>%</mat-option>
                 <mat-option value='SEMICOLON'>;</mat-option>
               </mat-select>
             </mat-form-field>
@@ -139,7 +137,7 @@
     </span>
   </div>
   <div class="button-row-right">
-    <button type="submit" class="adddrains-button" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || indexForm.invalid || elementCounter.length === 0">{{ 'INDEX.SAVE' | translate }}</button>
+    <button type="submit" class="adddrains-button" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || indexForm.invalid || (elementCounter.length === 0) || !lastSemicolon">{{ 'INDEX.SAVE' | translate }}</button>
     <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
   </div>
 </div>

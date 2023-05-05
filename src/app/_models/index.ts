@@ -5,6 +5,9 @@ export class Index {
   name: string;
   org_id: number;
   group: IndexGroup;
+  coefficient: number;
+  measure_unit: string;
+  decimals: number;
   min_value: number;
   max_value: number;
   warning_value: number;

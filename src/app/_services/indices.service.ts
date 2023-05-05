@@ -47,16 +47,9 @@ export class IndicesService {
     );
   }
 
-  calculateIndex(index: Index | number, start_time: string, end_time: string): Observable<Index> {
+  calculateIndex(index: Index | number, start: string, end: string, timeAggregation: string): Observable<Index> {
     const id = typeof index === 'number' ? index : index.id;
-    return this.http.get<Index>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + id + '/calculate?start=' + start_time + '&end=' + end_time).pipe(
-      catchError((err) => { return throwError(err); })
-    );
-  }
-
-  calculateLastIndex(index: Index | number, timeAggregation: string, nTimes: number): Observable<Index> {
-    const id = typeof index === 'number' ? index : index.id;
-    return this.http.get<Index>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + id + '/calculatelast?timeAggregation=' + timeAggregation + '&nTimes=' + nTimes).pipe(
+    return this.http.get<Index>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + id + '/calculate?start=' + start + '&end=' + end + '&timeAggregation=' + timeAggregation).pipe(
       catchError((err) => { return throwError(err); })
     );
   }
