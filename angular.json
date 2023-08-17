@@ -42,7 +42,7 @@
               "./node_modules/d3-mitch-tree/dist/js/d3-mitch-tree.js"
             ],
             "allowedCommonJsDependencies": [
-              "buffer", "highcharts", "highcharts-angular"
+              "buffer", "highcharts", "highcharts-angular", "moment"
             ]
           },
           "configurations": {}
@@ -62,7 +62,6 @@
       }
     }
   },
-  "defaultProject": "togo",
   "cli": {
     "analytics": false
   }

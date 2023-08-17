@@ -12,5 +12,6 @@ export class Drain {
   client_default_drain: boolean;
   base_drain_id: number;
   coefficient: number;
+  diff_drain_id: number;
   controls: DrainControlDetail[];
 }

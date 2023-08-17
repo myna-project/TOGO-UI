@@ -269,7 +269,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         } else if (detail.index_id) {
           if (!update || !widget.gauge)
             widget.is_loading_index = true;
-          this.indicesService.calculateIndex(detail.index_id, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(moment().toISOString()), true), widget.time_aggregation).subscribe(
+          this.indicesService.calculateIndex(detail.index_id, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe(
             (index: Index) => {
               index.result.forEach(measure => {
                 if (!Number.isNaN(parseFloat(measure.value))) {
@@ -299,7 +299,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
       if (widget.drains != '') {
         if (widget.costs_drain_id) {
-          this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(moment().toISOString()), true), widget.time_aggregation).subscribe(
+          this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe(
             (measures: any) => {
               this.loadMeasuresInGauge(widget, measures, update);
             },
@@ -311,7 +311,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             }
           );
         } else {
-          this.measuresService.getMeasures(widget.drains, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(moment().toISOString()), true), widget.time_aggregation).subscribe(
+          this.measuresService.getMeasures(widget.drains, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe(
             (measures: any) => {
               this.loadMeasuresInGauge(widget, measures, update);
             },
@@ -415,7 +415,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           indexRequests.push([]);
         });
         let start_time = new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString());
-        let end_time = new Date(new Date(moment().toISOString()));
+        let end_time = new Date(new Date(widget.end_time ? widget.end_time : moment().toISOString()));
         if (end_time < start_time) {
           this.setError(widget, { status: 8499 });
           return;
@@ -644,7 +644,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       widget.indices.forEach((index: Index) => {
         indexIds.push(index.id);
       })
-      this.router.navigate([widget.costs_drain_id ? 'costs' : 'measures'], { queryParams: { costsDrain: widget.costs_drain_id, indexIds: indexIds.toString(), drainIds: widget.drain_ids, formulaIds: widget.formula_ids, costsAggregation: widget.costs_aggregation, aggregations: widget.aggregations, operations: widget.operations, startTime: this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), false), timeAggregation: widget.time_aggregation, chartType: widget.type, color1: widget.color1 ? widget.color1.replace('#', '%23') : undefined, color2: widget.color2 ? widget.color2.replace('#', '%23') : undefined, color3: widget.color3 ? widget.color3.replace('#', '%23') : undefined, warningValue: widget.warning_value, alarmValue: widget.alarm_value } });
+      this.router.navigate([widget.costs_drain_id ? 'costs' : 'measures'], { queryParams: { costsDrain: widget.costs_drain_id, indexIds: indexIds.toString(), drainIds: widget.drain_ids, formulaIds: widget.formula_ids, costsAggregation: widget.costs_aggregation, aggregations: widget.aggregations, operations: widget.operations, startTime: this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), false), endTime: new Date(widget.end_time ? widget.end_time : moment().toISOString()), timeAggregation: widget.time_aggregation, chartType: widget.type, color1: widget.color1 ? widget.color1.replace('#', '%23') : undefined, color2: widget.color2 ? widget.color2.replace('#', '%23') : undefined, color3: widget.color3 ? widget.color3.replace('#', '%23') : undefined, warningValue: widget.warning_value, alarmValue: widget.alarm_value } });
     }
   }
 

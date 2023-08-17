@@ -151,16 +151,6 @@ export function HttpLoaderFactory(httpClient: HttpClient) {
     VendorDetailComponent,
     VendorListComponent
   ],
-  entryComponents: [
-    ChartDialogComponent,
-    ConfirmDialogComponent,
-    DrainControlDetailsTreeDialogComponent,
-    DrainControlsTreeDialogComponent,
-    DrainsTreeDialogComponent,
-    FormulasTreeDialogComponent,
-    IndicesTreeDialogComponent,
-    MessageDialogComponent
-  ],
   imports: [
     AppRoutingModule,
     BrowserAnimationsModule,

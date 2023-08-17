@@ -78,10 +78,13 @@
           </div>
         </div>
       </div>
-      <div class="togo-list">
-        <div *ngFor="let d of drains; let i = index" class="togo-list-item drain">
+      <div class="togo-list"  cdkDropList (cdkDropListDropped)="onDrop($event)">
+        <div [cdkDragData]="d" *ngFor="let d of drains; let i = index" class="togo-list-item drain" cdkDrag cdkDragLockAxis="y">
           <div *ngIf="d.visible" class="togo-form-field-group">
             <div class="togo-list-item-title">
+              <button cdkDragHandle mat-icon-button class="togo-list-item-title-icon">
+                <mat-icon class="togo-list-item-title-icon">unfold_more</mat-icon>
+              </button>
               <button mat-icon-button class="togo-list-item-title-icon" (click)="removeDrain(i)" >
                 <mat-icon class="togo-list-item-title-icon error" title="{{ 'MEASURES.REMOVEDRAIN' | translate }}">remove_circle</mat-icon>
               </button>
@@ -111,10 +114,19 @@
               </mat-form-field>
             </div>
             <mat-divider *ngIf="d.operation === 'SEMICOLON'" class="togo-list-item-divider"></mat-divider>
+            <div class="custom-placeholder" *cdkDragPlaceholder></div>
+            <div class="togo-list-item-title" *cdkDragPreview>
+              <button mat-icon-button class="togo-list-item-title-icon" (click)="removeDrain(i)" >
+                <mat-icon class="togo-list-item-title-icon error" title="{{ 'MEASURES.REMOVEDRAIN' | translate }}">remove_circle</mat-icon>
+              </button>
+              {{d.full_name}}
+              <button mat-icon-button class="togo-list-item-title-icon"></button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    <mat-spinner class="chart-loading-spinner measure-loading-spinner" *ngIf="isChangingMeasures" diameter="30"></mat-spinner>
     <div class="togo-form-field-group">
       <button type="submit" mat-raised-button class="chart-load-button" color="primary" (click)="loadMeasures()" [disabled]="measuresForm.invalid || ((drains.length == 0) && (indices.length == 0))">{{ 'MEASURES.LOADMEASURES' | translate }}</button>
       <mat-spinner class="chart-loading-spinner" *ngIf="isLoadingMeasures" diameter="30"></mat-spinner>

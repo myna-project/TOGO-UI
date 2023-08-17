@@ -207,6 +207,7 @@ export class DrainComponent implements OnInit {
   get client_default_drain() { return this.drainForm.get('client_default_drain'); }
   get baseDrain() { return this.drainForm.get('baseDrain'); }
   get coefficient() { return this.drainForm.get('coefficient'); }
+  get diffDrain() { return this.drainForm.get('diffDrain'); }
 
   createForm() {
     let patterns = this.httpUtils.getPatterns();
@@ -222,7 +223,8 @@ export class DrainComponent implements OnInit {
       'incremental': new FormControl((this.drain.type === 'inc') ? true : false, []),
       'client_default_drain': new FormControl((this.drain.client_default_drain != null) ? this.drain.client_default_drain : false, []),
       'baseDrain': new FormControl(this.drain.base_drain_id ? this.drainsForFeed.filter(d => (d.id === this.drain.base_drain_id))[0] : '', []),
-      'coefficient': new FormControl({ value: this.drain.coefficient, disabled: ((this.drain.base_drain_id === null) || (this.drain.base_drain_id === undefined)) }, [ Validators.pattern(patterns.positiveNegativeFloat) ])
+      'coefficient': new FormControl({ value: this.drain.coefficient, disabled: ((this.drain.base_drain_id === null) || (this.drain.base_drain_id === undefined)) }, [ Validators.pattern(patterns.positiveNegativeFloat) ]),
+      'diffDrain': new FormControl(this.drain.diff_drain_id ? this.drainsForFeed.filter(d => (d.id === this.drain.diff_drain_id))[0] : '', [])
     });
     this.drainForm.get('organization').valueChanges.subscribe((o: Organization) => {
       this.drainForm.patchValue({ client: undefined, feed: undefined, baseDrain: '', coefficient: undefined });
@@ -302,6 +304,7 @@ export class DrainComponent implements OnInit {
     newDrain.client_default_drain = this.client_default_drain.value;
     newDrain.base_drain_id = this.baseDrain.value ? this.baseDrain.value.id : undefined;
     newDrain.coefficient = this.coefficient.value;
+    newDrain.diff_drain_id = this.diffDrain.value ? this.diffDrain.value.id : undefined;
     if (this.drain.id !== undefined) {
       newDrain.id = this.drain.id;
       this.drainsService.updateDrain(newDrain).subscribe(

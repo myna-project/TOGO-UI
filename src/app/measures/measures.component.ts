@@ -1,4 +1,5 @@
 import { Clipboard } from '@angular/cdk/clipboard';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Location } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
@@ -43,6 +44,7 @@ export class MeasuresComponent implements OnInit {
 
   isLoading: boolean = true;
   isLoadingMeasures: boolean = false;
+  isChangingMeasures: boolean = false;
   measuresLoaded: boolean = false;
   isSaving: boolean = false;
   params: any = {};
@@ -684,6 +686,34 @@ export class MeasuresComponent implements OnInit {
         }
         this.chart = this.timeChart.createTimeChart(options);
       }
+    }
+  }
+
+  onDrop(event: CdkDragDrop<any[]>) {
+    if (event.previousIndex !== event.currentIndex) {
+      let drainCopy = [];
+      this.drains.forEach((d,i) => {
+        drainCopy.push(d);
+        this.measuresForm.removeControl('aggregation_' + i);
+        this.measuresForm.removeControl('operation_' + i);
+        this.measuresForm.removeControl('legend_' + i);
+      });
+      this.drains = [];
+      moveItemInArray(drainCopy, event.previousIndex, event.currentIndex);
+      this.isChangingMeasures = true;
+      setTimeout(() => {
+        drainCopy.forEach((d, i) => {
+          this.createDrainControls(i, d.aggregation, d.operation, d.legend);
+          this.drains.push(d);
+          this.measuresForm.get('aggregation_' + i).valueChanges.subscribe((a: string) => {
+            this.drains[i].aggregation = a;
+          });
+          this.measuresForm.get('operation_' + i).valueChanges.subscribe((o: string) => {
+            this.drains[i].operation = o;
+          });
+        });
+        this.isChangingMeasures = false;
+      }, 500);
     }
   }
 

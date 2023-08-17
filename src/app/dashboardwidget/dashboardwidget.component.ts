@@ -205,9 +205,9 @@ export class DashboardWidgetComponent implements OnInit {
                 }
                 this.relativeTime = (this.widget.start_time === undefined);
                 this.createForm();
-                widget.drain_details = widget.details.filter(d => d.drain_id !== undefined);
-                widget.details = widget.details.filter(d => d.drain_id === undefined);
                 if (widget.details) {
+                  widget.drain_details = widget.details.filter(d => d.drain_id !== undefined);
+                  widget.details = widget.details.filter(d => d.drain_id === undefined);
                   let i: number = 0;
                   widget.details.forEach(detail => {
                     if (detail.index_id) {
@@ -280,6 +280,7 @@ export class DashboardWidgetComponent implements OnInit {
   get number_periods() { return this.widgetForm.get('number_periods'); }
   get period() { return this.widgetForm.get('period'); }
   get start_time() { return this.widgetForm.get('start_time'); }
+  get end_time() { return this.widgetForm.get('end_time'); }
   get legend() { return this.widgetForm.get('legend'); }
   get legend_position() { return this.widgetForm.get('legend_position'); }
   get legend_layout() { return this.widgetForm.get('legend_layout'); }
@@ -307,6 +308,7 @@ export class DashboardWidgetComponent implements OnInit {
     this.group['number_periods'] = new FormControl(this.widget.number_periods, [ Validators.pattern(patterns.positiveInteger) ]);
     this.group['period'] = new FormControl(this.widget.period, []);
     this.group['start_time'] = new FormControl(new Date(this.widget.start_time), []);
+    this.group['end_time'] = new FormControl(new Date(this.widget.end_time), []);
     this.group['legend'] = new FormControl(this.widget.legend, []);
     this.group['legend_position'] = new FormControl(this.widget.legend_position, []);
     this.group['legend_layout'] = new FormControl(this.widget.legend_layout, []);
@@ -413,6 +415,8 @@ export class DashboardWidgetComponent implements OnInit {
 
   disableCostsWidget(): void {
     this.costsDrain = null;
+    this.widget.costs_drain_id = null;
+    this.widget.costs_aggregation = null;
     this.widgetForm.patchValue({ costs_aggregation: undefined });
     this.cleanAndUpdateValidators(this.costs_aggregation);
     this.hideDetails();
@@ -438,8 +442,9 @@ export class DashboardWidgetComponent implements OnInit {
     this.cleanAndUpdateValidators(this.number_periods);
     this.cleanAndUpdateValidators(this.period);
     this.cleanAndUpdateValidators(this.start_time);
+    this.cleanAndUpdateValidators(this.end_time);
     if (relative)
-      this.widgetForm.patchValue({ start_time: undefined });
+      this.widgetForm.patchValue({ start_time: undefined, end_time: undefined});
     this.period_missing = (relative && !this.period.value);
     this.number_period_missing = (relative && !this.number_periods.value);
     this.start_time_missing = (!relative && ((this.start_time.value === undefined) || (this.start_time.value === null)));
@@ -527,7 +532,7 @@ export class DashboardWidgetComponent implements OnInit {
           if (!component.costsWidget)
             detail.aggregation = 'AVG';
           detail.operator = 'SEMICOLON';
-          component.createDrainDetailControl(detail, drain.id, component.widget.drain_details.length);
+          component.createDrainDetailControl(detail, drain.id, component.widget.drain_details ? component.widget.drain_details.length : 0);
           if (component.widget.drain_details)
             component.widget.drain_details.push(detail);
           else
@@ -637,6 +642,7 @@ export class DashboardWidgetComponent implements OnInit {
     this.widget.number_periods = this.number_periods.value;
     this.widget.period = this.period.value;
     this.widget.start_time = this.relativeTime ? undefined : this.start_time.value;
+    this.widget.end_time = this.relativeTime ? undefined : this.end_time.value;
     this.widget.legend = this.legend.value;
     this.widget.legend_position = this.legend_position.value;
     this.widget.legend_layout = this.legend_layout.value;
@@ -650,7 +656,8 @@ export class DashboardWidgetComponent implements OnInit {
     this.widget.alarm_value = this.alarm_value.value;
     this.widget.details = this.widget.details.filter(d => d.visible);
     this.widget.drain_details.forEach((d: DashboardWidgetDetail) => {
-      this.widget.details.push(d);
+      if (d.visible)
+        this.widget.details.push(d);
     });
     if (this.widget.id !== undefined) {
       this.dashboardWidgetsService.updateDashboardWidget(this.widget, this.dashboardId).subscribe(

@@ -23,6 +23,7 @@ export class DashboardWidget implements GridsterItem {
   number_periods: number;
   period: string;
   start_time: string;
+  end_time: string;
   legend: boolean;
   legend_position: string;
   legend_layout: string;

@@ -103,6 +103,15 @@
         <mat-error *ngIf="coefficient.invalid && (coefficient.dirty || coefficient.touched) && coefficient.errors.pattern">{{ 'DRAIN.INVALIDCOEFFICIENT' | translate }}</mat-error>
       </mat-form-field>
     </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.DIFFDRAIN' | translate }}</mat-label>
+        <mat-select [formControl]="diffDrain" [compareWith]="compareObjects">
+          <mat-option value=""> -- </mat-option>
+          <mat-option *ngFor="let d of drainsForFeed" [value]="d">{{d.name}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
   </form>
   <div class="button-row-right">
     <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="isSaving || drainForm.invalid">{{ 'DRAIN.SAVE' | translate }}</button>

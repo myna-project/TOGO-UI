@@ -118,6 +118,12 @@
           <ngx-mat-datetime-picker #startpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
           <mat-error *ngIf="start_time_missing">{{ 'DASHBOARDWIDGET.MISSINGSTARTTIME' | translate }}</mat-error>
         </mat-form-field>
+        <mat-form-field class="short-form-field">
+          <mat-label>{{ 'DASHBOARDWIDGET.ENDTIME' | translate }}</mat-label>
+          <input matInput [ngxMatDatetimePicker]="endpicker" placeholder="{{ 'DASHBOARDWIDGET.ENDTIME' | translate }}" [formControl]="end_time">
+          <mat-datepicker-toggle matSuffix [for]="endpicker"></mat-datepicker-toggle>
+          <ngx-mat-datetime-picker #endpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
+        </mat-form-field>
         <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="changeRelativeTime(true)">{{ 'DASHBOARDWIDGET.SETRELATIVEPERIOD' | translate }}</button>
       </div>
     </div>
