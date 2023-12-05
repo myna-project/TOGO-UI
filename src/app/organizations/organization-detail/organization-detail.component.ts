@@ -29,8 +29,8 @@ export class OrganizationComponent implements OnInit {
   ngOnInit() {
     this.createForm();
     this.route.paramMap.subscribe((params: any) => {
-      this.orgsService.getOrganizations().subscribe(
-        (orgs: Organization[]) => {
+      this.orgsService.getOrganizations().subscribe({
+        next: (orgs: Organization[]) => {
           this.parentOrgs = orgs;
           var orgId = params.get('id');
           if (orgId) {
@@ -40,13 +40,15 @@ export class OrganizationComponent implements OnInit {
           }
           this.isLoading = false;
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
     this.isLoading = false;
   }
@@ -72,29 +74,31 @@ export class OrganizationComponent implements OnInit {
     newOrg.parent_id = this.parent.value ? this.parent.value.id : undefined;
     if (this.organization.id !== undefined) {
       newOrg.id = this.organization.id;
-      this.orgsService.updateOrganization(newOrg).subscribe(
-        (_response: Organization) => {
+      this.orgsService.updateOrganization(newOrg).subscribe({
+        next: (_response: Organization) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('ORG.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.orgsService.createOrganization(newOrg).subscribe(
-        (_response: Organization) => {
+      this.orgsService.createOrganization(newOrg).subscribe({
+        next: (_response: Organization) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('ORG.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -103,17 +107,18 @@ export class OrganizationComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.orgsService.deleteOrganization(this.organization).subscribe(
-          (_response: any) => {
+        this.orgsService.deleteOrganization(this.organization).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('ORG.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

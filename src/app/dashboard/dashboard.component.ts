@@ -3,7 +3,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CompactType, GridsterConfig, GridsterItemComponentInterface, GridType } from 'angular-gridster2';
 import { TranslateService } from '@ngx-translate/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 
 import { unitOfTime } from 'moment';
 import * as moment from 'moment';
@@ -83,8 +83,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.currentUser = this.authService.getCurrentUser();
       if (this.currentUser.default_dashboard_id || params.get('id')) {
         this.dashboardId = params.get('id') ? params.get('id') : this.currentUser.default_dashboard_id;
-        forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.indicesService.getIndices(), this.dashboardWidgetsService.getDashboardWidgets(params.get('id') ? +params.get('id') : this.currentUser.default_dashboard_id)).subscribe(
-          (results: any) => {
+        forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.indicesService.getIndices(), this.dashboardWidgetsService.getDashboardWidgets(params.get('id') ? +params.get('id') : this.currentUser.default_dashboard_id)]).subscribe({
+          next: (results: any) => {
             this.allOrgs = results[0];
             this.energyClients = results[1].filter((c: Client) => c.energy_client);
             this.allFeeds = results[2];
@@ -94,6 +94,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             let widgets: DashboardWidget[] = results[6];
             widgets.sort((a, b) => a.x_pos < b.x_pos ? ((a.y_pos <= b.y_pos) ? -1 : 1) : ((a.y_pos <= b.y_pos) ? -1 : 1));
             widgets.forEach(widget => {
+              widget.positive_negative_values = '';
               this.setGridsterItemPosition(widget);
               this.dashboard.push(widget);
               if (widget.widget_type === 'GAUGE') {
@@ -123,12 +124,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
             this.isLoading = false;
             this.myapp.dashboardLoading();
           },
-          (error: any) => {
-            this.httpUtils.errorDialog(error);
+          error: (error: any) => {
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
             this.isLoading = false;
             this.myapp.dashboardLoading();
           }
-        );
+        });
       } else {
         this.isLoading = false;
         this.myapp.dashboardLoading();
@@ -143,8 +145,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   itemResize(widget: DashboardWidget, itemComponent: GridsterItemComponentInterface): void {
-    widget.height = Number(itemComponent.el.style.height.substr(0, itemComponent.el.style.height.indexOf('px')));
-    widget.width = Number(itemComponent.el.style.width.substr(0, itemComponent.el.style.width.indexOf('px')));
+    widget.height = Number(itemComponent.el.style.height.substring(0, itemComponent.el.style.height.indexOf('px')));
+    widget.width = Number(itemComponent.el.style.width.substring(0, itemComponent.el.style.width.indexOf('px')));
     if (widget.widget_type === 'GAUGE')
       widget.gauge = this.gaugeChart.createGaugeChart(widget);
     if ((widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM'))
@@ -177,15 +179,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const dialogRef = this.httpUtils.confirmDelete(this.translate.instant('DASHBOARD.DELETECONFIRM'));
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
-        this.dashboardWidgetsService.deleteDashboardWidget(widget, this.dashboardId).subscribe(
-          (_response: any) => {
+        this.dashboardWidgetsService.deleteDashboardWidget(widget, this.dashboardId).subscribe({
+          next: (_response: any) => {
             clearInterval(widget.interval);
             this.dashboard.splice(this.dashboard.indexOf(widget), 1);
           },
-          (error: any) => {
-            this.httpUtils.errorDialog(error);
+          error: (error: any) => {
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        )
+        });
       }
     });
   }
@@ -202,17 +205,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
       widget.number_periods = 1;
       widget.period = 'hours';
       widget.time_aggregation = 'NONE';
-      this.dashboardWidgetsService.createDashboardWidget(widget, this.dashboardId).subscribe(
-        (response: any) => {
+      this.dashboardWidgetsService.createDashboardWidget(widget, this.dashboardId).subscribe({
+        next: (response: any) => {
           widget.id = response.id;
           this.dashboard.push(widget);
           this.httpUtils.successSnackbar(this.translate.instant('DASHBOARDWIDGET.SAVED'));
         },
-        (error: any) => {
+        error: (error: any) => {
           this.dashboard.splice(this.dashboard.indexOf(widget), 1);
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
       const dialogRef = this.httpUtils.confirmDelete(this.translate.instant('DASHBOARD.CREATEFIRST'));
       dialogRef.afterClosed().subscribe((dialogResult: any) => {
@@ -232,18 +236,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     let formula = this.allFormulas.find(f => f.id === detail.formula_id);
     if (formula) {
       if (formula.components) {
-        let i = 0;
+        formula.drains = this.allDrains.filter(d => formula.components.includes(d.id));
         widget.formula_ids += ((widget.formula_ids !== '') ? ',' : '') + formula.id;
-        let component = this;
-        formula.components.forEach(function (drain_id: number) {
-          let drain = component.allDrains.find(d => d.id === drain_id);
-          if (drain) {
-            detail.aggregation = formula.aggregations[i];
-            detail.operator = formula.operators[i];
-            component.loadDrainDetail(widget, detail, drain, formula);
-          }
-          i++;
-        });
+        this.loadDrainDetail(widget, detail, undefined, formula);
       }
     }
   }
@@ -269,8 +264,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         } else if (detail.index_id) {
           if (!update || !widget.gauge)
             widget.is_loading_index = true;
-          this.indicesService.calculateIndex(detail.index_id, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe(
-            (index: Index) => {
+          this.indicesService.calculateIndex(detail.index_id, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe({
+            next: (index: Index) => {
               index.result.forEach(measure => {
                 if (!Number.isNaN(parseFloat(measure.value))) {
                   widget.value = parseFloat(parseFloat(measure.value.toString()).toFixed(2));
@@ -290,38 +285,39 @@ export class DashboardComponent implements OnInit, OnDestroy {
               });
               widget.last_updated = this.httpUtils.getLocaleDateTimeString(moment().toISOString());
             },
-            (error: any) => {
-              this.setError(widget, error);
+            error: (error: any) => {
+              if (error.status !== 401)
+                this.setError(widget, error);
               return;
             }
-          );
+          });
         }
       });
       if (widget.drains != '') {
         if (widget.costs_drain_id) {
-          this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe(
-            (measures: any) => {
+          this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe({
+            next: (measures: any) => {
               this.loadMeasuresInGauge(widget, measures, update);
             },
-            (error: any) => {
-              if (error.status !== 404) {
+            error: (error: any) => {
+              if (error.status !== 404 && error.status !== 401 ) {
                 this.setError(widget, error);
                 return;
               }
             }
-          );
+          });
         } else {
-          this.measuresService.getMeasures(widget.drains, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe(
-            (measures: any) => {
+          this.measuresService.getMeasures(widget.drains, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe({
+            next: (measures: any) => {
               this.loadMeasuresInGauge(widget, measures, update);
             },
-            (error: any) => {
-              if (error.status !== 404) {
+            error: (error: any) => {
+              if (error.status !== 404 && error.status !== 401) {
                 this.setError(widget, error);
                 return;
               }
             }
-          );
+          });
         }
       }
     }
@@ -409,7 +405,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         return;
       }
       if ((widget.drains != '') || (widget.indices.length > 0)) {
-        let requests: any[] = [];
+        let requests: Observable<any>[] = [];
         let indexRequests: any[] = [];
         widget.indices.forEach((_index: Index) => {
           indexRequests.push([]);
@@ -426,7 +422,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             if (widget.costs_drain_id)
               requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
             else
-              requests.push(this.measuresService.getMeasures(widget.drains, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
+              requests.push(this.measuresService.getMeasures(widget.drains,widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
           let i = 0;
           widget.indices.forEach((index: Index) => {
             indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
@@ -442,7 +438,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                if (widget.costs_drain_id)
                  requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
                else
-                 requests.push(this.measuresService.getMeasures(widget.drains, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
+                 requests.push(this.measuresService.getMeasures(widget.drains, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
              let i = 0;
              widget.indices.forEach((index: Index) => {
                indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
@@ -459,8 +455,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           });
         });
         let totalRequests = requests.length;
-        forkJoin(requests).subscribe(
-          (results: any) => {
+        forkJoin(requests).subscribe({
+          next: (results: any) => {
             let measures: any = results[drainRequests - 1];
             for (let i = drainRequests - 2; i >= 0; i--) {
               for (let j = 0; j < measures.length; j++) {
@@ -490,13 +486,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
             }
             this.loadMeasuresInChart(widget, measures, indexResults);
           },
-          (error: any) => {
-            if (error.status !== 404) {
+          error: (error: any) => {
+            if (error.status !== 404 && error.status !== 401 ) {
               this.setError(widget, error);
               return;
             }
           }
-        );
+        });
       }
     }
   }
@@ -582,8 +578,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       widget.is_loading_control = true;
       widget.details.forEach(detail => {
         if (detail.drain_control_id) {
-          this.drainControlsService.getDrainControl(detail.drain_control_id).subscribe(
-            (control: DrainControl) => {
+          this.drainControlsService.getDrainControl(detail.drain_control_id).subscribe({
+            next: (control: DrainControl) => {
               widget.drain_control = control;
               if ((control.type === 'MISSING') || (control.type === 'THRESHOLD'))
                 widget.alert_n = control.details.filter(d => d.active && d.error).length;
@@ -593,13 +589,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
               widget.last_updated = this.httpUtils.getLocaleDateTimeString(moment().toISOString());
               widget.is_loading_control = false;
             },
-            (error: any) => {
-              if (error.status !== 404) {
+            error: (error: any) => {
+              if (error.status !== 404 && error.status !== 401) {
                 this.setError(widget, error);
                 return;
               }
             }
-          );
+          });
         }
       });
     }
@@ -644,7 +640,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       widget.indices.forEach((index: Index) => {
         indexIds.push(index.id);
       })
-      this.router.navigate([widget.costs_drain_id ? 'costs' : 'measures'], { queryParams: { costsDrain: widget.costs_drain_id, indexIds: indexIds.toString(), drainIds: widget.drain_ids, formulaIds: widget.formula_ids, costsAggregation: widget.costs_aggregation, aggregations: widget.aggregations, operations: widget.operations, startTime: this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), false), endTime: new Date(widget.end_time ? widget.end_time : moment().toISOString()), timeAggregation: widget.time_aggregation, chartType: widget.type, color1: widget.color1 ? widget.color1.replace('#', '%23') : undefined, color2: widget.color2 ? widget.color2.replace('#', '%23') : undefined, color3: widget.color3 ? widget.color3.replace('#', '%23') : undefined, warningValue: widget.warning_value, alarmValue: widget.alarm_value } });
+      this.router.navigate([widget.costs_drain_id ? 'costs' : 'measures'], { queryParams: { costsDrain: widget.costs_drain_id, indexIds: indexIds.toString(), drainIds: widget.drains, costsAggregation: widget.costs_aggregation, positiveNegativeValues: widget.positive_negative_values, aggregations: widget.aggregations, operations: widget.operations, startTime: this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), false), endTime: new Date(widget.end_time ? widget.end_time : moment().toISOString()), timeAggregation: widget.time_aggregation, chartType: widget.type, color1: widget.color1 ? widget.color1.replace('#', '%23') : undefined, color2: widget.color2 ? widget.color2.replace('#', '%23') : undefined, color3: widget.color3 ? widget.color3.replace('#', '%23') : undefined, warningValue: widget.warning_value, alarmValue: widget.alarm_value } });
     }
   }
 
@@ -654,15 +650,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (widget.details) {
       widget.details.forEach(detail => {
         if (detail.drain_control_id) {
-          this.drainControlsService.getDrainControl(detail.drain_control_id).subscribe(
-            (control: DrainControl) => {
+          this.drainControlsService.getDrainControl(detail.drain_control_id).subscribe({
+            next: (control: DrainControl) => {
               let active_controls = control.details.filter(d => d.active);
               if (active_controls.length === 1) {
-                let drains: number[] = [];
+                let drains: string[] = [];
                 let aggregations: string[] = [];
                 let operations: string[] = [];
                 if (active_controls[0].drain_id) {
-                  drains.push(active_controls[0].drain_id);
+                  drains.push('d_' + active_controls[0].drain_id);
                   aggregations.push(active_controls[0].aggregation);
                   operations.push('SEMICOLON');
                 } else if (active_controls[0].formula_id) {
@@ -674,7 +670,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                       formula.components.forEach(function (drain_id: number) {
                         let drain = component.allDrains.find(d => d.id === drain_id);
                         if (drain) {
-                          drains.push(drain_id);
+                          drains.push('d_' + drain_id);
                           aggregations.push(formula.aggregations[i]);
                           operations.push(formula.operators[i]);
                         }
@@ -686,13 +682,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 this.dialog.open(ChartDialogComponent, { width: '75%', data: { drains: drains, aggregations: aggregations, operations: operations, startTime: new Date(moment().add(active_controls[0].last_minutes * -1, 'minutes').toISOString()), endTime: new Date(moment().toISOString()), timeAggregation: 'NONE', high_threshold: active_controls[0].high_threshold, low_threshold: active_controls[0].low_threshold } });
               }
             },
-            (error: any) => {
-              if (error.status !== 404) {
+            error: (error: any) => {
+              if (error.status !== 404 && error.status !== 401) {
                 this.setError(widget, error);
                 return;
               }
             }
-          );
+          });
         }
       });
     }
@@ -706,19 +702,44 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (client) {
           let org = this.allOrgs.find(o => o.id === client.org_id);
           if (org) {
-            widget.drains += ((widget.drains !== '') ? ',' : '') + drain.id;
+            widget.drains += ((widget.drains !== '') ? ',' : '') + 'd_' + drain.id;
             if (!formula)
               widget.drain_ids += ((widget.drain_ids !== '') ? ',' : '') + drain.id;
+            widget.positive_negative_values += ((widget.positive_negative_values !== '') ? ',' : '') + ((detail.positive_negative_value !== undefined) ? detail.positive_negative_value : '');
             widget.aggregations += ((widget.aggregations !== '') ? ',' : '') + detail.aggregation;
             widget.operations += ((widget.operations !== '') ? ',' : '') + detail.operator;
             widget.last_operator = detail.operator;
+
             if (detail.operator === 'SEMICOLON') {
-              let serie_name = formula ? ((formula.operators.filter(o => o === 'SEMICOLON').length === 1) ? formula.name : '') : undefined;
+              let serie_name = formula ? ((formula.operators.filter(o => o === 'SEMICOLON').length === 1) ? formula.name : '') : detail.full_name;
               if (widget.serie_names)
                 widget.serie_names.push(serie_name);
               else
                 widget.serie_names = [serie_name];
             }
+          }
+        }
+      }
+    } else if (formula) {
+      let org = this.allOrgs.find(o => o.id === formula.org_id);
+      if (org) {
+        widget.drains += ((widget.drains !== '') ? ',' : '') + 'f_' + formula.id;
+        if (!(formula && formula.operators.filter(o => o === 'SEMICOLON').length > 1)) {
+          widget.operations += ((widget.operations !== '') ? ',' : '') + detail.operator;
+          widget.last_operator = detail.operator;
+        }
+        if (detail.operator === 'SEMICOLON') {
+          let serie_names: string[] = [];
+          if (formula.operators.filter(o => o === 'SEMICOLON').length === 1)
+            serie_names.push(formula.name ? formula.name : undefined);
+          else if (formula.operators.filter(o => o === 'SEMICOLON').length > 1) {
+            formula.legends.filter(name => name).forEach(legend => serie_names.push(legend));
+          }
+          if (widget.serie_names)
+            serie_names.forEach(serie_name => widget.serie_names.push(serie_name));
+          else {
+            widget.serie_names = [];
+            serie_names.forEach(serie_name => widget.serie_names.push(serie_name));
           }
         }
       }
@@ -769,18 +790,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
     widget.color2 = w.color2;
     widget.color3 = w.color3;
     widget.details = w.details;
-    this.dashboardWidgetsService.updateDashboardWidget(widget, this.dashboardId).subscribe(
-      (_response: DashboardWidget) => {
+    this.dashboardWidgetsService.updateDashboardWidget(widget, this.dashboardId).subscribe({
+      next: (_response: DashboardWidget) => {
         i++;
         if (i < this.dashboard.length)
           this.saveDashboard(i);
         else
           this.httpUtils.successSnackbar(this.translate.instant('DASHBOARD.SAVED'));
       },
-      (error: any) => {
-        this.httpUtils.errorDialog(error);
+      error: (error: any) => {
+        if (error.status !== 401)
+          this.httpUtils.errorDialog(error);
         return;
       }
-    );
+    });
   }
 }

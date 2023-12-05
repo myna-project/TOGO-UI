@@ -13,7 +13,7 @@ import { IndexGroup } from '../../_models/indexgroup';
 import { InvoiceItem } from '../../_models/invoiceitem';
 import { Job } from '../../_models/job';
 import { Organization } from '../../_models/organization';
-import { TreeItemNode } from '../../_models/treenode';
+import { TreeItemFlatNode, TreeItemNode } from '../../_models/treenode';
 
 @Injectable({
   providedIn: 'root',
@@ -30,9 +30,11 @@ export class OrganizationsTree {
   allIndexGroups: IndexGroup[] = [];
   allDrainControls: DrainControl[] = [];
   allInvoiceItemkWh: InvoiceItem[] = [];
+  showDetails: boolean = false;
   orgNodes: TreeItemNode[] = [];
   dataChange = new BehaviorSubject<TreeItemNode[]>([]);
   treeData: any[];
+  depthTree: string;
 
   get data(): TreeItemNode[] {
     return this.dataChange.value;
@@ -40,7 +42,7 @@ export class OrganizationsTree {
 
   constructor(private treeUtils: TreeUtils) {}
 
-  initialize(orgs: Organization[], jobs: Job[], clients: Client[], feeds: Feed[], drains: Drain[], formulas: Formula[], indexgroups: IndexGroup[], indices: Index[], controls: DrainControl[], invoiceitemskWh: InvoiceItem[]) {
+  initialize(orgs: Organization[], jobs: Job[], clients: Client[], feeds: Feed[], drains: Drain[], formulas: Formula[], indexgroups: IndexGroup[], indices: Index[], controls: DrainControl[], invoiceitemskWh: InvoiceItem[], showDetails: boolean, depthTree: string) {
     let orgsTree = this;
     orgsTree.allOrgs = orgs;
     orgsTree.allJobs = jobs;
@@ -52,6 +54,8 @@ export class OrganizationsTree {
     orgsTree.allIndices = indices;
     orgsTree.allDrainControls = controls;
     orgsTree.allInvoiceItemkWh = invoiceitemskWh;
+    orgsTree.showDetails = showDetails;
+    orgsTree.depthTree = depthTree;
     orgsTree.orgNodes = [];
     orgsTree.treeData = [];
     orgsTree.dataChange.next(orgsTree.treeUtils.buildTree(orgsTree.orgNodes, '0'));
@@ -59,9 +63,8 @@ export class OrganizationsTree {
     if (parentOrgs.length === 0) {
       this.allOrgs.forEach(function(org) {
         let checkParent = orgsTree.allOrgs.filter(o => (o.id === org.parent_id));
-        if (checkParent.length === 0) {
+        if (checkParent.length === 0)
           parentOrgs.push(org);
-        }
       });
     }
     parentOrgs.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
@@ -72,6 +75,7 @@ export class OrganizationsTree {
       orgNode.full_name = org.name;
       orgNode.type = 'organization';
       orgNode.code = '0.' + org.id;
+      orgNode.expanded = (orgsTree.depthTree !== 'org') || (orgsTree.allOrgs.filter(o => (o.parent_id == org.id)).length > 0 && orgsTree.depthTree === 'org' );
       orgsTree.orgNodes.push(orgNode);
       orgsTree.createChildrenTree(orgsTree, orgNode, org);
     });
@@ -80,7 +84,7 @@ export class OrganizationsTree {
   }
 
   getTreeData(orgs: Organization[], jobs: Job[], clients: Client[], feeds: Feed[], drains: Drain[], formulas: Formula[], indexgroups: IndexGroup[], indices: Index[], controls: DrainControl[], invoiceItemskWh: InvoiceItem[]): TreeItemNode[] {
-    this.initialize(orgs, jobs, clients, feeds, drains, formulas, indexgroups, indices, controls, invoiceItemskWh);
+    this.initialize(orgs, jobs, clients, feeds, drains, formulas, indexgroups, indices, controls, invoiceItemskWh, true, "feed");
     return this.treeUtils.buildTree(this.orgNodes, '0');
   }
 
@@ -99,8 +103,11 @@ export class OrganizationsTree {
       childNode.full_name = child.name;
       childNode.type = 'organization';
       childNode.code = (fatherNode.code ? fatherNode.code : '0') + '.' + child.id;
+      childNode.expanded = ((orgsTree.depthTree === 'feed') || (orgsTree.depthTree === 'clientChild') || (orgsTree.depthTree === 'clientFather') || (orgsTree.depthTree === 'drain'));
       orgsTree.orgNodes.push(childNode);
       orgsTree.createChildrenTree(orgsTree, childNode, child);
+      if (childNode.expanded)
+        fatherNode.expanded = true;
     });
   }
 
@@ -118,8 +125,14 @@ export class OrganizationsTree {
         clientNode.type = 'client';
         clientNode.code = (fatherNode.code ? fatherNode.code : '0') + '.c' + client.id;
         clientNode.default_drain_ids = client.default_drain_ids;
+        clientNode.formula_ids = client.formula_ids;
+        clientNode.has_details = (client.feed_ids && (client.feed_ids.length > 0));
+        clientNode.view_details = orgsTree.showDetails || client.view_details;
+        clientNode.expanded = ((orgsTree.depthTree === 'feed') || (orgsTree.depthTree === 'clientChild') || (orgsTree.depthTree === 'drain'));
         orgsTree.orgNodes.push(clientNode);
         orgsTree.createChildrenClientsTree(orgsTree, clientNode, client, org);
+        if (clientNode.view_details || clientNode.expanded)
+          fatherNode.expanded = true;
       });
     }
   }
@@ -139,8 +152,14 @@ export class OrganizationsTree {
       childNode.type = 'client';
       childNode.code = (fatherNode.code ? fatherNode.code : '0') + '.c' + child.id;
       childNode.default_drain_ids = child.default_drain_ids;
+      childNode.formula_ids = child.formula_ids;
+      childNode.has_details = (child.feed_ids && (child.feed_ids.length > 0));
+      childNode.view_details = orgsTree.showDetails || child.view_details;
+      childNode.expanded = ((orgsTree.depthTree === 'feed') || (orgsTree.depthTree === 'drain'));
       orgsTree.orgNodes.push(childNode);
       orgsTree.createChildrenClientsTree(orgsTree, childNode, child, org);
+      if (childNode.view_details || childNode.expanded)
+        fatherNode.expanded = (childNode.view_details || childNode.expanded);
     });
   }
 
@@ -154,9 +173,10 @@ export class OrganizationsTree {
       feedNode.full_name = ((orgsTree.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description;
       feedNode.type = 'feed';
       feedNode.code = (fatherNode.code ? fatherNode.code : '0') + '.f' + feed.id;
-      orgsTree.orgNodes.push(feedNode);
+      feedNode.expanded = (orgsTree.depthTree === 'drain');
+      let defaultDrains = false;
       if (orgsTree.allDrains.length > 0) {
-        let feedDrains = orgsTree.allDrains.filter(d => d.feed_id == feed.id);
+        let feedDrains = orgsTree.allDrains.filter(d => (d.feed_id == feed.id) && (orgsTree.showDetails || fatherNode.view_details || d.client_default_drain));
         feedDrains.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
         feedDrains.forEach(function(drain) {
           let drainNode = new TreeItemNode();
@@ -165,7 +185,10 @@ export class OrganizationsTree {
           drainNode.full_name = ((orgsTree.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feedNode.item + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : '');
           drainNode.type = 'drain';
           drainNode.code = (feedNode.code ? feedNode.code : '0') + '.d' + drain.id;
+          drainNode.client_default_drain = drain.client_default_drain;
           orgsTree.orgNodes.push(drainNode);
+          if (drain.client_default_drain)
+            defaultDrains = true;
           if (orgsTree.allInvoiceItemkWh.length > 0) {
             let drainInvoiceItemskWhYear: InvoiceItem[] = [];
             let years = [];
@@ -204,6 +227,8 @@ export class OrganizationsTree {
           }
         });
       }
+      if (orgsTree.showDetails || fatherNode.view_details || defaultDrains)
+        orgsTree.orgNodes.push(feedNode);
     });
   }
 
@@ -300,15 +325,22 @@ export class OrganizationsTree {
     }
   }
 
-  filterOrgs(filterText: string, type: string): boolean {
-    let filteredTreeData = this.treeData;
-    let expandAll = false;
+  filterByType(filterText: string, type: string, showDetails: boolean): boolean {
+    this.initialize(this.allOrgs, this.allJobs, this.allClients, this.allFeeds, this.allDrains, this.allFormulas, this.allIndexGroups, this.allIndices, this.allDrainControls, this.allInvoiceItemkWh, (showDetails || (filterText && (type !== 'client'))) ? true : false, this.depthTree);
+
     if (filterText) {
-      filteredTreeData = this.treeUtils.filter(filterText, type, this.treeData);
-      expandAll = true;
+      this.dataChange.next(this.treeUtils.buildTree(this.treeUtils.filter(filterText, type, this.treeData), '0'));
+      return true;
     }
-    this.dataChange.next(this.treeUtils.buildTree(filteredTreeData, '0'));
-    return expandAll;
+
+    return false;
+  }
+
+  changeViewDetails(node: TreeItemFlatNode) {
+    this.allClients.forEach((c: Client) => {
+      c.view_details = (c.id === node.id) ? !c.view_details : false;
+    });
+    this.initialize(this.allOrgs, this.allJobs, this.allClients, this.allFeeds, this.allDrains, this.allFormulas, this.allIndexGroups, this.allIndices, this.allDrainControls, this.allInvoiceItemkWh, false, this.depthTree);
   }
 
   selectFormula(data: any, orgs: Organization[], clients: Client[], formulas: Formula[], formula_id: number) {

@@ -18,32 +18,32 @@ export class FormulasService {
 
   getFormulas(): Observable<Formula[]> {
     return this.http.get<Formula[]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   getFormula(id: number | string): Observable<Formula> {
     return this.http.get<Formula>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + +id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   createFormula(formula: Formula): Observable<Formula> {
     return this.http.post<Formula>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource, formula).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   updateFormula(formula: Formula): Observable<any> {
     return this.http.put(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + formula.id, formula).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   deleteFormula(formula: Formula | number): Observable<Formula> {
     const id = typeof formula === 'number' ? formula : formula.id;
     return this.http.delete<Formula>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 }

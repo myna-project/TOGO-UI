@@ -30,35 +30,39 @@ export class JobComponent implements OnInit {
 
   ngOnInit(): void {
     this.createForm();
-    this.orgsService.getOrganizations().subscribe(
-      (orgs: Organization[]) => {
+    this.orgsService.getOrganizations().subscribe({
+      next: (orgs: Organization[]) => {
         this.allOrgs = orgs;
         this.route.paramMap.subscribe((params: any) => {
           var jobId = params.get('id');
           if (jobId) {
-            this.jobsService.getJob(jobId).subscribe(
-              (job: Job) => {
+            this.jobsService.getJob(jobId).subscribe({
+              next: (job: Job) => {
                 this.job = job;
                 this.createForm();
                 this.isLoading = false;
               },
-              (error: any) => {
-                const dialogRef = this.httpUtils.errorDialog(error);
-                dialogRef.afterClosed().subscribe((_value: any) => {
-                  this.router.navigate([this.backRoute]);
-                });
+              error: (error: any) => {
+                if (error.status !== 401) {
+                  const dialogRef = this.httpUtils.errorDialog(error);
+                  dialogRef.afterClosed().subscribe((_value: any) => {
+                    this.router.navigate([this.backRoute]);
+                  });
+                }
               }
-            );
+            });
           }
         });
       },
-      (error: any) => {
-        const dialogRef = this.httpUtils.errorDialog(error);
-        dialogRef.afterClosed().subscribe((_value: any) => {
-          this.router.navigate([this.backRoute]);
-        });
+      error: (error: any) => {
+        if (error.status !== 401) {
+          const dialogRef = this.httpUtils.errorDialog(error);
+          dialogRef.afterClosed().subscribe((_value: any) => {
+            this.router.navigate([this.backRoute]);
+          });
+        }
       }
-    );
+    });
     this.isLoading = false;
   }
 
@@ -86,29 +90,31 @@ export class JobComponent implements OnInit {
     newJob.org_id = this.organization.value ? this.organization.value.id : undefined;
     if (this.job.id !== undefined) {
       newJob.id = this.job.id;
-      this.jobsService.updateJob(newJob).subscribe(
-        (_response: Job) => {
+      this.jobsService.updateJob(newJob).subscribe({
+        next: (_response: Job) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('JOB.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.jobsService.createJob(newJob).subscribe(
-        (_response: Job) => {
+      this.jobsService.createJob(newJob).subscribe({
+        next: (_response: Job) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('JOB.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -117,17 +123,18 @@ export class JobComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.jobsService.deleteJob(this.job).subscribe(
-          (_response: any) => {
+        this.jobsService.deleteJob(this.job).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('JOB.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

@@ -46,6 +46,7 @@ export class DashboardWidget implements GridsterItem {
   indices: Index[];
   aggregations: string;
   operations: string;
+  positive_negative_values: string;
   last_operator: string;
   units: string[];
   y_axis: any;

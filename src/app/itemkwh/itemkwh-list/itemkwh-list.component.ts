@@ -94,8 +94,8 @@ export class ItemskwhComponent implements OnInit {
     this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
     this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-    forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.vendorsService.getVendors(), this.itemskWhService.getInvoiceItems()).subscribe(
-      (results: any) => {
+    forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.vendorsService.getVendors(), this.itemskWhService.getInvoiceItems()]).subscribe({
+      next: (results: any) => {
         this.allOrgs = results[0];
         this.energyClients = results[1].filter((c: Client) => c.energy_client);
         this.allFeeds = results[2];
@@ -116,19 +116,21 @@ export class ItemskwhComponent implements OnInit {
             item.vendor_name = vendor.name;
           item.month_name = this.months[item.month - 1];
         });
-        this.organizationsTree.initialize(this.costsOrgs, [], this.costsClients, this.costsFeeds, this.costsDrains, [], [], [], [], this.allInvoiceItems);
+        this.organizationsTree.initialize(this.costsOrgs, [], this.costsClients, this.costsFeeds, this.costsDrains, [], [], [], [], this.allInvoiceItems, true, 'feed');
         this.organizationsTree.dataChange.subscribe((data: any) => {
           this.dataSource.data = data;
         });
         this.isLoading = false;
       },
-      (error: any) => {
-        const dialogRef = this.httpUtils.errorDialog(error);
-        dialogRef.afterClosed().subscribe((_value: any) => {
-          this.router.navigate([this.backRoute]);
-        });
+      error: (error: any) => {
+        if (error.status !== 401) {
+          const dialogRef = this.httpUtils.errorDialog(error);
+          dialogRef.afterClosed().subscribe((_value: any) => {
+            this.router.navigate([this.backRoute]);
+          });
+        }
       }
-    );
+    });
   }
 
   getLevel = (node: TreeItemFlatNode) => node.level;
@@ -169,7 +171,7 @@ export class ItemskwhComponent implements OnInit {
   filterChanged(filterText: string, type: string) {
     this.isFiltering = true;
     this.isLoading = true;
-    if (this.organizationsTree.filterOrgs(filterText, type)) {
+    if (this.organizationsTree.filterByType(filterText, type, true)) {
       this.treeControl.expandAll();
     }
     this.isLoading = false;

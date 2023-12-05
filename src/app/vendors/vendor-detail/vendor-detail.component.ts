@@ -30,19 +30,21 @@ export class VendorDetailComponent implements OnInit {
     this.route.paramMap.subscribe((params: any) => {
       let vendorId = params.get('id');
       if (vendorId) {
-        this.vendorsService.getVendor(vendorId).subscribe(
-          (vendor: Vendor) => {
+        this.vendorsService.getVendor(vendorId).subscribe({
+          next: (vendor: Vendor) => {
             this.vendor = vendor;
             this.createForm();
             this.isLoading = false;
           },
-          (error: any) => {
-            const dialogRef = this.httpUtils.errorDialog(error);
-            dialogRef.afterClosed().subscribe((_value: any) => {
-              this.router.navigate([this.backRoute]);
-            });
+          error: (error: any) => {
+            if (error.status !== 401) {
+              const dialogRef = this.httpUtils.errorDialog(error);
+              dialogRef.afterClosed().subscribe((_value: any) => {
+                this.router.navigate([this.backRoute]);
+              });
+            }
           }
-        );
+        });
       } else {
         this.isLoading = false;
       }
@@ -63,29 +65,31 @@ export class VendorDetailComponent implements OnInit {
     newVendor.name = this.name.value;
     if (this.vendor.id !== undefined) {
       newVendor.id = this.vendor.id;
-      this.vendorsService.updateVendor(newVendor).subscribe(
-        (_response: Vendor) => {
+      this.vendorsService.updateVendor(newVendor).subscribe({
+        next: (_response: Vendor) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('VENDOR.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.vendorsService.createVendor(newVendor).subscribe(
-        (_response: Vendor) => {
+      this.vendorsService.createVendor(newVendor).subscribe({
+        next: (_response: Vendor) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('VENDOR.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -94,17 +98,18 @@ export class VendorDetailComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.vendorsService.deleteVendor(this.vendor.id).subscribe(
-          (_response: any) => {
+        this.vendorsService.deleteVendor(this.vendor.id).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('VENDOR.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

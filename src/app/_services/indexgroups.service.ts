@@ -18,32 +18,32 @@ export class IndexGroupsService {
 
   getIndexGroups(): Observable<IndexGroup[]> {
     return this.http.get<IndexGroup[]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   getIndexGroup(id: number | string): Observable<IndexGroup> {
     return this.http.get<IndexGroup>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + +id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   createIndexGroup(group: IndexGroup): Observable<IndexGroup> {
     return this.http.post<IndexGroup>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource, group).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   updateIndexGroup(group: IndexGroup): Observable<any> {
     return this.http.put(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + group.id, group).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   deleteIndexGroup(group: IndexGroup | number): Observable<IndexGroup> {
     const id = typeof group === 'number' ? group : group.id;
     return this.http.delete<IndexGroup>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 }

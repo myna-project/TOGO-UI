@@ -56,8 +56,8 @@ export class ItemkwhComponent implements OnInit {
   ngOnInit(): void {
     this.createForm();
     this.route.paramMap.subscribe((params: any) => {
-      forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.vendorsService.getVendors()).subscribe(
-        (results: any) => {
+      forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.vendorsService.getVendors()]).subscribe({
+        next: (results: any) => {
           this.allOrgs = results[0];
           this.energyClients = results[1].filter((c: Client) => c.energy_client);
           this.allFeeds = results[2];
@@ -95,13 +95,15 @@ export class ItemkwhComponent implements OnInit {
             this.isLoading = false;
           }
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !==401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -190,7 +192,7 @@ export class ItemkwhComponent implements OnInit {
   }
 
   selectCostDrain(): void {
-    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsOrgs, clients: this.costsClients, feeds: this.costsFeeds, drains: this.costsDrains, singleDrain: true } });
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsOrgs, clients: this.costsClients, feeds: this.costsFeeds, drains: this.costsDrains, formulas: [], singleDrain: true } });
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result)
         this.costsDrain = { id: result.id, full_name: result.full_name };
@@ -230,29 +232,31 @@ export class ItemkwhComponent implements OnInit {
     newItem.vat_perc_rate = this.vat_perc_rate.value;
     if (this.invoiceItemkWh.id) {
       newItem.id = this.invoiceItemkWh.id;
-      this.itemskWhService.updateInvoiceItem(newItem).subscribe(
-        (_response: InvoiceItem) => {
+      this.itemskWhService.updateInvoiceItem(newItem).subscribe({
+        next: (_response: InvoiceItem) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('ITEMKWH.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.itemskWhService.createInvoiceItem(newItem).subscribe(
-        (_response: InvoiceItem) => {
+      this.itemskWhService.createInvoiceItem(newItem).subscribe({
+        next: (_response: InvoiceItem) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('ITEMKWH.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -261,17 +265,18 @@ export class ItemkwhComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.itemskWhService.deleteInvoiceItem(this.invoiceItemkWh.id).subscribe(
-          (_response: any) => {
+        this.itemskWhService.deleteInvoiceItem(this.invoiceItemkWh.id).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('ITEMKWH.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

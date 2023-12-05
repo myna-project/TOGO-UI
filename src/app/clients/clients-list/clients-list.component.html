@@ -52,7 +52,7 @@
             <mat-icon class="mat-tree-node-title-icon mat-tree-node-title-icon-after warning" *ngIf="node.warning" title="{{ 'DRAIN.WARNING' | translate }}">warning</mat-icon>
           </div>
           <div class="mat-tree-node-buttons button-row-right">
-            <button *ngIf="node.id !== 0 && (node.default_drain_ids && (node.default_drain_ids.length > 0))" mat-stroked-button color="primary" (click)="measures(node.default_drain_ids)">
+            <button *ngIf="node.id !== 0 && ((node.default_drain_ids && (node.default_drain_ids.length > 0)) || (node.formula_ids && (node.formula_ids.length > 0)))" mat-stroked-button color="primary" (click)="measures(node)">
               <mat-icon>timeline</mat-icon>
               {{ 'CLIENT.VIEWMEASURES' | translate }}
             </button>

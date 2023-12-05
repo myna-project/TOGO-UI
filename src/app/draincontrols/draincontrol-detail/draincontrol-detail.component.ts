@@ -110,17 +110,18 @@ export class DrainControlComponent implements OnInit {
     this.createForm();
     this.route.paramMap.subscribe((params: any) => {
       var controlId = +params.get('id');
-      this.orgsService.getOrganizations().subscribe(
-        (orgs: Organization[]) => {
+      this.orgsService.getOrganizations().subscribe({
+        next: (orgs: Organization[]) => {
           this.allOrgs = orgs;
           if (controlId) {
             this.treeFlattener = new MatTreeFlattener(this.transformer, this.getLevel, this.isExpandable, this.getChildren);
             this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
             this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-            forkJoin(this.formulasService.getFormulas(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.drainControlsService.getDrainControl(controlId)).subscribe(
-              (results: any) => {
+            forkJoin([this.formulasService.getFormulas(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.drainControlsService.getDrainControl(controlId)]).subscribe({
+              next: (results: any) => {
                 this.allFormulas = results[0];
+                this.allFormulas = this.allFormulas.filter((formula: Formula) => formula.operators.filter(o => o === 'SEMICOLON').length === 1);
                 this.energyClients = results[1].filter((c: Client) => c.energy_client);
                 this.allFeeds = results[2];
                 this.allDrains = results[3];
@@ -276,24 +277,28 @@ export class DrainControlComponent implements OnInit {
                 }
                 this.isLoading = false;
               },
-              (error: any) => {
-                const dialogRef = this.httpUtils.errorDialog(error);
-                dialogRef.afterClosed().subscribe((_value: any) => {
-                  this.router.navigate([this.backRoute]);
-                });
+              error: (error: any) => {
+                if (error.status !== 401) {
+                  const dialogRef = this.httpUtils.errorDialog(error);
+                  dialogRef.afterClosed().subscribe((_value: any) => {
+                    this.router.navigate([this.backRoute]);
+                  });
+                }
               }
-            );
+            });
           } else {
             this.isLoading = false;
           }
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -699,7 +704,7 @@ export class DrainControlComponent implements OnInit {
   addDrains(): void {
     let controlOrgs: Organization[] = [this.allOrgs.find(o => o.id === this.control.org_id)];
     controlOrgs = this.httpUtils.getChildrenOrganizations(this.allOrgs, this.allOrgs.find(o => o.id === this.control.org_id), controlOrgs);
-    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: controlOrgs, clients: this.energyClients, feeds: this.allFeeds, drains: this.allDrains } });
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: controlOrgs, clients: this.energyClients, feeds: this.allFeeds, drains: this.allDrains, formulas: [] } });
     dialogRef.afterClosed().subscribe((result: any[]) => {
       if (result) {
         let component = this;
@@ -776,8 +781,8 @@ export class DrainControlComponent implements OnInit {
           if ((id === undefined) || ((type === 'drain') && (id === detail.drain_id)) || ((type === 'formula') && (id === detail.formula_id)))
             detail.waiting_measures = 0;
         });
-        this.drainControlsService.updateDrainControl(this.ctrl).subscribe(
-          (_response: any) => {
+        this.drainControlsService.updateDrainControl(this.ctrl).subscribe({
+          next: (_response: any) => {
             this.isSaving = false;
             this.httpUtils.successSnackbar(this.translate.instant('DRAINCONTROL.CLEARED'));
             if (id !== undefined)
@@ -785,11 +790,12 @@ export class DrainControlComponent implements OnInit {
             else
               this.waitingMeasures = {};
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isSaving = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }
@@ -905,32 +911,34 @@ export class DrainControlComponent implements OnInit {
       newControl.id = this.control.id;
       newControl.org_id = this.control.org_id;
       newControl.type = this.control.type;
-      this.drainControlsService.updateDrainControl(newControl).subscribe(
-        (_response: any) => {
+      this.drainControlsService.updateDrainControl(newControl).subscribe({
+        next: (_response: any) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('DRAINCONTROL.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
       newControl.org_id = this.organization.value ? this.organization.value.id : undefined;
       newControl.type = this.type.value;
-      this.drainControlsService.createDrainControl(newControl).subscribe(
-        (response: any) => {
+      this.drainControlsService.createDrainControl(newControl).subscribe({
+        next: (response: any) => {
           this.isSaving = false;
           this.ctrl = Object.assign({}, response);
           this.httpUtils.successSnackbar(this.translate.instant('DRAINCONTROL.SAVED'));
           this.router.navigate(['draincontrol/' + response.id]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -939,17 +947,18 @@ export class DrainControlComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.drainControlsService.deleteDrainControl(this.control).subscribe(
-          (_response: any) => {
+        this.drainControlsService.deleteDrainControl(this.control).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('DRAINCONTROL.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

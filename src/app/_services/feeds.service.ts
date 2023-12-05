@@ -19,39 +19,39 @@ export class FeedsService {
 
   getFeeds(): Observable<Feed[]> {
     return this.http.get<Feed[]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   getFeed(id: number | string): Observable<Feed> {
     return this.http.get<Feed>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + +id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   createFeed(feed: Feed): Observable<Feed> {
     return this.http.post<Feed>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource, feed).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   updateFeed(feed: Feed): Observable<any> {
     return this.http.put(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + feed.id, feed).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   deleteFeed(feed: Feed | number): Observable<Feed> {
     const id = typeof feed === 'number' ? feed : feed.id;
     return this.http.delete<Feed>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   getDrainsForFeed(feed: Feed | number): Observable<Drain[]> {
     const id = typeof feed === 'number' ? feed : feed.id;
     return this.http.get<Drain[]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + id + '/drains').pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 }

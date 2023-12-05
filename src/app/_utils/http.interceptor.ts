@@ -50,7 +50,7 @@ export class CustomHttpInterceptor implements HttpInterceptor {
                   this.token = success.headers.get('X-CSRF-TOKEN');
                   return next.handle(this.addAuthenticationToken(req)).pipe(
                     catchError((error: HttpErrorResponse) => {
-                      return throwError(error);
+                      return throwError(() => error);
                     })
                   );
                 }),
@@ -58,7 +58,7 @@ export class CustomHttpInterceptor implements HttpInterceptor {
               );
             }
           } else {
-            return throwError(error);
+            return throwError(() => error);
           }
         }
       })

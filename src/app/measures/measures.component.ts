@@ -7,7 +7,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Color } from '@angular-material-components/color-picker';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 
 import * as moment from 'moment';
 
@@ -19,7 +19,9 @@ import { Index } from '../_models/index';
 import { Organization } from '../_models/organization';
 import { Measure } from '../_models/measure';
 import { Measures } from '../_models/measures';
+import { User } from '../_models/user';
 
+import { AuthenticationService } from '../_services/authentication.service';
 import { ClientsService } from '../_services/clients.service';
 import { DrainsService } from '../_services/drains.service';
 import { FeedsService } from '../_services/feeds.service';
@@ -31,8 +33,9 @@ import { MeasuresService } from '../_services/measures.service';
 import { PieChart } from '../_utils/chart/pie-chart';
 import { TimeChart } from '../_utils/chart/time-chart';
 import { DrainsTreeDialogComponent } from '../_utils/drains-tree-dialog/drains-tree-dialog.component';
+import { FormulaDetailsDialogComponent } from '../_utils/formula-details-dialog/formula-details-dialog.component';
 import { FormulasTreeDialogComponent } from '../_utils/formulas-tree-dialog/formulas-tree-dialog.component';
-import { IndicesTreeDialogComponent } from "../_utils/indices-tree-dialog/indices-tree-dialog.component";
+import { IndicesTreeDialogComponent } from '../_utils/indices-tree-dialog/indices-tree-dialog.component';
 import { HttpUtils } from '../_utils/http.utils';
 import { OrganizationsTree } from '../_utils/tree/organizations-tree';
 
@@ -56,6 +59,7 @@ export class MeasuresComponent implements OnInit {
   allIndices: Index[] = [];
   timeAggregations: any[] = [];
   indices: Index[] = [];
+  formulas: Formula[] = [];
   drains: any[] = [];
   measures: Measures[];
   indexResults: Index[];
@@ -75,13 +79,22 @@ export class MeasuresComponent implements OnInit {
   formulaClients: Client[] = [];
   visibleDrains: boolean = false;
   chartOptions: boolean = false;
+  checkFormula: boolean = false;
   seriesNames: string[] = [];
+  user: User = new User();
+  default_start: string;
+  default_end: string;
+  depthTree: string;
   backRoute: string = 'dashboard';
 
-  constructor(private orgsService: OrganizationsService, private clientsService: ClientsService, private feedsService: FeedsService, private drainsService: DrainsService, private formulasService: FormulasService, private indicesService: IndicesService, private measuresService: MeasuresService, private organizationsTree: OrganizationsTree, private timeChart: TimeChart, private pieChart: PieChart, private route: ActivatedRoute, private router: Router, private location: Location, private clipboard: Clipboard, private dialog: MatDialog, private httpUtils: HttpUtils, private translate: TranslateService) {}
+  constructor(private authService: AuthenticationService, private orgsService: OrganizationsService, private clientsService: ClientsService, private feedsService: FeedsService, private drainsService: DrainsService, private formulasService: FormulasService, private indicesService: IndicesService, private measuresService: MeasuresService, private organizationsTree: OrganizationsTree, private timeChart: TimeChart, private pieChart: PieChart, private route: ActivatedRoute, private router: Router, private location: Location, private clipboard: Clipboard, private dialog: MatDialog, private httpUtils: HttpUtils, private translate: TranslateService) {}
 
   ngOnInit(): void {
     this.chartAggregations = this.httpUtils.getChartAggregations();
+    let currentUser = this.authService.getCurrentUser();
+    this.default_start = currentUser.default_start;
+    this.default_end = currentUser.default_end;
+    this.depthTree = currentUser.drain_tree_depth;
     this.translate.get('CHART.SPLINE').subscribe((spline: string) => {
       this.chartTypes.push({ id: 'spline', description: spline, visible: true });
       this.translate.get('CHART.HISTOGRAM').subscribe((histogram: string) => {
@@ -122,8 +135,8 @@ export class MeasuresComponent implements OnInit {
     this.route.queryParams.subscribe((params: any) => {
       this.params = params;
       this.createMeasuresForm();
-      forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.indicesService.getIndices()).subscribe(
-        (results: any) => {
+      forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.indicesService.getIndices()]).subscribe({
+        next: (results: any) => {
           this.allOrgs = results[0];
           this.allOrgs.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
           this.energyClients = results[1].filter((c: Client) => c.energy_client);
@@ -143,26 +156,42 @@ export class MeasuresComponent implements OnInit {
             }
             if (this.params.drainIds) {
               var drainIds = this.params.drainIds.split(',');
+              var drainPositiveNegativeValues = this.params.positiveNegativeValues ? this.params.positiveNegativeValues.split(',') : [];
               var drainAggregations = this.params.aggregations ? this.params.aggregations.split(',') : [];
               var drainOperations = this.params.operations ? this.params.operations.split(',') : [];
               var drainLegends = this.params.legends ? this.params.legends.split(',') : [];
               let i: number = 0;
+              let k: number = 0;
               drainIds.forEach((drainId: string) => {
-                let drain = this.allDrains.find(d => d.id === parseInt(drainId));
-                if (drain)
-                  this.loadDrain(drain, (drainAggregations.length > i) ? drainAggregations[i] : 'AVG', (drainOperations.length > i) ? drainOperations[i] : 'SEMICOLON', (drainLegends.length > i) ? drainLegends[i] : undefined);
-                i++;
+                if (drainId.slice(0,1) === 'd') {
+                  let drain = this.allDrains.find(d => d.id === parseInt(drainId.slice(2)));
+                  if (drain) {
+                    this.loadDrain(drain,(drainPositiveNegativeValues.length > k) ? drainPositiveNegativeValues[k] : '', (drainAggregations.length > k) ? drainAggregations[k] : 'AVG', (drainOperations.length > i) ? drainOperations[i] : 'SEMICOLON', (drainLegends.length > i) ? drainLegends[i] : undefined, undefined);
+                  }
+                  k++;
+                  i++;
+                } else if (drainId.slice(0,1) === 'f') {
+                  let formula = this.allFormulas.find(f => f.id === parseInt(drainId.slice(2)));
+                  if (formula) {
+                    this.loadFormula(formula, formula.operators.filter(o => o === 'SEMICOLON').length === 1 ? drainOperations[i] : null);
+                    //i = i + formula.operators.filter(o => o === 'SEMICOLON').length;
+                    if (formula.operators.filter(o => o === 'SEMICOLON').length === 1)
+                      i++;
+                  }
+                }
               });
+              if (drainIds.length === 1 && drainIds[0].slice(0,1) === 'f')
+                this.setFormulaData(this.allFormulas.find(f => f.id === parseInt(drainIds[0].slice(2))));
             }
             if (this.params.formulaIds) {
               var formulaIds = this.params.formulaIds.split(',');
               formulaIds.forEach((formulaId: string) => {
-                let formula = this.allFormulas.find(f => f.id === parseInt(formulaId));
+                let formula = this.allFormulas.find(f => f.id === parseInt(formulaId.slice(2)));
                 if (formula)
-                  this.loadFormula(formula);
+                  this.loadFormula(formula, 'SEMICOLON');
               });
               if ((formulaIds.length === 1) && !this.formulaId && !this.params.drainIds)
-                this.setFormulaData(this.allFormulas.find(f => f.id === parseInt(formulaIds[0])));
+                this.setFormulaData(this.allFormulas.find(f => f.id === parseInt(formulaIds[0].slice(2))));
             }
             this.setChartTypesVisible();
             this.isSplineChart = (this.params.chartType === 'spline') ? true : false;
@@ -172,13 +201,15 @@ export class MeasuresComponent implements OnInit {
           }
           this.isLoading = false;
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -228,7 +259,15 @@ export class MeasuresComponent implements OnInit {
     });
   }
 
-  createDrainControls(i: number, aggregation: string, operation: string, legend: String): void {
+  defaultDate(): void {
+    this.measuresForm.patchValue({ startTime: new Date(this.default_start), endTime: new Date(this.default_end) });
+  }
+
+  createDrainControls(i: number, positiveNegativeValue: string, aggregation: string, operation: string, legend: String): void {
+    this.group['positiveNegativeValue_' + i] = new FormControl(positiveNegativeValue);
+    this.measuresForm.get('positiveNegativeValue_' + i).valueChanges.subscribe((pn: string) => {
+      this.drains[i].positive_negative_value = pn;
+    });
     this.group['aggregation_' + i] = new FormControl(aggregation ? aggregation : 'AVG', [ Validators.required ]);
     this.measuresForm.get('aggregation_' + i).valueChanges.subscribe((a: string) => {
       this.drains[i].aggregation = a;
@@ -317,14 +356,25 @@ export class MeasuresComponent implements OnInit {
   }
 
   addDrains(): void {
-    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.allOrgs, clients: this.energyClients, feeds: this.allFeeds, drains: this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))) } });
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.allOrgs, clients: this.energyClients, feeds: this.allFeeds, drains: this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))), formulas: this.allFormulas, depth: this.depthTree } });
     dialogRef.afterClosed().subscribe((result: any[]) => {
       if (result) {
         let component = this;
         result.forEach(function (selected: any) {
-          let drain = component.allDrains.find((d: Drain) => d.id === selected.id);
-          if (drain) {
-            component.loadDrain(drain, 'AVG', 'SEMICOLON', undefined);
+          if (selected.type === 'drain') {
+            let drain = component.allDrains.find((d: Drain) => d.id === selected.id);
+            if (drain)
+              component.loadDrain(drain, '',(drain.measure_unit && drain.measure_unit.toLowerCase().includes('wh')) ? 'SUM' : 'AVG', 'SEMICOLON', undefined, undefined);
+          } else {
+            let formula = component.allFormulas.find(f => f.id === selected.id);
+            if (formula)
+              component.loadFormula(formula, 'SEMICOLON');
+            if ((component.drains.length === 1) && !component.formulaId)
+              component.setFormulaData(component.drains[0]);
+            else {
+              component.formulaId = undefined;
+              component.measuresForm.patchValue({ organization: undefined, client: undefined, formulaName: undefined });
+            }
           }
         });
         component.setChartTypesVisible();
@@ -344,7 +394,7 @@ export class MeasuresComponent implements OnInit {
     this.setChartTypesVisible();
   }
 
-  loadDrain(drain: Drain, aggregation: string, operation: string, legend: String) {
+  loadDrain(drain: Drain, positiveNegativeValue: string, aggregation: string, operation: string, legend: String, formula: Formula) {
     let feed = this.allFeeds.find(f => f.id === drain.feed_id);
     if (feed) {
       let client = this.energyClients.find(c => (feed.client_ids.indexOf(c.id) > -1));
@@ -353,8 +403,13 @@ export class MeasuresComponent implements OnInit {
         if (org) {
           if (!legend)
             legend = client.name + ' - ' + drain.name;
-          this.createDrainControls(this.drains.length, aggregation, operation, legend);
-          this.drains.push({ id: drain.id, visible: true, measure_type: drain.measure_type, full_name: ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : ''), aggregations: this.httpUtils.getMeasuresAggregationsForMeasureType(drain.measure_type), aggregation: aggregation, operations: this.httpUtils.getMeasuresOperationsForMeasureType(drain.measure_type), operation: operation, legend: legend, show_legend: false });
+          if (formula) {
+            this.createDrainControls(this.drains.length, null, null, null, '');
+            formula.drains.push({ id: drain.id, visible: true, measure_type: drain.measure_type, full_name: ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : ''), aggregations: this.httpUtils.getMeasuresAggregationsForMeasureType(drain.measure_type), aggregation: aggregation, operations: this.httpUtils.getMeasuresOperationsForMeasureType(drain.measure_type), operation: operation, legend: legend, show_legend: false, is_positive_negative_value: drain.positive_negative_value, positive_negative_value: positiveNegativeValue });
+          } else {
+            this.createDrainControls(this.drains.length, positiveNegativeValue, aggregation, operation, legend);
+            this.drains.push({ id: drain.id, visible: true, measure_type: drain.measure_type, full_name: ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : ''), aggregations: this.httpUtils.getMeasuresAggregationsForMeasureType(drain.measure_type), aggregation: aggregation, operations: this.httpUtils.getMeasuresOperationsForMeasureType(drain.measure_type), operation: operation, legend: legend, show_legend: false, is_positive_negative_value: drain.positive_negative_value, positive_negative_value: positiveNegativeValue });
+          }
           this.visibleDrains = true;
         }
       }
@@ -365,21 +420,45 @@ export class MeasuresComponent implements OnInit {
     this.drains[i].show_legend = !this.drains[i].show_legend;
   }
 
-  loadFormula(formula: Formula): void {
+  checkSubFormulas(i: number): boolean {
+    if (this.drains[i].components && this.drains[i].components.length > 0)
+      return !(this.drains[i].drains.filter((d:any) => d.operation === 'SEMICOLON').length > 1);
+    else
+      return true;
+  }
+
+  checkSaveFormula(): boolean {
+    return this.drains.filter(d => (d.components && d.visible)).length > 0;
+  }
+
+  loadFormula(formula: Formula, operation: string | null): void {
     if (formula.components) {
       let i = 0;
       let component = this;
+      let type = 'f';
+      formula.drains = [];
       formula.components.forEach(function (drain_id: number) {
-        let drain = component.allDrains.find(d => d.id === drain_id);
-        if (drain)
-          component.loadDrain(drain, formula.aggregations[i], formula.operators[i], formula.legends[i]);
+        let drain = component.allDrains.find((d: Drain) => d.id === drain_id);
+        if (drain) {
+          component.loadDrain(drain, formula.positive_negative_values[i], formula.aggregations[i], formula.operators[i], formula.legends[i], formula);
+          if (drain.type === 'c')
+            type = drain.type;
+        }
         i++;
       });
+      this.createDrainControls(this.drains.length, formula.positive_negative_values[i], null, null, operation ? operation : 'SEMICOLON');
+      component.drains.push({ id: formula.id, name: formula.name, full_name: formula.name, positive_negative_values: formula.positive_negative_values, aggregations: formula.aggregations, operations: this.httpUtils.getMeasuresOperationsForMeasureType(type), operation: operation ? operation : 'SEMICOLON', drains: formula.drains, legends: formula.legends, legend: formula.name, visible: true, components: formula.components, show_legend: false, disabled_sub_formula: formula.operators.filter(o => o === 'SEMICOLON').length > 1 });
     }
   }
 
   setFormulaData(formula: Formula): void {
     if (formula) {
+      if (!formula.org_id) {
+        let formulaFromDrain = this.allFormulas.filter(f => f.id === formula.id)[0];
+        formula.org_id = formulaFromDrain.org_id;
+        formula.client_id = formulaFromDrain.client_id;
+        formula.name = formulaFromDrain.name;
+      }
       this.formulaId = formula.id;
       if (formula.org_id) {
         this.updateFormulaClient(formula.org_id);
@@ -389,19 +468,18 @@ export class MeasuresComponent implements OnInit {
   }
 
   addFormulas(): void {
-    let component = this;
     let data = { orgs: [], clients: [], formulas: [] };
     this.allFormulas.forEach((formula: Formula) => {
-      this.organizationsTree.selectFormula(data, component.allOrgs, component.energyClients, component.allFormulas, formula.id);
+      this.organizationsTree.selectFormula(data, this.allOrgs, this.energyClients, this.allFormulas, formula.id);
     });
     const dialogRef = this.dialog.open(FormulasTreeDialogComponent, { width: '75%', data: { orgs: data.orgs, clients: data.clients, formulas: data.formulas } });
     dialogRef.afterClosed().subscribe((result: any[]) => {
       if (result) {
         let component = this;
         result.forEach(function (formula: Formula) {
-          component.loadFormula(formula);
+          component.loadFormula(formula, 'SEMICOLON');
         });
-        if ((result.length === 1) && !this.formulaId) {
+        if ((result.length === 1) && !this.formulaId && this.drains.length === 1) {
           this.setFormulaData(result[0]);
         } else {
           this.formulaId = undefined;
@@ -421,6 +499,7 @@ export class MeasuresComponent implements OnInit {
 
   saveLoad(): any {
     let drainIds = [];
+    let positiveNegativeValues = [];
     let aggregations = [];
     let operations = [];
     let lastSemicolonControl: boolean = false;
@@ -428,16 +507,44 @@ export class MeasuresComponent implements OnInit {
     this.seriesNames = [];
     this.drains.forEach(drain => {
       if (drain.visible) {
-        drainIds.push(drain.id);
-        aggregations.push(drain.aggregation);
-        operations.push(drain.operation);
-        lastSemicolonControl = (drain.operation === 'SEMICOLON');
-        legends.push((drain.operation === 'SEMICOLON') ? drain.legend : undefined);
-        if (drain.operation === 'SEMICOLON')
-          this.seriesNames.push(drain.legend);
+        if (drain.components) {
+          drainIds.push("f_" + drain.id);
+          let subFormulas = drain.drains.filter((d: any) => d.operation === 'SEMICOLON').length > 1;
+          let legendControl = operations.length > 0 ? operations[operations.length - 1] === 'SEMICOLON' : true;
+          if (subFormulas === true) {
+            if (legendControl === false || drain.operation !== 'SEMICOLON') {
+              this.checkFormula = true;
+              return;
+            }
+            drain.drains.forEach((d: any) => {
+              if (d.operation === 'SEMICOLON') {
+                this.seriesNames.push(d.legend);
+                legends.push(d.legend);
+                lastSemicolonControl = true;
+              }
+            });
+          } else {
+              if (drain.operation === 'SEMICOLON') {
+                legends.push(drain.legend);
+                this.seriesNames.push(drain.legend);
+                lastSemicolonControl = true;
+              } else
+                lastSemicolonControl = false;
+            operations.push(drain.operation);
+          }
+        } else {
+          drainIds.push("d_" + drain.id);
+          aggregations.push(drain.aggregation);
+          operations.push(drain.operation);
+          positiveNegativeValues.push(drain.is_positive_negative_value ? drain.positive_negative_value : '');
+          lastSemicolonControl = (drain.operation === 'SEMICOLON');
+          legends.push((drain.operation === 'SEMICOLON') ? drain.legend : undefined);
+          if (drain.operation === 'SEMICOLON')
+            this.seriesNames.push(drain.legend);
+        }
       }
     });
-    return { drainIds: drainIds, aggregations: aggregations, operations: operations, lastSemicolon: lastSemicolonControl, legends: legends };
+    return { drainIds: drainIds, positiveNegativeValues: positiveNegativeValues, aggregations: aggregations, operations: operations, lastSemicolon: lastSemicolonControl, legends: legends };
   }
 
   loadMeasures(): void {
@@ -445,12 +552,18 @@ export class MeasuresComponent implements OnInit {
     this.measuresLoaded = false;
     let dataDrain: any = this.saveLoad();
     if ((dataDrain.drainIds.length > 0) || (this.indices.length > 0)) {
-      if ((dataDrain.drainIds.length > 0) && !dataDrain.lastSemicolon) {
+      if (this.checkFormula === true) {
+        this.httpUtils.errorDialog({ status: 499, error: { errorCode: 8495 } });
+        this.isLoadingMeasures = false;
+        this.checkFormula = false;
+        return;
+      } else if (((dataDrain.drainIds.length > 0) && !dataDrain.lastSemicolon)) {
         this.httpUtils.errorDialog({ status: 499, error: { errorCode: 8499 } });
         this.isLoadingMeasures = false;
+        this.checkFormula = false;
         return;
       }
-      let requests: any[] = [];
+      let requests: Observable<any>[] = [];
       let indexRequests: any[] = [];
       this.indices.forEach((_index: Index) => {
         indexRequests.push([]);
@@ -465,7 +578,7 @@ export class MeasuresComponent implements OnInit {
       let years: number = 0;
       if ((start_time.getFullYear() === end_time.getFullYear()) || (this.measuresForm.get('timeAggregation').value === 'ALL')) {
         if (dataDrain.drainIds.length > 0)
-          requests.push(this.measuresService.getMeasures(dataDrain.drainIds.toString(), dataDrain.aggregations.toString(), dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
+          requests.push(this.measuresService.getMeasures(dataDrain.drainIds.toString(), dataDrain.positiveNegativeValues.toString(),dataDrain.aggregations.toString(), dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
         let i = 0;
         this.indices.forEach((index: Index) => {
           indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
@@ -478,7 +591,7 @@ export class MeasuresComponent implements OnInit {
          while (moment(start_time) < end) {
            start = (start_time.getFullYear() === new Date(end.toISOString()).getFullYear()) ? moment(start_time) : moment(end).startOf('year');
            if (dataDrain.drainIds.length > 0)
-             requests.push(this.measuresService.getMeasures(dataDrain.drainIds.toString(), dataDrain.aggregations.toString(), dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
+             requests.push(this.measuresService.getMeasures(dataDrain.drainIds.toString(), dataDrain.positiveNegativeValues.toString(), dataDrain.aggregations.toString(), dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
            let i = 0;
            this.indices.forEach((index: Index) => {
              indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
@@ -495,8 +608,8 @@ export class MeasuresComponent implements OnInit {
         });
       });
       let totalRequests = requests.length;
-      forkJoin(requests).subscribe(
-        (results: any) => {
+      forkJoin(requests).subscribe({
+        next: (results: any[]) => {
           this.measures = results[drainRequests - 1];
           for (let i = drainRequests - 2; i >= 0; i--) {
             for (let j = 0; j < this.measures.length; j++) {
@@ -528,11 +641,12 @@ export class MeasuresComponent implements OnInit {
           this.measuresLoaded = true;
           this.drawChart();
         },
-        (error: any) => {
-          this.httpUtils.errorDialog(error);
+        error: (error: any) => {
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
           this.isLoadingMeasures = false;
         }
-      );
+      });
     }
   }
 
@@ -540,14 +654,49 @@ export class MeasuresComponent implements OnInit {
     this.saveFormula(true);
   }
 
+  editFormula(i: number) {
+    let drainCopy = [];
+    this.drains.forEach((d,j) => {
+      drainCopy.push(d);
+      this.measuresForm.removeControl('aggregation_' + j);
+      this.measuresForm.removeControl('operation_' + j);
+      this.measuresForm.removeControl('legend_' + j);
+      this.measuresForm.removeControl('positiveNegativeValue_' + j);
+    });
+    this.drains = [];
+    this.isChangingMeasures = true;
+    setTimeout(() =>{
+      drainCopy.forEach((drain) => {
+        if ((this.drains.length) === i) {
+          drain.drains.forEach((d: any, k: number) => {
+            this.createDrainControls((this.drains.length), drain.positive_negative_values[k], d.aggregation, d.operation, d.legend);
+            this.drains.push(d);
+          });
+        } else {
+          this.createDrainControls(this.drains.length, drain.positive_negative_value, drain.aggregation, drain.operation, drain.legend);
+          this.drains.push(drain);
+        }
+      });
+      this.isChangingMeasures = false;
+    }, 500);
+  }
+
   updateFormula(): void {
     this.saveFormula(false);
+  }
+
+  showFormulaDetails(i: number) {
+    let formula = this.drains[i];
+    if (formula)
+      this.dialog.open(FormulaDetailsDialogComponent, { width: '75%', data: { formula: formula } });
   }
 
   saveFormula(create: boolean): void {
     this.isSaving = true;
     let newFormula: Formula = new Formula();
     let dataDrain: any = this.saveLoad();
+    let drainIdsStr = [];
+    dataDrain.drainIds.forEach((id: string) => drainIdsStr.push(id.slice(2)));
     if (!dataDrain.lastSemicolon) {
       this.httpUtils.errorDialog({ status: 499, error: { errorCode: 8499 } });
       return;
@@ -555,32 +704,39 @@ export class MeasuresComponent implements OnInit {
     newFormula.name = this.measuresForm.get('formulaName').value;
     newFormula.org_id = this.measuresForm.get('organization').value;
     newFormula.client_id = this.measuresForm.get('client').value;
-    newFormula.components = dataDrain.drainIds;
+    newFormula.components = drainIdsStr;
     newFormula.aggregations = dataDrain.aggregations;
     newFormula.operators = dataDrain.operations;
     newFormula.legends = dataDrain.legends;
+    newFormula.positive_negative_values = dataDrain.positiveNegativeValues;
     newFormula.operators.pop();
     if (create) {
-      this.formulasService.createFormula(newFormula).subscribe(
-        (_response: Formula) => {
+      this.formulasService.createFormula(newFormula).subscribe({
+        next: (_response: Formula) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('FORMULASTREE.FORMULASAVED'));
           window.location.reload();
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
       newFormula.id = this.formulaId;
-      this.formulasService.updateFormula(newFormula).subscribe(
-        (_response: Formula) => {
+      this.formulasService.updateFormula(newFormula).subscribe({
+        next: (_response: Formula) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('FORMULASTREE.FORMULAUPDATE'));
           window.location.reload();
+        },
+        error: (error: any) => {
+          this.isSaving = false;
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -694,6 +850,7 @@ export class MeasuresComponent implements OnInit {
       let drainCopy = [];
       this.drains.forEach((d,i) => {
         drainCopy.push(d);
+        this.measuresForm.removeControl('positiveNegativeValue_' + i);
         this.measuresForm.removeControl('aggregation_' + i);
         this.measuresForm.removeControl('operation_' + i);
         this.measuresForm.removeControl('legend_' + i);
@@ -703,8 +860,11 @@ export class MeasuresComponent implements OnInit {
       this.isChangingMeasures = true;
       setTimeout(() => {
         drainCopy.forEach((d, i) => {
-          this.createDrainControls(i, d.aggregation, d.operation, d.legend);
+          this.createDrainControls(i, d.positive_negative_value, d.aggregation, d.operation, d.legend);
           this.drains.push(d);
+          this.measuresForm.get('positiveNegativeValue_' + i).valueChanges.subscribe((pn: string) => {
+            this.drains[i].positive_negative_value = pn;
+          });
           this.measuresForm.get('aggregation_' + i).valueChanges.subscribe((a: string) => {
             this.drains[i].aggregation = a;
           });

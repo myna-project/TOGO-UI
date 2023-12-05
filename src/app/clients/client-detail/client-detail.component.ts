@@ -45,8 +45,8 @@ export class ClientComponent implements OnInit {
     this.route.paramMap.subscribe((params: any) => {
       var orgId = +params.get('orgId');
       var clientId = +params.get('id');
-      forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.clientCategoriesService.getClientCategories(), this.clientsService.getClientTypes()).subscribe(
-        (results: any) => {
+      forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.clientCategoriesService.getClientCategories(), this.clientsService.getClientTypes()]).subscribe({
+        next: (results: any) => {
           this.allOrgs = results[0];
           this.allClients = results[1];
           this.allCategories = results[2];
@@ -60,8 +60,8 @@ export class ClientComponent implements OnInit {
           this.setClientsForSelect(this.org);
           this.createForm();
           if (clientId) {
-            this.clientsService.getClient(clientId).subscribe(
-              (client: Client) => {
+            this.clientsService.getClient(clientId).subscribe({
+              next: (client: Client) => {
                 this.client = client;
                 this.setClientsForSelect(this.org);
                 if (this.client.image)
@@ -69,24 +69,28 @@ export class ClientComponent implements OnInit {
                 this.createForm();
                 this.isLoading = false;
               },
-              (error: any) => {
-                const dialogRef = this.httpUtils.errorDialog(error);
-                dialogRef.afterClosed().subscribe((_value: any) => {
-                  this.router.navigate([this.backRoute]);
-                });
+              error: (error: any) => {
+                if (error.status !== 401) {
+                  const dialogRef = this.httpUtils.errorDialog(error);
+                  dialogRef.afterClosed().subscribe((_value: any) => {
+                    this.router.navigate([this.backRoute]);
+                  });
+                }
               }
-            );
+            });
           } else {
             this.isLoading = false;
           }
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -182,29 +186,31 @@ export class ClientComponent implements OnInit {
     newClient.active = this.active.value;
     if (this.client.id !== undefined) {
       newClient.id = this.client.id;
-      this.clientsService.updateClient(newClient).subscribe(
-        (_response: Client) => {
+      this.clientsService.updateClient(newClient).subscribe({
+        next: (_response: Client) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('CLIENT.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.clientsService.createClient(newClient).subscribe(
-        (_response: Client) => {
+      this.clientsService.createClient(newClient).subscribe({
+        next: (_response: Client) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('CLIENT.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -213,17 +219,18 @@ export class ClientComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.clientsService.deleteClient(this.client).subscribe(
-          (_response: any) => {
+        this.clientsService.deleteClient(this.client).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('CLIENT.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

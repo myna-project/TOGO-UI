@@ -20,14 +20,14 @@
   </div>
   <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
     <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
-      <span class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node)">
+      <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node)">
         <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id">
           <mat-icon class="mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
             {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
           </mat-icon>
         </button>
-        <span class="mat-tree-node-title">{{node.item}}</span>
-        <span class="mat-tree-node-buttons button-row-right">
+        <div class="mat-tree-node-title">{{node.item}}</div>
+        <div class="mat-tree-node-buttons button-row-right">
           <button *ngIf="node.id !== 0" mat-stroked-button color="primary" (click)="showClients(node.id)">
             <mat-icon>settings_input_component</mat-icon>
             {{ 'ORG.SHOWCLIENTS' | translate }}
@@ -36,11 +36,9 @@
             <mat-icon>edit</mat-icon>
             {{ 'ORG.EDIT' | translate }}
           </button>
-        </span>
-        <span class="mat-tree-node-divider">
-          <mat-divider></mat-divider>
-        </span>
-      </span>
+        </div>
+        <mat-divider class="mat-tree-node-divider"></mat-divider>
+      </div>
     </mat-tree-node>
   </mat-tree>
 </div>

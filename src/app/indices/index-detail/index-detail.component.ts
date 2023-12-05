@@ -47,14 +47,14 @@ export class IndexComponent implements OnInit {
     this.createForm();
     this.route.paramMap.subscribe((params: any) => {
       var indexId = +params.get('id');
-      forkJoin(this.orgsService.getOrganizations(), this.formulasService.getFormulas(), this.indexGroupsService.getIndexGroups()).subscribe(
-        (results: any) => {
+      forkJoin([this.orgsService.getOrganizations(), this.formulasService.getFormulas(), this.indexGroupsService.getIndexGroups()]).subscribe({
+        next: (results: any) => {
           this.allOrgs = results[0];
           this.allFormulas = results[1];
           this.allGroups = results[2];
           if (indexId) {
-            this.indicesService.getIndex(indexId).subscribe(
-              (index: Index) => {
+            this.indicesService.getIndex(indexId).subscribe({
+              next: (index: Index) => {
                 this.index = index;
                 this.org = this.allOrgs.filter(o => (o.id === index.org_id))[0];
                 if (index.group)
@@ -64,25 +64,29 @@ export class IndexComponent implements OnInit {
                 this.createForm();
                 this.isLoading = false;
               },
-              (error: any) => {
-                const dialogRef = this.httpUtils.errorDialog(error);
-                dialogRef.afterClosed().subscribe((_value: any) => {
-                  this.router.navigate([this.backRoute]);
-                });
+              error: (error: any) => {
+                if (error.status !== 401) {
+                  const dialogRef = this.httpUtils.errorDialog(error);
+                  dialogRef.afterClosed().subscribe((_value: any) => {
+                    this.router.navigate([this.backRoute]);
+                  });
+                }
               }
-            );
+            });
           } else {
             this.createFormulaControls(null, this.counter, null);
             this.isLoading = false;
           }
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -195,29 +199,31 @@ export class IndexComponent implements OnInit {
       this.httpUtils.errorDialog({ status: 499, error: { errorCode: 8499 } });
     if (this.index.id !== undefined) {
       newIndex.id = this.index.id;
-      this.indicesService.updateIndex(newIndex).subscribe(
-        (_response: Index) => {
+      this.indicesService.updateIndex(newIndex).subscribe({
+        next: (_response: Index) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('INDEX.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.indicesService.createIndex(newIndex).subscribe(
-        (_response: Index) => {
+      this.indicesService.createIndex(newIndex).subscribe({
+        next: (_response: Index) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('INDEX.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -226,17 +232,18 @@ export class IndexComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.indicesService.deleteIndex(this.index).subscribe(
-          (_response: any) => {
+        this.indicesService.deleteIndex(this.index).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('INDEX.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

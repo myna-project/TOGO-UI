@@ -6,7 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Color } from '@angular-material-components/color-picker';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 
 import * as moment from 'moment';
 
@@ -120,8 +120,8 @@ export class CostsComponent implements OnInit {
     this.route.queryParams.subscribe((params: any) => {
       this.params = params;
       this.createCostsForm();
-      forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas()).subscribe(
-        (results: any) => {
+      forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas()]).subscribe({
+        next: (results: any) => {
           this.allOrgs = results[0];
           this.energyClients = results[1].filter((c: Client) => c.energy_client);
           this.allFeeds = results[2];
@@ -160,18 +160,15 @@ export class CostsComponent implements OnInit {
               var drainLegends = this.params.legends ? this.params.legends.split(',') : [];
               let i: number = 0;
               drainIds.forEach((drainId: string) => {
-                let drain = this.allDrains.find(d => d.id === parseInt(drainId));
-                if (drain)
-                  this.loadDrain(drain, (drainOperations.length > i) ? drainOperations[i] : 'SEMICOLON', (drainLegends.length > i) ? drainLegends[i] : undefined);
-                i++;
-              });
-            }
-            if (this.params.formulaIds) {
-              var formulaIds = this.params.formulaIds.split(',');
-              formulaIds.forEach((formulaId: string) => {
-                let formula = this.allFormulas.find(f => f.id === parseInt(formulaId));
-                if (formula) {
-                  this.loadFormula(formula);
+                if (drainId.slice(0,1) === 'd') {
+                  let drain = this.allDrains.find(d => d.id === parseInt(drainId.slice(2)));
+                  if (drain)
+                    this.loadDrain(drain, (drainOperations.length > i) ? drainOperations[i] : 'SEMICOLON', (drainLegends.length > i) ? drainLegends[i] : undefined);
+                  i++;
+                } else if (drainId.slice(0,1) === 'f') {
+                  let formula = this.allFormulas.find(f => f.id === parseInt(drainId.slice(2)));
+                  if (formula)
+                    this.loadFormula(formula);
                 }
               });
             }
@@ -184,13 +181,15 @@ export class CostsComponent implements OnInit {
 
           this.isLoading = false;
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -309,7 +308,7 @@ export class CostsComponent implements OnInit {
   }
 
   selectCostDrain(): void {
-    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsOrgs, clients: this.costsClients, feeds: this.costsFeeds, drains: this.costsDrains, singleDrain: true } });
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsOrgs, clients: this.costsClients, feeds: this.costsFeeds, drains: this.costsDrains, formulas: [], showDetails: true, singleDrain: true } });
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result && result.id) {
         this.costsDrain = { id: result.id, full_name: result.full_name };
@@ -324,7 +323,7 @@ export class CostsComponent implements OnInit {
   }
 
   addDrains(): void {
-    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.unitOrgs, clients: this.unitClients, feeds: this.unitFeeds, drains: this.unitDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))) } });
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.unitOrgs, clients: this.unitClients, feeds: this.unitFeeds, drains: this.unitDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))), formulas: [], showDetails: true } });
     dialogRef.afterClosed().subscribe((result: any[]) => {
       if (result) {
         let component = this;
@@ -415,7 +414,7 @@ export class CostsComponent implements OnInit {
     this.seriesNames = [];
     this.drains.forEach(drain => {
       if (drain.visible) {
-        drainIds.push(drain.id);
+        drainIds.push('d_' + drain.id);
         operations.push(drain.operation);
         lastSemicolonControl = (drain.operation === 'SEMICOLON');
         legends.push((drain.operation === 'SEMICOLON') ? drain.legend : undefined);
@@ -436,7 +435,7 @@ export class CostsComponent implements OnInit {
         this.isLoadingCosts = false;
         return;
       }
-      let requests: any[] = [];
+      let requests: Observable<any>[] = [];
       let start_time = new Date(moment(this.costsForm.get('startTime').value).toISOString());
       let end_time = new Date(moment(this.costsForm.get('endTime').value).toISOString());
       if (end_time < start_time) {
@@ -455,8 +454,8 @@ export class CostsComponent implements OnInit {
            end = moment(start).add(-1, 'second');
          }
       }
-      forkJoin(requests).subscribe(
-        (results: any) => {
+      forkJoin(requests).subscribe({
+        next: (results: any) => {
           this.costs = results[results.length - 1];
           for (let i = results.length - 2; i >= 0; i--) {
             for (let j = 0; j < this.costs.length; j++) {
@@ -467,11 +466,12 @@ export class CostsComponent implements OnInit {
           this.costsLoaded = true;
           this.drawChart();
         },
-        (error: any) => {
-          this.httpUtils.errorDialog(error);
+        error: (error: any) => {
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
           this.isLoadingCosts = false;
         }
-      );
+      });
     }
   }
 

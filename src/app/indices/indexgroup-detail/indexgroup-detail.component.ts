@@ -33,34 +33,38 @@ export class IndexGroupComponent implements OnInit {
     this.createForm();
     this.route.paramMap.subscribe((params: any) => {
       var indexgroupId = +params.get('id');
-      this.orgsService.getOrganizations().subscribe(
-        (orgs: Organization[]) => {
+      this.orgsService.getOrganizations().subscribe({
+        next: (orgs: Organization[]) => {
           this.allOrgs = orgs;
           if (indexgroupId) {
-            this.indexGroupsService.getIndexGroup(indexgroupId).subscribe(
-              (indexgroup: IndexGroup) => {
+            this.indexGroupsService.getIndexGroup(indexgroupId).subscribe({
+              next: (indexgroup: IndexGroup) => {
                 this.indexgroup = indexgroup;
                 this.createForm();
                 this.isLoading = false;
               },
-              (error: any) => {
-                const dialogRef = this.httpUtils.errorDialog(error);
-                dialogRef.afterClosed().subscribe((_value: any) => {
-                  this.router.navigate([this.backRoute]);
-                });
+              error: (error: any) => {
+                if (error.status !== 401) {
+                  const dialogRef = this.httpUtils.errorDialog(error);
+                  dialogRef.afterClosed().subscribe((_value: any) => {
+                    this.router.navigate([this.backRoute]);
+                  });
+                }
               }
-            );
+            });
           } else {
             this.isLoading = false;
           }
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -85,29 +89,31 @@ export class IndexGroupComponent implements OnInit {
     newIndexGroup.org_id = this.organization.value ? this.organization.value.id : undefined;
     if (this.indexgroup.id !== undefined) {
       newIndexGroup.id = this.indexgroup.id;
-      this.indexGroupsService.updateIndexGroup(newIndexGroup).subscribe(
-        (_response: IndexGroup) => {
+      this.indexGroupsService.updateIndexGroup(newIndexGroup).subscribe({
+        next: (_response: IndexGroup) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('INDEXGROUP.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.indexGroupsService.createIndexGroup(newIndexGroup).subscribe(
-        (_response: IndexGroup) => {
+      this.indexGroupsService.createIndexGroup(newIndexGroup).subscribe({
+        next: (_response: IndexGroup) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('INDEXGROUP.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -116,17 +122,18 @@ export class IndexGroupComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.indexGroupsService.deleteIndexGroup(this.indexgroup).subscribe(
-          (_response: any) => {
+        this.indexGroupsService.deleteIndexGroup(this.indexgroup).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('INDEXGROUP.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

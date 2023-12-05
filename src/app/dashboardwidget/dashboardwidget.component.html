@@ -155,8 +155,16 @@
               </button>
               {{d.full_name}}
             </div>
-            <div *ngIf="d.drain_id" class="togo-list-item-right togo-list-item-right-form-field">
-              <mat-form-field *ngIf="!costsWidget" class="short-form-field">
+            <div *ngIf="d.drain_id || d.formula_id" class="togo-list-item-right togo-list-item-right-form-field">
+              <mat-form-field class="short-form-field" *ngIf="d.full_name && !d.formula_id && d.is_positive_negative_value && !costsWidget">
+                <mat-label>{{ 'MEASURES.POSITIVENEGATIVEVALUES' | translate }}</mat-label>
+                <mat-select [formControlName]="'positiveNegativeValue_' + i">
+                  <mat-option [value]="''">{{ 'MEASURES.ALLVALUES' | translate }}</mat-option>
+                  <mat-option [value]="'pos'">{{ 'MEASURES.POSITIVEVALUES' | translate }}</mat-option>
+                  <mat-option [value]="'neg'">{{ 'MEASURES.NEGATIVEVALUES' | translate }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field *ngIf="!costsWidget && !d.formula_id" class="short-form-field">
                 <mat-label>{{ 'DASHBOARDWIDGET.AGGREGATION' | translate }}</mat-label>
                 <mat-select [formControlName]="'aggregation_' + i" required>
                   <mat-option *ngFor="let aggregation of d.aggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
@@ -166,7 +174,7 @@
               <mat-form-field class="short-form-field">
                 <mat-label>{{ 'DASHBOARDWIDGET.OPERATION' | translate }}</mat-label>
                 <mat-select [formControlName]="'operator_' + i" required>
-                  <mat-option *ngFor="let operator of d.operators" [value]="operator.id">{{operator.description}}</mat-option>
+                  <mat-option *ngFor="let operator of d.operators" [value]="operator.id" [disabled]="d.disabled_sub_formula">{{operator.description}}</mat-option>
                 </mat-select>
                 <mat-error *ngIf="widgetForm.get('operator_' + i).invalid && (widgetForm.get('operator_' + i).dirty || widgetForm.get('operator_' + i).touched) && widgetForm.get('operator_' + i).errors.required">{{ 'DASHBOARDWIDGET.MISSINGAGGREGATION' | translate }}</mat-error>
               </mat-form-field>

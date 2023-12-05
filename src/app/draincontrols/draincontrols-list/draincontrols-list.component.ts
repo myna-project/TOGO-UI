@@ -40,23 +40,25 @@ export class DrainControlsComponent implements OnInit {
     this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
     this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-    forkJoin(this.orgsService.getOrganizations(), this.drainControlsService.getDrainControls()).subscribe(
-      (results: any) => {
+    forkJoin([this.orgsService.getOrganizations(), this.drainControlsService.getDrainControls()]).subscribe({
+      next: (results: any) => {
         this.allOrgs = results[0];
         this.allControls = results[1];
-        this.organizationsTree.initialize(this.allOrgs, [], [], [], [], [], [], [], this.allControls, []);
+        this.organizationsTree.initialize(this.allOrgs, [], [], [], [], [], [], [], this.allControls, [], true, 'feed');
         this.organizationsTree.dataChange.subscribe((data: any) => {
           this.dataSource.data = data;
         });
         this.isLoading = false;
       },
-      (error: any) => {
-        const dialogRef = this.httpUtils.errorDialog(error);
-        dialogRef.afterClosed().subscribe((_value: any) => {
-          this.router.navigate([this.backRoute]);
-        });
+      error: (error: any) => {
+        if (error.status !== 401) {
+          const dialogRef = this.httpUtils.errorDialog(error);
+          dialogRef.afterClosed().subscribe((_value: any) => {
+            this.router.navigate([this.backRoute]);
+          });
+        }
       }
-    );
+    });
   }
 
   getLevel = (node: TreeItemFlatNode) => node.level;
@@ -85,7 +87,7 @@ export class DrainControlsComponent implements OnInit {
   filterChanged(filterText: string, type: string) {
     this.isFiltering = true;
     this.isLoading = true;
-    if (this.organizationsTree.filterOrgs(filterText, type))
+    if (this.organizationsTree.filterByType(filterText, type, true))
       this.treeControl.expandAll();
     this.isLoading = false;
   }

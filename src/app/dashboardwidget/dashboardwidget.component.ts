@@ -29,7 +29,7 @@ import { DrainControlsTreeDialogComponent } from '../_utils/draincontrols-tree-d
 import { DrainsTreeDialogComponent } from '../_utils/drains-tree-dialog/drains-tree-dialog.component';
 import { FormulasTreeDialogComponent } from '../_utils/formulas-tree-dialog/formulas-tree-dialog.component';
 import { HttpUtils } from '../_utils/http.utils';
-import { IndicesTreeDialogComponent } from "../_utils/indices-tree-dialog/indices-tree-dialog.component";
+import { IndicesTreeDialogComponent } from '../_utils/indices-tree-dialog/indices-tree-dialog.component';
 import { OrganizationsTree } from '../_utils/tree/organizations-tree';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -60,6 +60,7 @@ export class DashboardWidgetComponent implements OnInit {
   unitClients: Client[] = [];
   unitFeeds: Feed[] = [];
   unitDrains: Drain[] = [];
+  unitFormulas: Formula[] = [];
   widgetTypes: any[] = [];
   costsWidgetTypes: any[] = [];
   timeAggregations: any[] = [];
@@ -178,8 +179,8 @@ export class DashboardWidgetComponent implements OnInit {
     });
     this.createForm();
     this.route.paramMap.subscribe((params: any) => {
-      forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.indicesService.getIndices(), this.drainControlsService.getDrainControls()).subscribe(
-        (results: any) => {
+      forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.indicesService.getIndices(), this.drainControlsService.getDrainControls()]).subscribe({
+        next: (results: any) => {
           this.allOrgs = results[0];
           this.energyClients = results[1].filter((c: Client) => c.energy_client);
           this.allFeeds = results[2];
@@ -196,8 +197,8 @@ export class DashboardWidgetComponent implements OnInit {
           var widgetId = +params.get('id');
           this.dashboardId = +params.get('dashboardId');
           if (widgetId) {
-            this.dashboardWidgetsService.getDashboardWidget(widgetId, this.dashboardId).subscribe(
-              (widget: DashboardWidget) => {
+            this.dashboardWidgetsService.getDashboardWidget(widgetId, this.dashboardId).subscribe({
+              next: (widget: DashboardWidget) => {
                 this.widget = widget;
                 if (this.widget.costs_drain_id != undefined) {
                   this.costsWidget = true;
@@ -206,22 +207,18 @@ export class DashboardWidgetComponent implements OnInit {
                 this.relativeTime = (this.widget.start_time === undefined);
                 this.createForm();
                 if (widget.details) {
-                  widget.drain_details = widget.details.filter(d => d.drain_id !== undefined);
-                  widget.details = widget.details.filter(d => d.drain_id === undefined);
+                  widget.drain_details = widget.details.filter(d => (d.drain_id !== undefined || d.formula_id !== undefined));
+                  widget.details = widget.details.filter(d => (d.drain_id === undefined && d.formula_id === undefined) );
                   let i: number = 0;
                   widget.details.forEach(detail => {
                     if (detail.index_id) {
                       let index = this.allIndices.find(i => i.id === detail.index_id);
                       if (index)
-                        this.createDetailControl(detail, undefined, index, undefined);
-                    } else if (detail.formula_id) {
-                      let formula = this.allFormulas.find(f => f.id === detail.formula_id);
-                      if (formula)
-                        this.createDetailControl(detail, formula, undefined, undefined);
+                        this.createDetailControl(detail, undefined, index, undefined, undefined);
                     } else if (detail.drain_control_id) {
                       let control = this.allControls.find(c => c.id === detail.drain_control_id);
                       if (control)
-                        this.createDetailControl(detail, undefined, undefined, control);
+                        this.createDetailControl(detail, undefined, undefined, control, undefined);
                     }
                     i++;
                   });
@@ -233,9 +230,15 @@ export class DashboardWidgetComponent implements OnInit {
                 if (widget.drain_details) {
                   let i: number = 0;
                   widget.drain_details.forEach(detail => {
-                    let drain = this.allDrains.find(d => d.id === detail.drain_id);
-                    if (drain)
-                      this.createDrainDetailControl(detail, drain.id, i);
+                  if (detail.formula_id) {
+                      let formula = this.allFormulas.find(f => f.id === detail.formula_id);
+                      if (formula)
+                        this.createDetailControl(detail, formula, undefined, undefined, i);
+                    } else if (detail.drain_id) {
+                      let drain = this.allDrains.find(d => d.id === detail.drain_id);
+                      if(drain)
+                        this.createDrainDetailControl(detail, drain.id, i);
+                    }
                     i++;
                   });
                   if (i > 0)
@@ -245,13 +248,15 @@ export class DashboardWidgetComponent implements OnInit {
                 }
                 this.isLoading = false;
               },
-              (error: any) => {
-                const dialogRef = this.httpUtils.errorDialog(error);
-                dialogRef.afterClosed().subscribe((_value: any) => {
-                  this.router.navigate([this.backRoute]);
-                });
+              error: (error: any) => {
+                if (error.status !== 401) {
+                  const dialogRef = this.httpUtils.errorDialog(error);
+                  dialogRef.afterClosed().subscribe((_value: any) => {
+                    this.router.navigate([this.backRoute]);
+                  });
+                }
               }
-            );
+            });
           } else {
             this.widget.x_pos = 0;
             this.widget.y_pos = 0;
@@ -260,13 +265,15 @@ export class DashboardWidgetComponent implements OnInit {
             this.isLoading = false;
           }
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -393,6 +400,16 @@ export class DashboardWidgetComponent implements OnInit {
           if (org) {
             this.costsDrain = { id: drain.id, full_name: ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : '') }
             this.unitDrains = this.allDrains.filter(d => (d.measure_unit && d.measure_unit.toLowerCase().includes('wh') && !d.measure_unit.toLowerCase().includes('€')));
+            this.allFormulas.forEach((formula: Formula) => {
+              let control = true;
+              formula.components.forEach((drain_id: number) => {
+                let drain = this.allDrains.filter(d => d.id === drain_id)[0];
+                if (!drain.measure_unit.toLowerCase().includes('wh'))
+                  control = false;
+              });
+              if (control)
+                this.unitFormulas.push(formula);
+            });
             let data = { orgs: [], clients: [], feeds: [], drains: [] };
             this.addDrainsForTree(data, this.unitDrains);
             this.unitOrgs = data.orgs;
@@ -462,6 +479,7 @@ export class DashboardWidgetComponent implements OnInit {
             if (org) {
               detail.drain_id = drain.id;
               detail.full_name = ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : '');
+              detail.is_positive_negative_value = drain.positive_negative_value;
               detail.aggregations = this.httpUtils.getMeasuresAggregationsForMeasureType(drain.measure_type);
               detail.operators = this.httpUtils.getMeasuresOperationsForMeasureType(drain.measure_type);
               detail.visible = true;
@@ -471,8 +489,12 @@ export class DashboardWidgetComponent implements OnInit {
       }
     }
     detail.divider = (!detail.operator || (detail.operator === 'SEMICOLON'));
+    this.group['positiveNegativeValue_' + i] = new FormControl(detail.positive_negative_value ? detail.positive_negative_value : '');
     this.group['aggregation_' + i] = new FormControl(detail.aggregation, []);
     this.group['operator_' + i] = new FormControl(detail.operator, []);
+    this.widgetForm.get('positiveNegativeValue_' + i).valueChanges.subscribe((pn: string) => {
+      detail.positive_negative_value = pn;
+    });
     this.widgetForm.get('aggregation_' + i).valueChanges.subscribe((aggregation: string) => {
       detail.aggregation = aggregation;
     });
@@ -483,13 +505,34 @@ export class DashboardWidgetComponent implements OnInit {
     });
   }
 
-  createDetailControl(detail: DashboardWidgetDetail, formula: Formula, index: Index, control: DrainControl) {
+  createDetailControl(detail: DashboardWidgetDetail, formula: Formula, index: Index, control: DrainControl, i: number) {
     if (formula) {
       detail.formula_id = formula.id;
-      let client = this.energyClients.find(c => (c.id === formula.client_id));
-      detail.full_name = ((this.allOrgs.length > 1) ? this.allOrgs.find(o => o.id === formula.org_id).name + ' - ' : '') + (client ? client.name + ' - ' : '') + formula.name;
-      detail.visible = true;
-    } else if (index) {
+      let org = this.allOrgs.find(o => o.id === formula.org_id);
+      if (org) {
+        let client = this.energyClients.find(c => (c.id === formula.client_id));
+        detail.full_name = (org.name + ' - ' ) + (client ? client.name + ' - ' : '') + formula.name;
+        if (formula.components) {
+          let type = 'f';
+          detail.operators = this.httpUtils.getMeasuresOperationsForMeasureType(type);
+          detail.operator = 'SEMICOLON';
+          detail.visible = true;
+          detail.disabled_sub_formula = formula.operators.filter(o => o === 'SEMICOLON').length > 1;
+          detail.is_positive_negative_value = false;
+        }
+        detail.divider = (!detail.operator || (detail.operator === 'SEMICOLON'));
+        this.group['operator_' + i] = new FormControl(detail.operator, []);
+        this.group['aggregation_' + i] = new FormControl('AVG', []);
+        this.widgetForm.get('aggregation_' + i).valueChanges.subscribe((aggregation: string) => {
+          detail.aggregation = aggregation;
+        });
+        this.widgetForm.get('operator_' + i).valueChanges.subscribe((operator: string) => {
+          detail.operator = operator;
+          detail.divider = (!operator || (operator === 'SEMICOLON'));
+          this.checkLastSemicolon();
+        });
+      }
+    }  if (index) {
       detail.index_id = index.id;
       detail.full_name = ((this.allOrgs.length > 1) ? this.allOrgs.find(o => o.id === index.org_id).name + ' - ' : '') + (index.group ? index.group.name + ' - ' : '') + index.name + (index.measure_unit ? ' (' + index.measure_unit + ')' : '');
       detail.visible = true;
@@ -508,7 +551,7 @@ export class DashboardWidgetComponent implements OnInit {
   }
 
   selectCostDrain(): void {
-    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsOrgs, clients: this.costsClients, feeds: this.costsFeeds, drains: this.costsDrains, singleDrain: true } });
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsOrgs, clients: this.costsClients, feeds: this.costsFeeds, drains: this.costsDrains, formulas: [], showDetails: true, singleDrain: true } });
     dialogRef.afterClosed().subscribe((result: any) => {
       if (result && result.id) {
         this.costsDrain = { id: result.id, full_name: result.full_name };
@@ -523,7 +566,7 @@ export class DashboardWidgetComponent implements OnInit {
   }
 
   addDrains(): void {
-    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsWidget ? this.unitOrgs : this.allOrgs, clients: this.costsWidget ? this.unitClients : this.energyClients, feeds: this.costsWidget ? this.unitFeeds : this.allFeeds, drains: this.costsWidget ? this.unitDrains : this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))) } });
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsWidget ? this.unitOrgs : this.allOrgs, clients: this.costsWidget ? this.unitClients : this.energyClients, feeds: this.costsWidget ? this.unitFeeds : this.allFeeds, filteredFeeds: this.costsWidget ? this.unitFeeds : this.allFeeds, drains: this.costsWidget ? this.unitDrains : this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))), filteredDrains: this.costsWidget ? this.unitDrains : this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))), formulas: [], showDetails: this.costsWidget } });
     dialogRef.afterClosed().subscribe((result: any[]) => {
       if (result) {
         let component = this;
@@ -548,19 +591,18 @@ export class DashboardWidgetComponent implements OnInit {
     let component = this;
     let data = { orgs: [], clients: [], formulas: [] };
     this.allFormulas.forEach((formula: Formula) => {
-      this.organizationsTree.selectFormula(data, component.allOrgs, component.energyClients, component.allFormulas, formula.id);
+      this.organizationsTree.selectFormula(data, this.allOrgs, this.energyClients, this.costsWidget ? this.unitFormulas : this.allFormulas, formula.id);
     });
     const dialogRef = this.dialog.open(FormulasTreeDialogComponent, { width: '75%', data: { orgs: data.orgs, clients: data.clients, formulas: data.formulas } });
     dialogRef.afterClosed().subscribe((result: any[]) => {
       if (result) {
-        let component = this;
         result.forEach(function (formula: Formula) {
           let detail: DashboardWidgetDetail = new DashboardWidgetDetail();
-          component.createDetailControl(detail, formula, undefined, undefined);
-          if (component.widget.details)
-            component.widget.details.push(detail);
+          component.createDetailControl(detail, formula, undefined, undefined, component.widget.drain_details.length);
+          if (component.widget.drain_details)
+            component.widget.drain_details.push(detail);
           else
-            component.widget.details = [detail];
+            component.widget.drain_details = [detail];
         });
         component.visibleDetails = true;
       }
@@ -574,7 +616,7 @@ export class DashboardWidgetComponent implements OnInit {
         let component = this;
         result.forEach(function (index: Index) {
           let detail: DashboardWidgetDetail = new DashboardWidgetDetail();
-          component.createDetailControl(detail, undefined, index, undefined);
+          component.createDetailControl(detail, undefined, index, undefined, undefined);
           if (component.widget.details)
             component.widget.details.push(detail);
           else
@@ -591,7 +633,7 @@ export class DashboardWidgetComponent implements OnInit {
       if (control) {
         let component = this;
         let detail: DashboardWidgetDetail = new DashboardWidgetDetail();
-        component.createDetailControl(detail, undefined, undefined, control);
+        component.createDetailControl(detail, undefined, undefined, control, undefined);
         if (component.widget.details)
           component.widget.details.push(detail);
         else
@@ -626,6 +668,8 @@ export class DashboardWidgetComponent implements OnInit {
 
   save(): void {
     this.isSaving = true;
+    let widgetDetailsRecords = this.widget.details.slice();
+    let checkFormula = false;
     if (this.costsWidget && this.costsDrain)
       this.widget.costs_drain_id = this.costsDrain.id;
     this.widget.widget_type = this.widget_type.value;
@@ -655,36 +699,57 @@ export class DashboardWidgetComponent implements OnInit {
     this.widget.warning_value = this.warning_value.value;
     this.widget.alarm_value = this.alarm_value.value;
     this.widget.details = this.widget.details.filter(d => d.visible);
+    let lastOperator = 'SEMICOLON';
     this.widget.drain_details.forEach((d: DashboardWidgetDetail) => {
-      if (d.visible)
+      if (d.visible) {
+        d.positive_negative_value = d.is_positive_negative_value ? (d.positive_negative_value ? d.positive_negative_value : "") : "";
         this.widget.details.push(d);
+        if (d.formula_id) {
+          let formula = this.allFormulas.filter(f => f.id === d.formula_id)[0]
+          let subFormulas = formula.operators.filter(o => o === 'SEMICOLON').length > 1;
+          let legendControl = lastOperator === 'SEMICOLON';
+          if (subFormulas === true) {
+            if (legendControl === false || d.operator !== 'SEMICOLON')
+              checkFormula = true;
+          }
+        }
+        lastOperator = d.operator;
+      }
     });
+    if (checkFormula) {
+      this.httpUtils.errorDialog({ status: 499, error: { errorCode: 8495 } });
+      this.widget.details = widgetDetailsRecords;
+      this.isSaving = false;
+      return;
+    }
     if (this.widget.id !== undefined) {
-      this.dashboardWidgetsService.updateDashboardWidget(this.widget, this.dashboardId).subscribe(
-        (_response: DashboardWidget) => {
+      this.dashboardWidgetsService.updateDashboardWidget(this.widget, this.dashboardId).subscribe({
+        next: (_response: DashboardWidget) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('DASHBOARDWIDGET.SAVED'));
           this.router.navigate([this.backRoute + '/' + this.dashboardId]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
           this.widget.details = this.widget.details.filter(d => (d.drain_id === undefined));
         }
-      );
+      });
     } else {
-      this.dashboardWidgetsService.createDashboardWidget(this.widget, this.dashboardId).subscribe(
-        (_response: DashboardWidget) => {
+      this.dashboardWidgetsService.createDashboardWidget(this.widget, this.dashboardId).subscribe({
+        next: (_response: DashboardWidget) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('DASHBOARDWIDGET.SAVED'));
           this.router.navigate([this.backRoute + '/' + this.dashboardId]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
           this.widget.details = this.widget.details.filter(d => (d.drain_id === undefined));
         }
-      );
+      });
     }
   }
 

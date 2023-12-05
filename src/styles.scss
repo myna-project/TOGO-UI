@@ -177,13 +177,22 @@ mat-divider.togo-list-item-divider {
 .togo-form .togo-form-fieldset .very-short-form-field,
 .togo-form .togo-form-fieldset .togo-form-field-group .very-short-form-field,
 .togo-form .togo-form-field-group .very-short-form-field,
-.togo-list .togo-list-item .very-short-form-field {
+.togo-list .togo-list-item .very-short-form-field,
+.togo-list-item-right-form-field .short-form-field {
   margin-right: 12px;
 }
 
 .togo-form .togo-form-button {
   margin-bottom: 4px;
   margin-right: 12px;
+}
+
+.details-formula-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin: 10px;
 }
 
 .togo-radio-button {
@@ -257,6 +266,11 @@ mat-divider.togo-list-item-divider {
 
 .mat-tree-node-divider {
   flex-basis: 100%;
+}
+
+.mat-tree-node-button-details {
+  display: flex;
+  margin-left: auto;
 }
 
 .mitch-graph .mitch-d3-tree.boxed-tree.default .node.inactive-client .title-group .title-box {

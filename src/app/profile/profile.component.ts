@@ -26,28 +26,47 @@ export class ProfileComponent implements OnInit {
   user_avatar_show: any;
   profileForm: FormGroup;
   changePassword: boolean = false;
+  drainTreeDepths: any[] = [];
 
   constructor(public myapp: AppComponent, private authService: AuthenticationService, private usersService: UsersService, private location: Location, private sanitizer: DomSanitizer, private httpUtils: HttpUtils, private translate: TranslateService) {}
 
   ngOnInit(): void {
+    this.translate.get('PROFILE.ORG').subscribe( (org: string) => {
+      this.drainTreeDepths.push({ id: 'org', description: org });
+      this.translate.get('PROFILE.CLIENTFATHER').subscribe((clientFather: string) => {
+        this.drainTreeDepths.push({ id: 'clientFather', description: clientFather });
+        this.translate.get('PROFILE.CLIENTCHILD').subscribe((clientChild: string) => {
+          this.drainTreeDepths.push({ id: 'clientChild', description: clientChild })
+          this.translate.get('PROFILE.FEED').subscribe((feed: string) => {
+            this.drainTreeDepths.push({ id: 'feed', description: feed });
+            this.translate.get('PROFILE.DRAINS').subscribe((drain: string) => {
+              this.drainTreeDepths.push({ id:'drain', description: drain })
+            });
+          });
+        });
+      });
+    });
+
     this.createForm();
-    let currentUser = this.authService.getCurrentUser().username;
+    let currentUser = this.authService.getCurrentUser();
     if (currentUser !== null) {
-      this.usersService.getUsersByUsername(currentUser).subscribe(
-        (users: User[]) => {
-          this.user = users.filter(u => u.username === currentUser)[0];
+      this.usersService.getUsersByUsername(currentUser.username).subscribe({
+        next: (users: User[]) => {
+          this.user = users.filter(u => u.username === currentUser.username)[0];
           if (this.user.avatar)
             this.user_avatar_show = this.sanitizer.bypassSecurityTrustUrl('data:image/jpg;base64,' + this.user.avatar);
           this.createForm();
           this.isLoading = false;
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.goBack();
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.goBack();
+            });
+          }
         }
-      );
+      });
     }
   }
 
@@ -57,12 +76,18 @@ export class ProfileComponent implements OnInit {
   get old_password() { return this.profileForm.get('old_password'); }
   get password() { return this.profileForm.get('password'); }
   get confirmPassword() { return this.profileForm.get('confirmPassword'); }
+  get default_start() { return this.profileForm.get('default_start'); }
+  get default_end() { return this.profileForm.get('default_end'); }
+  get drain_tree_depth() { return this.profileForm.get('drain_tree_depth'); }
 
   createForm() {
     this.profileForm = new FormGroup({
       'name': new FormControl({ value: this.user.name, disabled: true }, []),
       'surname': new FormControl({ value: this.user.surname, disabled: true }, []),
-      'lang': new FormControl(this.user.lang, [])
+      'lang': new FormControl(this.user.lang, []),
+      'default_start': new FormControl(this.user.default_start ? new Date(this.user.default_start) : undefined, []),
+      'default_end': new FormControl(this.user.default_end ? new Date(this.user.default_end) : undefined, []),
+      'drain_tree_depth': new FormControl(this.user.drain_tree_depth ? this.user.drain_tree_depth : 'org', [Validators.required])
     });
     if (this.changePassword) {
       this.profileForm.addControl('old_password', new FormControl('', [ Validators.required ]));
@@ -130,21 +155,26 @@ export class ProfileComponent implements OnInit {
       newUser.enabled = this.user.enabled;
       newUser.role_ids = this.user.role_ids;
       newUser.avatar = this.user_avatar;
+      newUser.default_start = this.default_start.value;
+      newUser.default_end = this.default_end.value;
+      newUser.drain_tree_depth = this.drain_tree_depth.value;
       newUser.style = this.user.style;
-      this.usersService.updateUser(newUser).subscribe(
-        (_response: User) => {
+      this.usersService.updateUser(newUser).subscribe({
+        next: (_response: User) => {
           this.user = newUser;
           this.isSaving = false;
           if (this.user.lang)
             this.myapp.changeLanguage(this.user.lang);
+          this.myapp.changeDefaultDatesAndDepth(newUser.default_start, newUser.default_end, newUser.drain_tree_depth);
           this.profileForm.markAsUntouched();
           this.httpUtils.successSnackbar(this.translate.instant('PROFILE.SAVED'));
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 

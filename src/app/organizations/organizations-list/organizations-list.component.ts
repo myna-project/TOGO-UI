@@ -35,24 +35,25 @@ export class OrganizationsComponent implements OnInit {
     this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
     this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-    this.orgsService.getOrganizations().subscribe(
-      (orgs: Organization[]) => {
+    this.orgsService.getOrganizations().subscribe({
+      next: (orgs: Organization[]) => {
         this.allOrgs = orgs;
         if (this.router.url === '/clients') {
           if (this.allOrgs.length === 1)
             this.router.navigate(['organization/' + this.allOrgs[0].id + '/clients']);
           this.orgsForClients = true;
         }
-        this.organizationsTree.initialize(this.allOrgs, [], [], [], [], [], [], [], [], []);
+        this.organizationsTree.initialize(this.allOrgs, [], [], [], [], [], [], [], [], [], true, 'org');
         this.organizationsTree.dataChange.subscribe((data: any) => {
           this.dataSource.data = data;
         });
         this.isLoading = false;
       },
-      (error: any) => {
-        this.httpUtils.errorDialog(error);
+      error: (error: any) => {
+        if (error.status !== 401)
+          this.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   getLevel = (node: TreeItemFlatNode) => node.level;
@@ -82,7 +83,7 @@ export class OrganizationsComponent implements OnInit {
   filterChanged(filterText: string, type: string) {
     this.isFiltering = true;
     this.isLoading = true;
-    if (this.organizationsTree.filterOrgs(filterText, type))
+    if (this.organizationsTree.filterByType(filterText, type, true))
       this.treeControl.expandAll();
     this.isLoading = false;
   }

@@ -46,30 +46,30 @@ export class IndicesTreeDialogComponent implements OnInit {
       this.dataSource.data = data;
     });
 
-    this.indexGroupsService.getIndexGroups().subscribe(
-      (groups: IndexGroup[]) => {
+    this.indexGroupsService.getIndexGroups().subscribe({
+      next: (groups: IndexGroup[]) => {
         this.allGroups = groups;
         if (!this.data.indices) {
-          this.indicesService.getIndices().subscribe(
-            (indices: Index[]) => {
+          this.indicesService.getIndices().subscribe({
+            next: (indices: Index[]) => {
               this.allIndices = indices;
-              this.organizationsTree.initialize(this.data.orgs, [], [], [], [], [], this.allGroups, this.allIndices, [], []);
+              this.organizationsTree.initialize(this.data.orgs, [], [], [], [], [], this.allGroups, this.allIndices, [], [], true, 'feed');
               this.isLoading = false;
             },
-            (error: any) => {
+            error: (error: any) => {
               this.httpUtils.errorDialog(error);
             }
-          );
+          });
         } else {
           this.allIndices = this.data.indices;
-          this.organizationsTree.initialize(this.data.orgs, [], [], [], [], [], this.allGroups, this.allIndices, [], []);
+          this.organizationsTree.initialize(this.data.orgs, [], [], [], [], [], this.allGroups, this.allIndices, [], [], true, 'feed');
           this.isLoading = false;
         }
       },
-      (error: any) => {
+      error: (error: any) => {
         this.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   getLevel = (node: TreeItemFlatNode) => node.level;
@@ -103,7 +103,7 @@ export class IndicesTreeDialogComponent implements OnInit {
 
   filterChanged(filterText: string, type: string) {
     this.isFiltering = true;
-    if (this.organizationsTree.filterOrgs(filterText, type))
+    if (this.organizationsTree.filterByType(filterText, type, true))
       this.treeControl.expandAll();
     this.isFiltering = false;
   }

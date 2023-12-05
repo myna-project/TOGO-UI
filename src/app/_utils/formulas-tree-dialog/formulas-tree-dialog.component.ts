@@ -47,7 +47,7 @@ export class FormulasTreeDialogComponent implements OnInit {
     });
 
     this.allFormulas = this.data.formulas;
-    this.organizationsTree.initialize(this.data.orgs, [], this.data.clients, [], [], this.data.formulas, [], [], [], []);
+    this.organizationsTree.initialize(this.data.orgs, [], this.data.clients, [], [], this.data.formulas, [], [], [], [], true, 'feed');
     this.isLoading = false;
   }
 
@@ -82,7 +82,7 @@ export class FormulasTreeDialogComponent implements OnInit {
 
   filterChanged(filterText: string, type: string) {
     this.isFiltering = true;
-    if (this.organizationsTree.filterOrgs(filterText, type))
+    if (this.organizationsTree.filterByType(filterText, type, true))
       this.treeControl.expandAll();
     this.isFiltering = false;
   }
@@ -104,15 +104,15 @@ export class FormulasTreeDialogComponent implements OnInit {
     const dialogRef = this.httpUtils.confirmDelete(this.translate.instant('FORMULASTREE.DELETECONFIRM'));
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
-        this.formulasService.deleteFormula(node.id).subscribe(
-          (_response: any) => {
+        this.formulasService.deleteFormula(node.id).subscribe({
+          next: (_response: any) => {
             this.httpUtils.successSnackbar(this.translate.instant('FORMULASTREE.DELETEFORMULA'));
             window.location.reload();
           },
-          (error: any) => {
+          error: (error: any) => {
             this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

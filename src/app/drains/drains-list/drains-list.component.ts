@@ -41,13 +41,13 @@ export class DrainsComponent implements OnInit {
     this.route.paramMap.subscribe((params: any) => {
       var orgId = +params.get('orgId');
       if (orgId) {
-        this.orgsService.getOrganization(orgId).subscribe(
-          (org: Organization) => {
+        this.orgsService.getOrganization(orgId).subscribe({
+          next: (org: Organization) => {
             this.org = org;
             var clientId = +params.get('clientId');
             if (clientId) {
-              this.clientsService.getClient(clientId).subscribe(
-                (client: Client) => {
+              this.clientsService.getClient(clientId).subscribe({
+                next: (client: Client) => {
                   this.client = client;
                   this.drainsTree.initialize(this.client);
                   this.drainsTree.dataChange.subscribe((data: any) => {
@@ -55,18 +55,20 @@ export class DrainsComponent implements OnInit {
                   });
                   this.isLoading = false;
                 },
-                (error: any) => {
-                  this.httpUtils.errorDialog(error);
+                error: (error: any) => {
+                  if (error.status !== 401)
+                    this.httpUtils.errorDialog(error);
                 }
-              );
+              });
             } else {
               this.isLoading = false;
             }
           },
-          (error: any) => {
-            this.httpUtils.errorDialog(error);
+          error: (error: any) => {
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       } else {
         this.isLoading = false;
       }
@@ -112,7 +114,7 @@ export class DrainsComponent implements OnInit {
   show(id: number): void {
     this.router.navigate(['measures/' + id]);
     if (id)
-      this.router.navigate(['measures'], { queryParams: { drainIds: id.toString() } });
+      this.router.navigate(['measures'], { queryParams: { drainIds: 'd_' + id.toString() } });
   }
 
   edit(type: string, id: number): void {

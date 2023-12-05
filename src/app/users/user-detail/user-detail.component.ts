@@ -33,34 +33,38 @@ export class UserComponent implements OnInit {
     this.route.paramMap.subscribe((params: any) => {
       var userId = params.get('id');
       if (userId) {
-        this.usersService.getUser(userId).subscribe(
-          (user: User) => {
+        this.usersService.getUser(userId).subscribe({
+          next: (user: User) => {
             this.user = user;
             this.createForm();
             this.isLoading = false;
           },
-          (error: any) => {
-            const dialogRef = this.httpUtils.errorDialog(error);
-            dialogRef.afterClosed().subscribe((_value: any) => {
-              this.router.navigate([this.backRoute]);
-            });
+          error: (error: any) => {
+            if (error.status !== 401) {
+              const dialogRef = this.httpUtils.errorDialog(error);
+              dialogRef.afterClosed().subscribe((_value: any) => {
+                this.router.navigate([this.backRoute]);
+              });
+            }
           }
-        );
+        });
       } else {
         this.isLoading = false;
       }
     });
-    this.rolesService.getRoles().subscribe(
-      (roles: Role[]) => {
+    this.rolesService.getRoles().subscribe({
+      next: (roles: Role[]) => {
         this.allRoles = roles;
       },
-      (error: any) => {
-        const dialogRef = this.httpUtils.errorDialog(error);
-        dialogRef.afterClosed().subscribe((_value: any) => {
-          this.router.navigate([this.backRoute]);
-        });
+      error: (error: any) => {
+        if (error.status !== 401) {
+          const dialogRef = this.httpUtils.errorDialog(error);
+          dialogRef.afterClosed().subscribe((_value: any) => {
+            this.router.navigate([this.backRoute]);
+          });
+        }
       }
-    );
+    });
   }
 
   get username() { return this.userForm.get('username'); }
@@ -91,29 +95,32 @@ export class UserComponent implements OnInit {
       newUser.lang = this.user.lang;
       newUser.avatar = this.user.avatar;
       newUser.style = this.user.style;
-      this.usersService.updateUser(newUser).subscribe(
-        (_response: User) => {
+      newUser.drain_tree_depth = 'org';
+      this.usersService.updateUser(newUser).subscribe({
+        next: (_response: User) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('USER.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.usersService.createUser(newUser).subscribe(
-        (_response: User) => {
+      this.usersService.createUser(newUser).subscribe({
+        next: (_response: User) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('USER.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -122,17 +129,18 @@ export class UserComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.usersService.deleteUser(this.user).subscribe(
-          (_response: any) => {
+        this.usersService.deleteUser(this.user).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('USER.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

@@ -62,8 +62,8 @@ export class AccountingDataComponent implements OnInit {
     this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
     this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
     if (environment.accountingDrains && (environment.accountingDrains.length > 0)) {
-      forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains()).subscribe(
-        (results: any) => {
+      forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains()]).subscribe({
+        next: (results: any) => {
           this.allOrgs = results[0];
           this.energyClients = results[1].filter((c: Client) => c.energy_client);
           this.allFeeds = results[2];
@@ -74,13 +74,15 @@ export class AccountingDataComponent implements OnInit {
           this.buildDetailTree();
           this.isLoading = false;
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     } else {
       this.isLoading = false;
     }
@@ -151,7 +153,7 @@ export class AccountingDataComponent implements OnInit {
   }
 
   addDrains(): void {
-    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.allOrgs, clients: this.energyClients, feeds: this.allFeeds, drains: this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))) } });
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.allOrgs, clients: this.energyClients, feeds: this.allFeeds, drains: this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))), formulas: [] } });
     dialogRef.afterClosed().subscribe((result: any[]) => {
       if (result) {
         let component = this;
@@ -172,17 +174,18 @@ export class AccountingDataComponent implements OnInit {
         measures.push({ at: this.httpUtils.getDateTimeForUrl(date, false), client_id: drain.client_id, device_id: drain.device_id, measures: [{ measure_id: drain.measure_id, value: this.accountingdataForm.get('value_' + drain.id).value }] });
     });
     if (measures.length > 0) {
-      this.measuresService.updateMeasuresMatrix(measures).subscribe(
-        (_response: any) => {
+      this.measuresService.updateMeasuresMatrix(measures).subscribe({
+        next: (_response: any) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('ACCOUNTINGDATA.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
-          this.httpUtils.errorDialog(error);
+        error: (error: any) => {
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
           this.isSaving = false;
         }
-      );
+      });
     }
   }
 }

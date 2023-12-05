@@ -43,8 +43,8 @@ export class DrainComponent implements OnInit {
 
   ngOnInit() {
     this.createForm();
-    forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients()).subscribe(
-      (results: any) => {
+    forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients()]).subscribe({
+      next: (results: any) => {
         this.allOrgs = results[0];
         this.allClients = results[1];
         this.allClients.sort((a, b) => a.name < b.name ? -1 : (a.name > b.name) ? 1 : 0);
@@ -58,66 +58,76 @@ export class DrainComponent implements OnInit {
             if (clientId) {
               this.c = this.orgClients.find(c => c.id === clientId);
               this.backRoute = 'organization/' + this.org.id + '/client/' + this.c.id + '/drains';
-              this.clientsService.getFeedsForClient(this.c).subscribe(
-                (feeds: Feed[]) => {
+              this.clientsService.getFeedsForClient(this.c).subscribe({
+                next: (feeds: Feed[]) => {
                   this.feedsForClient = feeds;
                   var drainId = +params.get('id');
                   if (drainId) {
-                    this.drainsService.getDrain(drainId).subscribe(
-                      (drain: Drain) => {
+                    this.drainsService.getDrain(drainId).subscribe({
+                      next: (drain: Drain) => {
                         this.drain = drain;
                         if (this.drain.feed_id) {
                           this.f = this.feedsForClient.find(f => (f.id === this.drain.feed_id));
-                          this.feedsService.getDrainsForFeed(this.drain.feed_id).subscribe(
-                            (drains: Drain[]) => {
+                          this.feedsService.getDrainsForFeed(this.drain.feed_id).subscribe({
+                            next: (drains: Drain[]) => {
                               this.drainsForFeed = drains.filter(d => (d.id !== this.drain.id));
                               this.createForm();
                               this.isLoading = false;
                             },
-                            (error: any) => {
-                              const dialogRef = this.httpUtils.errorDialog(error);
-                              dialogRef.afterClosed().subscribe((_value: any) => {
-                                this.router.navigate([this.backRoute]);
-                              });
+                            error: (error: any) => {
+                              {
+                                if (error.status !== 401) {
+                                  const dialogRef = this.httpUtils.errorDialog(error);
+                                  dialogRef.afterClosed().subscribe((_value: any) => {
+                                    this.router.navigate([this.backRoute]);
+                                  });
+                                }
+                              }
                             }
-                          );
+                          });
                         }
                       },
-                      (error: any) => {
-                        const dialogRef = this.httpUtils.errorDialog(error);
-                        dialogRef.afterClosed().subscribe((_value: any) => {
-                          this.router.navigate([this.backRoute]);
-                        });
+                      error: (error: any) => {
+                        if (error.status !== 401) {
+                          const dialogRef = this.httpUtils.errorDialog(error);
+                          dialogRef.afterClosed().subscribe((_value: any) => {
+                            this.router.navigate([this.backRoute]);
+                          });
+                        }
                       }
-                    )
+                    })
                   } else {
                     this.createForm();
                     this.isLoading = false;
                   }
                 },
-                (error: any) => {
-                  const dialogRef = this.httpUtils.errorDialog(error);
-                  dialogRef.afterClosed().subscribe((_value: any) => {
-                    this.router.navigate([this.backRoute]);
-                  });
+                error: (error: any) => {
+                  if (error.status !== 401) {
+                    const dialogRef = this.httpUtils.errorDialog(error);
+                    dialogRef.afterClosed().subscribe((_value: any) => {
+                      this.router.navigate([this.backRoute]);
+                    });
+                  }
                 }
-              );
+              });
             }
           }
         });
       },
-      (error: any) => {
-        const dialogRef = this.httpUtils.errorDialog(error);
-        dialogRef.afterClosed().subscribe((_value: any) => {
-          this.router.navigate([this.backRoute]);
-        });
+      error: (error: any) => {
+        if (error.status !== 401) {
+          const dialogRef = this.httpUtils.errorDialog(error);
+          dialogRef.afterClosed().subscribe((_value: any) => {
+            this.router.navigate([this.backRoute]);
+          });
+        }
       }
-    );
-    this.orgsService.getOrganizations().subscribe(
-      (orgs: Organization[]) => {
+    });
+    this.orgsService.getOrganizations().subscribe({
+      next: (orgs: Organization[]) => {
         this.allOrgs = orgs;
-        this.clientsService.getClients().subscribe(
-          (clients: Client[]) => {
+        this.clientsService.getClients().subscribe({
+          next: (clients: Client[]) => {
             clients.sort((a, b) => a.name < b.name ? -1 : (a.name > b.name) ? 1 : 0);
             this.allClients = clients;
             this.route.paramMap.subscribe((params: any) => {
@@ -130,69 +140,79 @@ export class DrainComponent implements OnInit {
                 if (clientId) {
                   this.c = this.orgClients.find(c => c.id === clientId);
                   this.backRoute = 'organization/' + this.org.id + '/client/' + this.c.id + '/drains';
-                  this.clientsService.getFeedsForClient(this.c).subscribe(
-                    (feeds: Feed[]) => {
+                  this.clientsService.getFeedsForClient(this.c).subscribe({
+                    next: (feeds: Feed[]) => {
                       this.feedsForClient = feeds;
                       var drainId = +params.get('id');
                       if (drainId) {
-                        this.drainsService.getDrain(drainId).subscribe(
-                          (drain: Drain) => {
+                        this.drainsService.getDrain(drainId).subscribe({
+                          next: (drain: Drain) => {
                             this.drain = drain;
                             if (this.drain.feed_id) {
                               this.f = this.feedsForClient.find(f => (f.id === this.drain.feed_id));
-                              this.feedsService.getDrainsForFeed(this.drain.feed_id).subscribe(
-                                (drains: Drain[]) => {
+                              this.feedsService.getDrainsForFeed(this.drain.feed_id).subscribe({
+                                next: (drains: Drain[]) => {
                                   this.drainsForFeed = drains.filter(d => (d.id !== this.drain.id));
                                   this.createForm();
                                   this.isLoading = false;
                                 },
-                                (error: any) => {
-                                  const dialogRef = this.httpUtils.errorDialog(error);
-                                  dialogRef.afterClosed().subscribe((_value: any) => {
-                                    this.router.navigate([this.backRoute]);
-                                  });
+                                error: (error: any) => {
+                                  if (error.status !== 401) {
+                                    const dialogRef = this.httpUtils.errorDialog(error);
+                                    dialogRef.afterClosed().subscribe((_value: any) => {
+                                      this.router.navigate([this.backRoute]);
+                                    });
+                                  }
                                 }
-                              );
+                              });
                             }
                           },
-                          (error: any) => {
-                            const dialogRef = this.httpUtils.errorDialog(error);
-                            dialogRef.afterClosed().subscribe((_value: any) => {
-                              this.router.navigate([this.backRoute]);
-                            });
+                          error: (error: any) => {
+                            if (error.status !== 401) {
+                              const dialogRef = this.httpUtils.errorDialog(error);
+                              dialogRef.afterClosed().subscribe((_value: any) => {
+                                this.router.navigate([this.backRoute]);
+                              });
+                            }
                           }
-                        )
+                        })
                       } else {
                         this.createForm();
                         this.isLoading = false;
                       }
                     },
-                    (error: any) => {
-                      const dialogRef = this.httpUtils.errorDialog(error);
-                      dialogRef.afterClosed().subscribe((_value: any) => {
-                        this.router.navigate([this.backRoute]);
-                      });
+                    error: (error: any) => {
+                      if (error.status !== 401) {
+                        const dialogRef = this.httpUtils.errorDialog(error);
+                        dialogRef.afterClosed().subscribe((_value: any) => {
+                          this.router.navigate([this.backRoute]);
+                        });
+                      }
                     }
-                  );
+                  });
                 }
               }
             });
           },
-          (error: any) => {
-            const dialogRef = this.httpUtils.errorDialog(error);
-            dialogRef.afterClosed().subscribe((_value: any) => {
-              this.router.navigate([this.backRoute]);
-            });
+          error: (error: any) => {
+            if (error.status !== 401) {
+              const dialogRef = this.httpUtils.errorDialog(error);
+              dialogRef.afterClosed().subscribe((_value: any) => {
+                this.router.navigate([this.backRoute]);
+              });
+            }
           }
-        );
-      },
-      (error: any) => {
-        const dialogRef = this.httpUtils.errorDialog(error);
-        dialogRef.afterClosed().subscribe((_value: any) => {
-          this.router.navigate([this.backRoute]);
         });
+      },
+      error: (error: any) => {
+        if (error.status !== 401) {
+          const dialogRef = this.httpUtils.errorDialog(error);
+          dialogRef.afterClosed().subscribe((_value: any) => {
+            this.router.navigate([this.backRoute]);
+          });
+        }
       }
-    );
+    });
   }
 
   get organization() { return this.drainForm.get('organization'); }
@@ -205,9 +225,10 @@ export class DrainComponent implements OnInit {
   get decimals() { return this.drainForm.get('decimals'); }
   get incremental() { return this.drainForm.get('incremental'); }
   get client_default_drain() { return this.drainForm.get('client_default_drain'); }
-  get baseDrain() { return this.drainForm.get('baseDrain'); }
+  get positive_negative_value() { return this.drainForm.get('positive_negative_value'); }
+  get base_drain() { return this.drainForm.get('base_drain'); }
   get coefficient() { return this.drainForm.get('coefficient'); }
-  get diffDrain() { return this.drainForm.get('diffDrain'); }
+  get diff_drain() { return this.drainForm.get('diff_drain'); }
 
   createForm() {
     let patterns = this.httpUtils.getPatterns();
@@ -222,48 +243,53 @@ export class DrainComponent implements OnInit {
       'decimals': new FormControl(this.drain.decimals, [ Validators.pattern(patterns.positiveInteger) ]),
       'incremental': new FormControl((this.drain.type === 'inc') ? true : false, []),
       'client_default_drain': new FormControl((this.drain.client_default_drain != null) ? this.drain.client_default_drain : false, []),
-      'baseDrain': new FormControl(this.drain.base_drain_id ? this.drainsForFeed.filter(d => (d.id === this.drain.base_drain_id))[0] : '', []),
+      'positive_negative_value': new FormControl(this.drain.positive_negative_value ? this.drain.positive_negative_value : false, []),
+      'base_drain': new FormControl(this.drain.base_drain_id ? this.drainsForFeed.filter(d => (d.id === this.drain.base_drain_id))[0] : '', []),
       'coefficient': new FormControl({ value: this.drain.coefficient, disabled: ((this.drain.base_drain_id === null) || (this.drain.base_drain_id === undefined)) }, [ Validators.pattern(patterns.positiveNegativeFloat) ]),
-      'diffDrain': new FormControl(this.drain.diff_drain_id ? this.drainsForFeed.filter(d => (d.id === this.drain.diff_drain_id))[0] : '', [])
+      'diff_drain': new FormControl(this.drain.diff_drain_id ? this.drainsForFeed.filter(d => (d.id === this.drain.diff_drain_id))[0] : '',  [])
     });
     this.drainForm.get('organization').valueChanges.subscribe((o: Organization) => {
-      this.drainForm.patchValue({ client: undefined, feed: undefined, baseDrain: '', coefficient: undefined });
+      this.drainForm.patchValue({ client: undefined, feed: undefined, base_drain: '', coefficient: undefined });
       this.orgClients = this.allClients.filter(client => (client.org_id == o.id));
       this.drainsForFeed = [];
     });
     this.drainForm.get('client').valueChanges.subscribe((c: Client) => {
-      this.drainForm.patchValue({ feed: undefined, baseDrain: '', coefficient: undefined });
+      this.drainForm.patchValue({ feed: undefined, base_drain: '', coefficient: undefined });
       if (c) {
-        this.clientsService.getFeedsForClient(c).subscribe(
-           (feeds: Feed[]) => {
+        this.clientsService.getFeedsForClient(c).subscribe({
+          next: (feeds: Feed[]) => {
             this.feedsForClient = feeds;
             this.drainsForFeed = [];
           },
-          (error: any) => {
-            const dialogRef = this.httpUtils.errorDialog(error);
-            dialogRef.afterClosed().subscribe((_value: any) => {
-              this.router.navigate([this.backRoute]);
-            });
+          error: (error: any) => {
+            if (error.status !== 401) {
+              const dialogRef = this.httpUtils.errorDialog(error);
+              dialogRef.afterClosed().subscribe((_value: any) => {
+                this.router.navigate([this.backRoute]);
+              });
+            }
           }
-        );
+        });
       }
     });
     this.drainForm.get('feed').valueChanges.subscribe((feed: Feed) => {
       if (feed) {
-        this.feedsService.getDrainsForFeed(feed.id).subscribe(
-          (drains: Drain[]) => {
+        this.feedsService.getDrainsForFeed(feed.id).subscribe({
+          next: (drains: Drain[]) => {
             this.drainsForFeed = drains.filter(d => (d.id !== this.drain.id));
           },
-          (error: any) => {
-            const dialogRef = this.httpUtils.errorDialog(error);
-            dialogRef.afterClosed().subscribe((_value: any) => {
-              this.router.navigate([this.backRoute]);
-            });
+          error: (error: any) => {
+            if (error.status !== 401) {
+              const dialogRef = this.httpUtils.errorDialog(error);
+              dialogRef.afterClosed().subscribe((_value: any) => {
+                this.router.navigate([this.backRoute]);
+              });
+            }
           }
-        );
+        });
       }
     });
-    this.drainForm.get('baseDrain').valueChanges.subscribe((d: Drain) => {
+    this.drainForm.get('base_drain').valueChanges.subscribe((d: Drain) => {
       if (d) {
         this.coefficient.enable();
       } else {
@@ -302,34 +328,37 @@ export class DrainComponent implements OnInit {
     newDrain.type = this.incremental.value ? 'inc' : '';
     newDrain.decimals = this.decimals.value;
     newDrain.client_default_drain = this.client_default_drain.value;
-    newDrain.base_drain_id = this.baseDrain.value ? this.baseDrain.value.id : undefined;
+    newDrain.positive_negative_value = this.positive_negative_value.value ? this.positive_negative_value.value : false;
+    newDrain.base_drain_id = this.base_drain.value ? this.base_drain.value.id : undefined;
     newDrain.coefficient = this.coefficient.value;
-    newDrain.diff_drain_id = this.diffDrain.value ? this.diffDrain.value.id : undefined;
+    newDrain.diff_drain_id = this.diff_drain.value ? this.diff_drain.value.id : undefined;
     if (this.drain.id !== undefined) {
       newDrain.id = this.drain.id;
-      this.drainsService.updateDrain(newDrain).subscribe(
-        (_response: Drain) => {
+      this.drainsService.updateDrain(newDrain).subscribe({
+        next: (_response: Drain) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('DRAIN.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.drainsService.createDrain(newDrain).subscribe(
-        (_response: Drain) => {
+      this.drainsService.createDrain(newDrain).subscribe({
+        next: (_response: Drain) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('DRAIN.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -338,17 +367,18 @@ export class DrainComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.drainsService.deleteDrain(this.drain).subscribe(
-          (_response: any) => {
+        this.drainsService.deleteDrain(this.drain).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('DRAIN.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

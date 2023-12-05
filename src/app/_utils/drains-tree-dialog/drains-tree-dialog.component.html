@@ -13,7 +13,7 @@
   </div>
   <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
     <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
-      <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node) || (node.type === 'drain')" [class.drain-selected]="(node.type === 'drain') && checkSelectedDrain(node)" (click)="selectDrain(node)">
+      <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node) || (node.type === 'drain') || (node.type === 'formula')" [class.drain-selected]="((node.type === 'drain') && checkSelectedDrain(node)) || ((node.type === 'formula') && checkSelectedDrain(node))" (click)="selectDrain(node)">
         <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id" >
           <mat-icon class="mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
             {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
@@ -22,6 +22,10 @@
         <div class="mat-tree-node-title" [class.mat-tree-node-bold-title]="node.type === 'organization'" [class.mat-tree-node-underlined-title]="node.type === 'client'" [class.mat-tree-node-italic-title]="node.type === 'feed'">
           {{node.item}}
         </div>
+        <div *ngIf="node.has_details && !showDetails" class="mat-tree-node-button-details togo-list-item-right-form-field">
+          <mat-slide-toggle [checked]="node.view_details" (click)="detailsDrainButton(node)">{{ 'DRAINSTREE.DETAIL' | translate }}</mat-slide-toggle>
+        </div>
+        <mat-progress-bar *ngIf="node.is_loading" mode="indeterminate" class="mat-tree-node-content"></mat-progress-bar>
         <mat-divider class="mat-tree-node-divider"></mat-divider>
       </div>
     </mat-tree-node>

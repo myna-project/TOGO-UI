@@ -17,4 +17,7 @@ export class User {
   main_role: string;
   default_dashboard_id: number;
   dashboard_ids: number[];
+  default_start: string;
+  default_end: string;
+  drain_tree_depth: string;
 }

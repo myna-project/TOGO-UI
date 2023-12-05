@@ -95,8 +95,9 @@ import { ConfirmDialogComponent } from './_utils/confirm-dialog/confirm-dialog.c
 import { DrainControlDetailsTreeDialogComponent } from './_utils/draincontroldetails-tree-dialog/draincontroldetails-tree-dialog.component';
 import { DrainControlsTreeDialogComponent } from './_utils/draincontrols-tree-dialog/draincontrols-tree-dialog.component';
 import { DrainsTreeDialogComponent } from './_utils/drains-tree-dialog/drains-tree-dialog.component';
+import { FormulaDetailsDialogComponent } from './_utils/formula-details-dialog/formula-details-dialog.component';
 import { FormulasTreeDialogComponent } from './_utils/formulas-tree-dialog/formulas-tree-dialog.component';
-import { IndicesTreeDialogComponent } from "./_utils/indices-tree-dialog/indices-tree-dialog.component";
+import { IndicesTreeDialogComponent } from './_utils/indices-tree-dialog/indices-tree-dialog.component';
 import { MessageDialogComponent } from './_utils/message-dialog/message-dialog.component';
 
 import { CustomHttpInterceptor } from './_utils/http.interceptor';
@@ -129,6 +130,7 @@ export function HttpLoaderFactory(httpClient: HttpClient) {
     DrainsComponent,
     DrainsTreeDialogComponent,
     FeedComponent,
+    FormulaDetailsDialogComponent,
     FormulasTreeDialogComponent,
     IndexComponent,
     IndexGroupComponent,

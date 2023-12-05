@@ -19,4 +19,5 @@ export class Client {
   alert: boolean;
   alarm: boolean;
   warning: boolean;
+  view_details: boolean;
 }

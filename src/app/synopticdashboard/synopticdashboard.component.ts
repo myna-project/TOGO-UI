@@ -70,8 +70,8 @@ export class SynopticDashboardComponent implements AfterViewInit, OnDestroy {
           k++;
         });
         let start_time: Date = new Date(moment().add(data.lastN * -1, (data.last == 'HOUR') ? 'hour' : 'month').toISOString());
-        this.measuresService.getMeasures(data.drains, data.aggregations, data.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), data.timeAggregation).subscribe(
-          (measures: any[]) => {
+        this.measuresService.getMeasures(data.drains, null, data.aggregations, data.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), data.timeAggregation).subscribe({
+          next: (measures: any[]) => {
             let i = 0;
             measures.forEach(m => {
               let lineY = ((data.lines.length == 1) ? data.imgHeight/2 : ((data.lines.length == 2) ? data.imgHeight * ((i + 1)/(data.lines.length) + 0.005) : data.imgHeight * ((i + 1)/(data.lines.length) - 0.1)));
@@ -90,10 +90,11 @@ export class SynopticDashboardComponent implements AfterViewInit, OnDestroy {
             svgImage.src = 'data:image/svg+xml;base64,' + svg64;
             this.last_updated = this.httpUtils.getLocaleDateTimeString(moment().toISOString());
           },
-          (error: any) => {
-            this.httpUtils.errorDialog(error);
+          error: (error: any) => {
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       });
     };
 

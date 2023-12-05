@@ -21,13 +21,16 @@ export class TreeUtils {
         node.code = o.code;
         node.client_default_drain = o.client_default_drain;
         node.default_drain_ids = o.default_drain_ids;
+        node.formula_ids = o.formula_ids;
         node.alert = o.alert;
         node.alarm = o.alarm;
         node.warning = o.warning;
+        node.has_details = o.has_details;
+        node.view_details = o.view_details;
+        node.expanded = o.expanded;
         const children = obj.filter(so => (<string>so.code).startsWith(level + '.'));
-        if (children && children.length > 0) {
+        if (children && children.length > 0)
           node.children = this.buildTree(children, o.code);
-        }
         return node;
       });
   }
@@ -43,8 +46,11 @@ export class TreeUtils {
           str = str.substring(0, index);
           if (filteredTreeData.findIndex(t => t.code === str) === -1) {
             const obj = data.find(d => d.code === str);
-            if (obj)
+            if (obj) {
+              if (obj.type === 'client')
+                obj.has_details = false;
               filteredTreeData.push(obj);
+            }
           }
         }
         const objs = data.filter(d => d.code.indexOf(ftd.code + '.') !== -1);

@@ -16,31 +16,31 @@ export class DashboardService {
 
   getDasboard(id: number | string): Observable<Dashboard> {
     return this.http.get<Dashboard>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   getDashboards(): Observable<Dashboard[]> {
     return this.http.get<Dashboard[]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   createDashboard(dashboard: Dashboard): Observable<Dashboard> {
     return this.http.post<Dashboard>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource, dashboard).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   updateDashboard(id: number | string, dashboard: Dashboard): Observable<Dashboard> {
     return this.http.put<Dashboard>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + `/${id}`, dashboard).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   deleteDashboard(id: number): Observable<Dashboard> {
     return this.http.delete<Dashboard>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + `/${id}`).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 }

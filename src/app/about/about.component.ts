@@ -17,10 +17,12 @@ export class AboutComponent implements OnInit {
   constructor(private aboutService: AboutService, private httpUtils: HttpUtils) {}
 
   ngOnInit() {
-    this.aboutService.getVersion().subscribe((params: any) => {
-      this.version = params.version;
-      this.time = this.httpUtils.getLocaleDateTimeString(params.buildtime);
-      this.isLoading = false;
+    this.aboutService.getVersion().subscribe({
+      next: (params: any) => {
+        this.version = params.version;
+        this.time = this.httpUtils.getLocaleDateTimeString(params.buildtime);
+        this.isLoading = false;
+      }
     });
   }
 }

@@ -33,21 +33,23 @@ export class ClientCategoryComponent implements OnInit {
     this.route.paramMap.subscribe((params: any) => {
       var categoryId = +params.get('id');
       if (categoryId) {
-        this.clientCategoriesService.getClientCategory(categoryId).subscribe(
-          (response: ClientCategory) => {
+        this.clientCategoriesService.getClientCategory(categoryId).subscribe({
+          next: (response: ClientCategory) => {
             this.category = response;
             if (this.category.image)
               this.category_image_show = this.sanitizer.bypassSecurityTrustUrl('data:image/jpg;base64,' + this.category.image);
             this.createForm();
             this.isLoading = false;
           },
-          (error: any) => {
-            const dialogRef = this.httpUtils.errorDialog(error);
-            dialogRef.afterClosed().subscribe((_value: any) => {
-              this.router.navigate([this.backRoute]);
-            });
+          error: (error: any) => {
+            if (error.status !== 401) {
+              const dialogRef = this.httpUtils.errorDialog(error);
+              dialogRef.afterClosed().subscribe((_value: any) => {
+                this.router.navigate([this.backRoute]);
+              });
+            }
           }
-        );
+        });
       } else {
         this.isLoading = false;
       }
@@ -86,29 +88,30 @@ export class ClientCategoryComponent implements OnInit {
     newCategory.image = this.category_image;
     if (this.category.id !== undefined) {
       newCategory.id = this.category.id;
-      this.clientCategoriesService.updateClientCategory(newCategory).subscribe(
-        (_response: ClientCategory) => {
+      this.clientCategoriesService.updateClientCategory(newCategory).subscribe({
+        next: (_response: ClientCategory) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('CLIENTCATEGORY.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.clientCategoriesService.createClientCategory(newCategory).subscribe(
-        (_response: ClientCategory) => {
+      this.clientCategoriesService.createClientCategory(newCategory).subscribe({
+        next: (_response: ClientCategory) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('CLIENTCATEGORY.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
           this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -117,17 +120,17 @@ export class ClientCategoryComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.clientCategoriesService.deleteClientCategory(this.category).subscribe(
-          (_response: any) => {
+        this.clientCategoriesService.deleteClientCategory(this.category).subscribe({
+          next:(_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('CLIENTCATEGORY.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
             this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

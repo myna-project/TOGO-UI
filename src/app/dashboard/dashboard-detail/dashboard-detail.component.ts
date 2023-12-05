@@ -50,8 +50,8 @@ export class DashboardDetailComponent implements OnInit {
     this.createForm();
     this.route.paramMap.subscribe((params: any) => {
       let dashboardId: number = +params.get("id");
-      forkJoin(this.orgsService.getOrganizations(),this.usersService.getUsers(), this.jobService.getJobs()).subscribe(
-        (results: any) => {
+      forkJoin([this.orgsService.getOrganizations(),this.usersService.getUsers(), this.jobService.getJobs()]).subscribe({
+        next: (results: any) => {
           this.allOrgs = results[0];
           this.allUsers = results[1];
           this.otherUsers = this.allUsers.filter((user: User) => user.username !== this.currentUser.username);
@@ -70,8 +70,8 @@ export class DashboardDetailComponent implements OnInit {
           if (this.allOrgs.length === 1)
             this.organization.setValue(this.allOrgs[0]);
           if (dashboardId) {
-            this.dashboardService.getDasboard(dashboardId).subscribe(
-              (dashboard: Dashboard) => {
+            this.dashboardService.getDasboard(dashboardId).subscribe({
+              next: (dashboard: Dashboard) => {
                 this.dashboard = dashboard;
                 this.dashboard.default = this.currentUser.default_dashboard_id === this.dashboard.id;
                 this.dashboardUsersList = dashboard.user_ids;
@@ -80,24 +80,28 @@ export class DashboardDetailComponent implements OnInit {
                 this.createForm();
                 this.isLoading = false;
               },
-              (error: any) => {
-                const dialogRef = this.httpUtils.errorDialog(error);
-                dialogRef.afterClosed().subscribe((_value: any) => {
-                  this.router.navigate([this.backRoute]);
-                });
+              error: (error: any) => {
+                if (error.status !== 401) {
+                  const dialogRef = this.httpUtils.errorDialog(error);
+                  dialogRef.afterClosed().subscribe((_value: any) => {
+                    this.router.navigate([this.backRoute]);
+                  });
+                }
               }
-            );
+            });
           } else {
             this.isLoading = false;
           }
         },
-        (error: any) => {
-          const dialogRef = this.httpUtils.errorDialog(error);
-          dialogRef.afterClosed().subscribe((_value: any) => {
-            this.router.navigate([this.backRoute]);
-          });
+        error: (error: any) => {
+          if (error.status !== 401) {
+            const dialogRef = this.httpUtils.errorDialog(error);
+            dialogRef.afterClosed().subscribe((_value: any) => {
+              this.router.navigate([this.backRoute]);
+            });
+          }
         }
-      );
+      });
     });
   }
 
@@ -143,8 +147,8 @@ export class DashboardDetailComponent implements OnInit {
       dashboardToSave.user_ids.push(userId);
     if (this.dashboard.id && !duplicate) {
       dashboardToSave.id = this.dashboard.id
-      this.dashboardService.updateDashboard(this.dashboard.id, dashboardToSave).subscribe(
-        (response: Dashboard) => {
+      this.dashboardService.updateDashboard(this.dashboard.id, dashboardToSave).subscribe({
+        next: (response: Dashboard) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('DASHBOARD.SAVED'));
           if (dashboardToSave.default)
@@ -152,15 +156,16 @@ export class DashboardDetailComponent implements OnInit {
           this.myapp.updateDashboardsList();
           this.router.navigate([this.backRoute + '/' + this.dashboard.id]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
       dashboardToSave.duplicate_dashboard_id = duplicate ? this.dashboard.id : null;
-      this.dashboardService.createDashboard(dashboardToSave).subscribe(
-        (response: Dashboard) => {
+      this.dashboardService.createDashboard(dashboardToSave).subscribe({
+        next: (response: Dashboard) => {
           this.isSaving = false;
           this.myapp.updateDashboardIds(response.id);
           if (dashboardToSave.default)
@@ -168,11 +173,12 @@ export class DashboardDetailComponent implements OnInit {
           this.httpUtils.successSnackbar(this.translate.instant('DASHBOARD.SAVED'));
           this.router.navigate([this.backRoute + '/' + response.id]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -181,18 +187,19 @@ export class DashboardDetailComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.dashboardService.deleteDashboard(this.dashboard.id).subscribe(
-          (_response: any) => {
+        this.dashboardService.deleteDashboard(this.dashboard.id).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.myapp.deleteDashboardIds(this.dashboard.id);
             this.httpUtils.successSnackbar(this.translate.instant('DASHBOARD.DELETEDDASHBOARD'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

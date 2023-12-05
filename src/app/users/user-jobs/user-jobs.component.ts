@@ -39,8 +39,8 @@ export class UserJobsComponent implements OnInit {
     this.route.paramMap.subscribe((params: any) => {
       var userId = params.get('userId');
       if (userId) {
-        forkJoin(this.orgsService.getOrganizations(), this.jobsService.getJobs(), this.usersService.getUser(userId)).subscribe(
-          (results: any) => {
+        forkJoin([this.orgsService.getOrganizations(), this.jobsService.getJobs(), this.usersService.getUser(userId)]).subscribe({
+          next: (results: any) => {
             this.allOrgs = results[0];
             this.allJobs = results[1];
             this.user = results[2];
@@ -58,13 +58,15 @@ export class UserJobsComponent implements OnInit {
             }
             this.isLoading = false;
           },
-          (error: any) => {
-            const dialogRef = this.httpUtils.errorDialog(error);
-            dialogRef.afterClosed().subscribe((_value: any) => {
-              this.router.navigate([this.backRoute]);
-            });
+          error: (error: any) => {
+            if (error.status !== 401) {
+              const dialogRef = this.httpUtils.errorDialog(error);
+              dialogRef.afterClosed().subscribe((_value: any) => {
+                this.router.navigate([this.backRoute]);
+              });
+            }
           }
-        );
+        });
       } else {
         this.isLoading = false;
       }
@@ -86,34 +88,36 @@ export class UserJobsComponent implements OnInit {
   addJob(): void {
     let jobId = this.newJob.value.id;
     if (jobId) {
-      this.usersService.addJobToUser(this.user.id, jobId).subscribe(
-        (_response: any) => {
+      this.usersService.addJobToUser(this.user.id, jobId).subscribe({
+        next: (_response: any) => {
           let job = this.allJobs.filter(j => (j.id === jobId))[0];
           let orgName = this.allOrgs.filter(o => (o.id === job.org_id))[0].name;
           this.userJobs.push({ id: jobId, name: orgName + ' - ' + job.name });
           this.jobs = this.jobs.filter(j => (j.id !== jobId));
           this.httpUtils.successSnackbar(this.translate.instant('USER.JOBADDED'));
         },
-        (error: any) => {
-          this.httpUtils.errorDialog(error);
+        error: (error: any) => {
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
   removeJob(jobId: number): void {
-    this.usersService.removeJobFromUser(this.user.id, jobId).subscribe(
-      (_response: any) => {
+    this.usersService.removeJobFromUser(this.user.id, jobId).subscribe({
+      next: (_response: any) => {
         let job = this.allJobs.filter(j => (j.id === jobId))[0];
         let orgName = this.allOrgs.filter(o => (o.id === job.org_id))[0].name;
         this.userJobs = this.userJobs.filter(j => (j.id !== jobId));
         this.jobs.push({ id: jobId, name: orgName + ' - ' + job.name });
         this.httpUtils.successSnackbar(this.translate.instant('USER.JOBREMOVED'));
       },
-      (error: any) => {
-        this.httpUtils.errorDialog(error);
+      error: (error: any) => {
+        if (error.status !== 401)
+          this.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   goBack(): void {

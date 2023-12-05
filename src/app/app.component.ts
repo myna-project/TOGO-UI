@@ -11,8 +11,8 @@ import { forkJoin } from 'rxjs';
 import * as HighChart from 'highcharts';
 import * as HighStock from 'highcharts/highstock';
 
-import HighchartsMore from "highcharts/highcharts-more";
-import HighchartsExporting from "highcharts/modules/exporting";
+import HighchartsMore from 'highcharts/highcharts-more';
+import HighchartsExporting from 'highcharts/modules/exporting';
 
 HighchartsMore(HighChart);
 HighchartsExporting(HighChart);
@@ -52,6 +52,7 @@ export class AppComponent implements OnInit, OnDestroy {
   dashboards: Dashboard[] = [];
   langName: {[key: string]: string} = {
     en: 'English',
+    fr: 'Français',
     it: 'Italiano'
   };
   selectedLang: string;
@@ -68,10 +69,10 @@ export class AppComponent implements OnInit, OnDestroy {
   _mobileQueryListener: () => void;
 
   constructor(private dateAdapter: DateAdapter<any>, private ngxMatDateAdapter: NgxMatDateAdapter<any>, private router: Router, private authService: AuthenticationService, private dashboardsService: DashboardService, private orgsService: OrganizationsService, private changeDetectorRef: ChangeDetectorRef, private media: MediaMatcher, private sanitizer: DomSanitizer, private httpUtils: HttpUtils, public translate: TranslateService) {
-    this.translate.addLangs(['en', 'it']);
+    this.translate.addLangs(['en', 'fr', 'it']);
 
     const browserLang = this.translate.getBrowserLang();
-    this.selectedLang = browserLang.match(/en|it/) ? browserLang : 'en';
+    this.selectedLang = browserLang.match(/en|fr|it/) ? browserLang : 'en';
     this.translate.use(this.selectedLang);
     this.dateAdapter.setLocale(this.selectedLang);
     this.ngxMatDateAdapter.setLocale(this.selectedLang);
@@ -222,6 +223,13 @@ export class AppComponent implements OnInit, OnDestroy {
     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
   }
 
+  changeDefaultDatesAndDepth(default_start: string, default_end: string, depth: string) {
+    this.currentUser.default_start = default_start;
+    this.currentUser.default_end = default_end;
+    this.currentUser.drain_tree_depth = depth;
+    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+  }
+
   addDashboard(): void {
     this.closeSideNav();
     this.router.navigate(["dashboarddetail"]);
@@ -244,7 +252,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.authService.logout();
         this.currentUser = this.authService.getCurrentUser();
         const browserLang = this.translate.getBrowserLang();
-        this.selectedLang = browserLang.match(/en|it/) ? browserLang : 'en';
+        this.selectedLang = browserLang.match(/en|fr|it/) ? browserLang : 'en';
         this.translate.use(this.selectedLang);
         this.router.navigate(['/login']);
       }
@@ -272,18 +280,19 @@ export class AppComponent implements OnInit, OnDestroy {
   updateDashboardsList() {
     this.dashboards = [];
     this.orgs = [];
-    forkJoin(this.orgsService.getOrganizations(), this.dashboardsService.getDashboards()).subscribe(
-      (results: any) => {
+    forkJoin([this.orgsService.getOrganizations(), this.dashboardsService.getDashboards()]).subscribe({
+      next: (results: any) => {
         this.orgs = results[0];
         results[1].forEach((dashboard: Dashboard) => {
           if (this.currentUser.dashboard_ids.includes(dashboard.id))
             this.dashboards.push(dashboard);
         });
       },
-      (error: any) => {
-        this.httpUtils.errorDialog(error);
+      error: (error: any) => {
+        if (error.status !== 401)
+          this.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   updateDefaultDashboardId(id: number) {

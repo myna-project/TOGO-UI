@@ -29,6 +29,7 @@ export class ClientsTree {
       clientNode.type = 'client';
       clientNode.code = '0.' + client.id;
       clientNode.default_drain_ids = client.default_drain_ids;
+      clientNode.formula_ids = client.formula_ids;
       clientNode.alert = client.alert;
       clientNode.alarm = client.alarm;
       clientNode.warning = client.warning;
@@ -66,6 +67,7 @@ export class ClientsTree {
       childNode.type = 'client';
       childNode.code = (fatherNode.code ? fatherNode.code : '0') + '.' + child.id;
       childNode.default_drain_ids = child.default_drain_ids;
+      childNode.formula_ids = child.formula_ids;
       childNode.alert = child.alert;
       childNode.alarm = child.alarm;
       childNode.warning = child.warning;

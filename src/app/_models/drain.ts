@@ -10,6 +10,7 @@ export class Drain {
   measure_type: string;
   decimals: number;
   client_default_drain: boolean;
+  positive_negative_value: boolean;
   base_drain_id: number;
   coefficient: number;
   diff_drain_id: number;

@@ -39,7 +39,7 @@ export class DrainControlsTreeDialogComponent implements OnInit {
       this.dataSource.data = data;
     });
 
-    this.organizationsTree.initialize(this.data.orgs, [], [], [], [], [], [], [], this.data.controls, []);
+    this.organizationsTree.initialize(this.data.orgs, [], [], [], [], [], [], [], this.data.controls, [], true, 'feed');
     this.isLoading = false;
   }
 
@@ -74,7 +74,7 @@ export class DrainControlsTreeDialogComponent implements OnInit {
 
   filterChanged(filterText: string, type: string) {
     this.isFiltering = true;
-    if (this.organizationsTree.filterOrgs(filterText, type))
+    if (this.organizationsTree.filterByType(filterText, type, true))
       this.treeControl.expandAll();
     this.isFiltering = false;
   }

@@ -30,8 +30,8 @@ export class DrainsTree {
     feedsTree.treeData = feedNodes;
     const data = feedsTree.treeUtils.buildTree(feedNodes, '0');
     feedsTree.dataChange.next(data);
-    feedsTree.clientsService.getFeedsForClient(client).subscribe(
-      (feeds: Feed[]) => {
+    feedsTree.clientsService.getFeedsForClient(client).subscribe({
+      next: (feeds: Feed[]) => {
         feeds.sort((a, b) => a.description < b.description ? -1 : a.description > b.description ? 1 : 0);
         feeds.forEach(function (feed) {
           let feedNode = new TreeItemNode();
@@ -43,8 +43,8 @@ export class DrainsTree {
           feedsTree.treeData = feedNodes;
           const data = feedsTree.treeUtils.buildTree(feedNodes, '0');
           feedsTree.dataChange.next(data);
-          feedsTree.feedsService.getDrainsForFeed(feed).subscribe(
-            (drains: Drain[]) => {
+          feedsTree.feedsService.getDrainsForFeed(feed).subscribe({
+            next: (drains: Drain[]) => {
               drains.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
               drains.forEach(function (drain: Drain) {
                 let drainNode = new TreeItemNode();
@@ -73,16 +73,16 @@ export class DrainsTree {
                 feedsTree.dataChange.next(data);
               });
             },
-            (error: any) => {
+            error: (error: any) => {
               feedsTree.httpUtils.errorDialog(error);
             }
-          );
+          });
         });
       },
-      (error: any) => {
+      error: (error: any) => {
         feedsTree.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   public filterDrains(filterText: string, type: string): boolean {

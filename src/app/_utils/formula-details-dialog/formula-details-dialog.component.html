@@ -1,0 +1,29 @@
+<h1 mat-dialog-title>{{ 'MEASURES.FORMULADETAILS' | translate }}</h1>
+<div mat-dialog-content class="main container">
+  <mat-divider class="mat-tree-node-divider"></mat-divider>
+  <div *ngFor="let d of formula.drains; let i = index" class="details-formula-container">
+    {{d.full_name}}
+    <div class="togo-list-item-right-form-field">
+      <mat-form-field class="short-form-field" *ngIf="d.is_positive_negative_value">
+        <mat-label>{{ 'MEASURES.POSITIVENEGATIVEVALUES' | translate }}</mat-label>
+        <mat-select [value]="d.positive_negative_value" disabled>
+          <mat-option [value]="''">{{ 'MEASURES.ALLVALUES' | translate }}</mat-option>
+          <mat-option [value]="'pos'">{{ 'MEASURES.POSITIVEVALUES' | translate }}</mat-option>
+          <mat-option [value]="'neg'">{{ 'MEASURES.NEGATIVEVALUES' | translate }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'MEASURES.AGGREGATION' | translate }}</mat-label>
+        <mat-select [value]="d.aggregation" disabled>
+          <mat-option *ngFor="let aggregation of d.aggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="short-form-field">
+        <mat-label>{{ 'MEASURES.OPERATION' | translate }}</mat-label>
+        <mat-select [value]="d.operation" disabled>
+          <mat-option *ngFor="let operation of d.operations" [value]="operation.id">{{operation.description}}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+</div>

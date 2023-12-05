@@ -227,7 +227,7 @@ export class HttpUtils {
       let csvRow = [this.getLocaleDateTimeString(tv.time)];
       for (let j = 0; j < i; j++) {
         let m = tv['measures'].find((v: any) => v.key === j);
-        csvRow.push(m !== undefined ? m.value : '');
+        csvRow.push(m !== undefined ? m.value.toString().replace('.', ',') : '');
       }
       csvData.push(csvRow);
     });
@@ -246,6 +246,8 @@ export class HttpUtils {
       queryParams += 'costsDrain=' + costsDrain.id + '&';
     if (dataDrain && dataDrain.drainIds)
       queryParams += 'drainIds=' + dataDrain.drainIds.toString() + '&';
+    if (dataDrain && dataDrain.positiveNegativeValues)
+      queryParams += 'positiveNegativeValues=' + dataDrain.positiveNegativeValues.toString() + '&';
     if (dataDrain && dataDrain.aggregations)
       queryParams += 'aggregations=' + dataDrain.aggregations.toString() + '&';
     if (dataDrain && dataDrain.operations)

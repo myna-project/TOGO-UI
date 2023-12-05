@@ -18,13 +18,13 @@ export class RolesService {
 
   getRoles(): Observable<Role[]> {
     return this.http.get<Role[]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   getRole(id: number | string): Observable<Role> {
     return this.http.get<Role>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + +id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 }

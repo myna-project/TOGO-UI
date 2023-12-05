@@ -151,8 +151,15 @@ export class MitchTreeGraph {
         .attr("xlink:href", "assets/img/measures.png")
         .on('click', function(d: any) {
           var obj = objs.find(current => current.id === +d.id);
-          if (((obj.default_drain_ids !== undefined) && (obj.default_drain_ids !== null) && (obj.default_drain_ids.length > 0)) || ((obj.formula_ids !== undefined) && (obj.formula_ids !== null) && (obj.formula_ids.length > 0)))
-            dialog.open(ChartDialogComponent, { width: '75%', data: { drains: obj.default_drain_ids, formulas: obj.formula_ids } });
+          if (((obj.default_drain_ids !== undefined) && (obj.default_drain_ids !== null) && (obj.default_drain_ids.length > 0)) || ((obj.formula_ids !== undefined) && (obj.formula_ids !== null) && (obj.formula_ids.length > 0))) {
+            if (obj.default_drain_ids)
+              obj.default_drain_ids.forEach((id, index) => obj.default_drain_ids[index] = 'd_' + id);
+            else
+              obj.default_drain_ids = [];
+            if (obj.formula_ids)
+              obj.formula_ids.forEach((id, index) => obj.default_drain_ids.push('f_' + id));
+            dialog.open(ChartDialogComponent, { width: '75%', data: {drains: obj.default_drain_ids} });
+          }
         })
         .style("cursor", function(d: any) {
           var obj = objs.find(current => current.id === +d.id);

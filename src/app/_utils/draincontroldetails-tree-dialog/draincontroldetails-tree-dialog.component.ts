@@ -43,7 +43,7 @@ export class DrainControlDetailsTreeDialogComponent implements OnInit {
       this.dataSource.data = data;
     });
 
-    this.organizationsTree.initialize(this.data.orgs, [], this.data.clients, this.data.feeds, this.data.drains, this.data.formulas, [], [], [], []);
+    this.organizationsTree.initialize(this.data.orgs, [], this.data.clients, this.data.feeds, this.data.drains, this.data.formulas, [], [], [], [], false, 'feed');
     this.isLoading = false;
   }
 

@@ -57,7 +57,11 @@ export class TimeChart {
         type: options.type,
         height: options ? options.height : '100%',
         width: options ? options.width : '100%',
+        zooming: {
+          mouseWheel: { enabled: false }
+        }
       },
+      colors: ["#2caffe", "#fa041a", "#214cd7", "#4fc574", "#da6a41", "#050f1f", "#00ea37", "#ea190e", "#d568fb", "#91e8e1"],
       title: {
         text: options.title,
       },

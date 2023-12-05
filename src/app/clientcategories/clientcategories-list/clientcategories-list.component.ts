@@ -21,17 +21,18 @@ export class ClientCategoriesComponent implements OnInit {
   constructor(private clientCategoriesService: ClientCategoriesService, private router: Router, private httpUtils: HttpUtils) {}
 
   ngOnInit(): void {
-    this.clientCategoriesService.getClientCategories().subscribe(
-      (categories: ClientCategory[]) => {
+    this.clientCategoriesService.getClientCategories().subscribe({
+      next: (categories: ClientCategory[]) => {
         categories.sort((a, b) => a.description < b.description ? -1 : a.description > b.description ? 1 : 0);
         this.categories = categories;
         this.filteredCategories = categories;
         this.isLoading = false;
       },
-      (error: any) => {
-        this.httpUtils.errorDialog(error);
+      error: (error: any) => {
+        if (error.status !== 401)
+          this.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   search(term: string): void {

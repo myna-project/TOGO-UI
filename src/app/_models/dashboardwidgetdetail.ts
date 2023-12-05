@@ -11,4 +11,7 @@ export class DashboardWidgetDetail {
   full_name: string;
   divider: boolean;
   visible: boolean;
+  disabled_sub_formula: boolean;
+  is_positive_negative_value: boolean;
+  positive_negative_value: string;
 }

@@ -29,6 +29,7 @@
       <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastDay()">{{ 'MEASURES.LASTDAY' | translate }}</button>
       <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastWeek()">{{ 'MEASURES.LASTWEEK' | translate }}</button>
       <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastMonth()">{{ 'MEASURES.LASTMONTH' | translate }}</button>
+      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="defaultDate()" *ngIf="(this.default_start !== null && this.default_start !== undefined) && (this.default_end !== null && this.default_end !== undefined)">{{ 'MEASURES.DEFAULTDATE' | translate }}</button>
     </div>
     <div class="togo-form-field-group">
       <mat-form-field class="short-form-field">
@@ -38,7 +39,7 @@
         </mat-select>
       </mat-form-field>
     </div>
-    <div>
+    <div *ngIf="!isChangingMeasures">
       <h5>
         {{ 'MEASURES.DRAINS' | translate }}
         <button *ngIf="!isLoading" mat-raised-button class="togo-form-button adddrains-button" (click)="addDrains()">{{ 'MEASURES.ADDDRAINS' | translate }}</button>
@@ -62,8 +63,8 @@
             <mat-option *ngFor="let c of formulaClients" [value]="c.id">{{c.name}}</mat-option>
           </mat-select>
         </mat-form-field>
-        <button type="submit" class="togo-form-button" mat-raised-button (click)="createFormula()" color="primary" [disabled]="!visibleDrains || measuresForm.get('formulaName').value === '' || measuresForm.get('formulaName').value === undefined || measuresForm.get('organization').value === undefined">{{ 'FORMULASTREE.SAVE' | translate }}</button>
-        <button class="togo-form-button" mat-raised-button (click)="updateFormula()" [disabled]="!formulaId || !visibleDrains || measuresForm.get('formulaName').value === '' || measuresForm.get('formulaName').value === undefined || measuresForm.get('organization').value === undefined">{{ 'FORMULASTREE.UPDATE' | translate }}</button>
+        <button type="submit" class="togo-form-button" mat-raised-button (click)="createFormula()" color="primary" [disabled]="!visibleDrains || measuresForm.get('formulaName').value === '' || measuresForm.get('formulaName').value === undefined || measuresForm.get('organization').value === undefined || checkSaveFormula()">{{ 'FORMULASTREE.SAVE' | translate }}</button>
+        <button class="togo-form-button" mat-raised-button (click)="updateFormula()" [disabled]="!formulaId || !visibleDrains || measuresForm.get('formulaName').value === '' || measuresForm.get('formulaName').value === undefined || measuresForm.get('organization').value === undefined || checkSaveFormula()">{{ 'FORMULASTREE.UPDATE' | translate }}</button>
       </div>
       <div class="togo-list">
         <div *ngFor="let index of indices" class="togo-list-item drain">
@@ -78,23 +79,37 @@
           </div>
         </div>
       </div>
-      <div class="togo-list"  cdkDropList (cdkDropListDropped)="onDrop($event)">
+      <div class="togo-list"  cdkDropList (cdkDropListDropped)="onDrop($event)" *ngIf="!isChangingMeasures">
         <div [cdkDragData]="d" *ngFor="let d of drains; let i = index" class="togo-list-item drain" cdkDrag cdkDragLockAxis="y">
           <div *ngIf="d.visible" class="togo-form-field-group">
             <div class="togo-list-item-title">
               <button cdkDragHandle mat-icon-button class="togo-list-item-title-icon">
                 <mat-icon class="togo-list-item-title-icon">unfold_more</mat-icon>
               </button>
-              <button mat-icon-button class="togo-list-item-title-icon" (click)="removeDrain(i)" >
+              <button mat-icon-button class="togo-list-item-title-icon" (click)="removeDrain(i)">
                 <mat-icon class="togo-list-item-title-icon error" title="{{ 'MEASURES.REMOVEDRAIN' | translate }}">remove_circle</mat-icon>
               </button>
-              {{d.full_name}}
-              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.operation === 'SEMICOLON')" (click)="showLegend(i)" >
+              {{d.full_name ? d.full_name : d.name}}
+              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.operation && d.operation === 'SEMICOLON') && checkSubFormulas(i)" (click)="showLegend(i)" >
                 <mat-icon class="togo-list-item-title-icon" color="primary" title="{{ 'MEASURES.EDITLEGEND' | translate }}">edit</mat-icon>
+              </button>
+              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.components)" (click)="showFormulaDetails(i)" >
+                <mat-icon class="togo-list-item-title-icon" color="primary" title="{{ 'MEASURES.FORMULADETAILS' | translate }}">remove_red_eye</mat-icon>
+              </button>
+              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.components)" (click)="editFormula(i)" >
+                <mat-icon class="togo-list-item-title-icon" color="primary" title="{{ 'MEASURES.EDITFORMULA' | translate }}">settings</mat-icon>
               </button>
             </div>
             <div class="togo-list-item-right togo-list-item-right-form-field">
-              <mat-form-field class="short-form-field">
+              <mat-form-field class="short-form-field" *ngIf="d.full_name && !d.components && d.is_positive_negative_value">
+                <mat-label>{{ 'MEASURES.POSITIVENEGATIVEVALUES' | translate }}</mat-label>
+                <mat-select [formControlName]="'positiveNegativeValue_' + i">
+                  <mat-option [value]="''">{{ 'MEASURES.ALLVALUES' | translate }}</mat-option>
+                  <mat-option [value]="'pos'">{{ 'MEASURES.POSITIVEVALUES' | translate }}</mat-option>
+                  <mat-option [value]="'neg'">{{ 'MEASURES.NEGATIVEVALUES' | translate }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field class="short-form-field" *ngIf="d.full_name && !d.components">
                 <mat-label>{{ 'MEASURES.AGGREGATION' | translate }}</mat-label>
                 <mat-select [formControlName]="'aggregation_' + i" required>
                   <mat-option *ngFor="let aggregation of d.aggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
@@ -103,11 +118,11 @@
               <mat-form-field class="short-form-field">
                 <mat-label>{{ 'MEASURES.OPERATION' | translate }}</mat-label>
                 <mat-select [formControlName]="'operation_' + i" required>
-                  <mat-option *ngFor="let operation of d.operations" [value]="operation.id">{{operation.description}}</mat-option>
+                  <mat-option *ngFor="let operation of d.operations" [value]="operation.id" [disabled]="d.disabled_sub_formula">{{operation.description}}</mat-option>
                 </mat-select>
               </mat-form-field>
             </div>
-            <div *ngIf="(d.operation === 'SEMICOLON') && d.show_legend" class="chart-legend-field-div">
+            <div *ngIf="(d.operation === 'SEMICOLON') && d.show_legend && d.full_name" class="chart-legend-field-div">
               <mat-form-field class="long-form-field">
                 <mat-label>{{ 'MEASURES.LEGEND' | translate }}</mat-label>
                 <input matInput placeholder="{{ 'MEASURES.LEGEND' | translate }}" [formControlName]="'legend_' + i">
@@ -128,7 +143,7 @@
     </div>
     <mat-spinner class="chart-loading-spinner measure-loading-spinner" *ngIf="isChangingMeasures" diameter="30"></mat-spinner>
     <div class="togo-form-field-group">
-      <button type="submit" mat-raised-button class="chart-load-button" color="primary" (click)="loadMeasures()" [disabled]="measuresForm.invalid || ((drains.length == 0) && (indices.length == 0))">{{ 'MEASURES.LOADMEASURES' | translate }}</button>
+      <button type="submit" mat-raised-button class="chart-load-button" color="primary" (click)="loadMeasures()" [disabled]="measuresForm.invalid || ((drains.length == 0) && (indices.length == 0) && (formulas.length == 0))">{{ 'MEASURES.LOADMEASURES' | translate }}</button>
       <mat-spinner class="chart-loading-spinner" *ngIf="isLoadingMeasures" diameter="30"></mat-spinner>
     </div>
     <div class="no-data-div" *ngIf="measuresLoaded && (chartSeries.length === 0)">

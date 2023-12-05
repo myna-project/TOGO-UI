@@ -20,16 +20,17 @@ export class VendorListComponent implements OnInit {
   constructor(private vendorsService: VendorsService, private router: Router, private httpUtils: HttpUtils) {}
 
   ngOnInit(): void {
-    this.vendorsService.getVendors().subscribe(
-      (vendors: Vendor[]) => {
+    this.vendorsService.getVendors().subscribe({
+      next: (vendors: Vendor[]) => {
         this.vendors = vendors;
         this.filteredVendors = vendors;
         this.isLoading = false;
       },
-      (error: any) => {
-        this.httpUtils.errorDialog(error);
+      error: (error: any) => {
+        if (error.status !== 401)
+          this.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   search(term: string): void {

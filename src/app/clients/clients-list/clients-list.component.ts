@@ -56,8 +56,8 @@ export class ClientsComponent implements OnInit {
     this.route.paramMap.subscribe((params: any) => {
       let orgId = params.get('orgId');
       if (orgId) {
-        forkJoin(this.orgsService.getOrganization(orgId), this.clientsService.getClients(), this.clientCategoriesService.getClientCategories()).subscribe(
-          (results: any) => {
+        forkJoin([this.orgsService.getOrganization(orgId), this.clientsService.getClients(), this.clientCategoriesService.getClientCategories()]).subscribe({
+          next: (results: any) => {
             this.org = results[0];
             this.allClients = results[1];
             this.allCategories = results[2];
@@ -94,13 +94,15 @@ export class ClientsComponent implements OnInit {
               this.isLoading = false;
             }
           },
-          (error: any) => {
-            const dialogRef = this.httpUtils.errorDialog(error);
-            dialogRef.afterClosed().subscribe((_value: any) => {
-              this.router.navigate([this.backRoute]);
-            });
+          error: (error: any) => {
+            if (error.status !== 401) {
+              const dialogRef = this.httpUtils.errorDialog(error);
+              dialogRef.afterClosed().subscribe((_value: any) => {
+                this.router.navigate([this.backRoute]);
+              });
+            }
           }
-        );
+        });
       } else {
         this.isLoading = false;
       }
@@ -124,6 +126,7 @@ export class ClientsComponent implements OnInit {
     flatNode.level = level;
     flatNode.code = node.code;
     flatNode.default_drain_ids = node.default_drain_ids;
+    flatNode.formula_ids = node.formula_ids;
     flatNode.alert = node.alert;
     flatNode.alarm = node.alarm;
     flatNode.warning = node.warning;
@@ -248,8 +251,13 @@ export class ClientsComponent implements OnInit {
     this.router.navigate(['organization/' + this.org.id + '/client/' + id + '/drains']);
   }
 
-  measures(default_drain_ids: number[]): void {
-    this.dialog.open(ChartDialogComponent, { width: '75%', data: { drains: default_drain_ids } });
+  measures(node: TreeItemFlatNode): void {
+    let drains: string[] = [];
+    if (node.default_drain_ids && node.default_drain_ids.length > 0)
+      node.default_drain_ids.forEach(drain_id => drains.push('d_' + drain_id));
+    if (node.formula_ids && node.formula_ids.length > 0)
+      node.formula_ids.forEach(formula_id => drains.push('f_' + formula_id));
+    this.dialog.open(ChartDialogComponent, { width: '75%', data: { drains: drains } });
   }
 
   goBack(): void {

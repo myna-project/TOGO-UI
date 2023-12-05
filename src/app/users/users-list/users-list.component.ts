@@ -24,8 +24,8 @@ export class UsersComponent implements OnInit {
   constructor(private usersService: UsersService, private rolesService: RolesService, private router: Router, private httpUtils: HttpUtils) {}
 
   ngOnInit(): void {
-    forkJoin(this.usersService.getUsers(), this.rolesService.getRoles()).subscribe(
-      (results: any) => {
+    forkJoin([this.usersService.getUsers(), this.rolesService.getRoles()]).subscribe({
+      next: (results: any) => {
         this.users = results[0];
         this.roles = results[1];
         this.filteredUsers = this.users;
@@ -37,10 +37,11 @@ export class UsersComponent implements OnInit {
         );
         this.isLoading = false;
       },
-      (error: any) => {
-        this.httpUtils.errorDialog(error);
+      error: (error: any) => {
+        if (error.status !== 401)
+          this.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   search(term: string): void {

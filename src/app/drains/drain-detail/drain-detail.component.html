@@ -90,9 +90,15 @@
       </mat-form-field>
     </div>
     <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle color="primary" [formControl]="positive_negative_value">{{ 'DRAIN.POSITIVENEGATIVEVALUES' | translate }}<mat-icon class="incremental-info" matTooltip="{{ 'DRAIN.POSITIVENEGATIVEVALUESINFO' | translate }}">info_outline</mat-icon></mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
       <mat-form-field class="medium-form-field">
         <mat-label>{{ 'DRAIN.BASEDRAIN' | translate }}</mat-label>
-        <mat-select [formControl]="baseDrain" [compareWith]="compareObjects">
+        <mat-select [formControl]="base_drain" [compareWith]="compareObjects">
           <mat-option value=""> -- </mat-option>
           <mat-option *ngFor="let d of drainsForFeed" [value]="d">{{d.name}}</mat-option>
         </mat-select>
@@ -106,7 +112,7 @@
     <div class="togo-form-field-group">
       <mat-form-field class="medium-form-field">
         <mat-label>{{ 'DRAIN.DIFFDRAIN' | translate }}</mat-label>
-        <mat-select [formControl]="diffDrain" [compareWith]="compareObjects">
+        <mat-select [formControl]="diff_drain" [compareWith]="compareObjects">
           <mat-option value=""> -- </mat-option>
           <mat-option *ngFor="let d of drainsForFeed" [value]="d">{{d.name}}</mat-option>
         </mat-select>

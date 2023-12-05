@@ -40,8 +40,8 @@ export class FeedComponent implements OnInit {
 
   ngOnInit() {
     this.createForm();
-    forkJoin(this.orgsService.getOrganizations(), this.clientsService.getClients()).subscribe(
-      (results: any) => {
+    forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients()]).subscribe({
+      next: (results: any) => {
         this.allOrgs = results[0];
         this.allClients = results[1];
         this.allClients.sort((a, b) => a.name < b.name ? -1 : (a.name > b.name) ? 1 : 0);
@@ -61,8 +61,8 @@ export class FeedComponent implements OnInit {
               this.backRoute = 'organization/' + this.org.id + '/client/' + this.c.id + '/drains';
               var feedId = +params.get('id');
               if (feedId) {
-                this.feedsService.getFeed(feedId).subscribe(
-                  (feed: Feed) => {
+                this.feedsService.getFeed(feedId).subscribe({
+                  next: (feed: Feed) => {
                     this.feed = feed;
                     if (this.feed.client_ids) {
                       this.feed.client_ids.forEach(id => {
@@ -76,13 +76,15 @@ export class FeedComponent implements OnInit {
                     this.createForm();
                     this.isLoading = false;
                   },
-                  (error: any) => {
-                    const dialogRef = this.httpUtils.errorDialog(error);
-                    dialogRef.afterClosed().subscribe((_value: any) => {
-                      this.router.navigate([this.backRoute]);
-                    });
+                  error: (error: any) => {
+                    if (error.status !== 401) {
+                      const dialogRef = this.httpUtils.errorDialog(error);
+                      dialogRef.afterClosed().subscribe((_value: any) => {
+                        this.router.navigate([this.backRoute]);
+                      });
+                    }
                   }
-                )
+                });
               } else {
                 this.createForm();
                 this.isLoading = false;
@@ -91,13 +93,15 @@ export class FeedComponent implements OnInit {
           }
         });
       },
-      (error: any) => {
-        const dialogRef = this.httpUtils.errorDialog(error);
-        dialogRef.afterClosed().subscribe((_value: any) => {
-          this.router.navigate([this.backRoute]);
-        });
+      error: (error: any) => {
+        if (error.status !== 401) {
+          const dialogRef = this.httpUtils.errorDialog(error);
+          dialogRef.afterClosed().subscribe((_value: any) => {
+            this.router.navigate([this.backRoute]);
+          });
+        }
       }
-    );
+    });
   }
 
   get organization() { return this.feedForm.get('organization'); }
@@ -109,7 +113,7 @@ export class FeedComponent implements OnInit {
     this.feedForm = new FormGroup({
       'organization': new FormControl({ value: this.org.id ? this.org : undefined, disabled: this.disabledCondition() }, [ Validators.required ]),
       'energy_client': new FormControl(this.energyClient.id ? this.energyClient : undefined, [ Validators.required ]),
-      'computer_client': new FormControl({ value: this.computerClient.id ? this.computerClient : undefined, disabled: this.disabledCondition() }, [ Validators.required ]),
+      'computer_client': new FormControl({ value: this.computerClient.id ? this.computerClient : undefined, disabled: this.disabledCondition() }),
       'description': new FormControl(this.feed.description, [ Validators.required ])
     });
     this.feedForm.get('organization').valueChanges.subscribe((o: Organization) => {
@@ -142,29 +146,31 @@ export class FeedComponent implements OnInit {
       newFeed.client_ids.push(this.computer_client.value.id);
     if (this.feed.id !== undefined) {
       newFeed.id = this.feed.id;
-      this.feedsService.updateFeed(newFeed).subscribe(
-        (_response: Feed) => {
+      this.feedsService.updateFeed(newFeed).subscribe({
+        next: (_response: Feed) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('FEED.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     } else {
-      this.feedsService.createFeed(newFeed).subscribe(
-        (_response: Feed) => {
+      this.feedsService.createFeed(newFeed).subscribe({
+        next: (_response: Feed) => {
           this.isSaving = false;
           this.httpUtils.successSnackbar(this.translate.instant('FEED.SAVED'));
           this.router.navigate([this.backRoute]);
         },
-        (error: any) => {
+        error: (error: any) => {
           this.isSaving = false;
-          this.httpUtils.errorDialog(error);
+          if (error.status !== 401)
+            this.httpUtils.errorDialog(error);
         }
-      );
+      });
     }
   }
 
@@ -173,17 +179,18 @@ export class FeedComponent implements OnInit {
     dialogRef.afterClosed().subscribe((dialogResult: any) => {
       if (dialogResult) {
         this.isDeleting = true;
-        this.feedsService.deleteFeed(this.feed).subscribe(
-          (_response: any) => {
+        this.feedsService.deleteFeed(this.feed).subscribe({
+          next: (_response: any) => {
             this.isDeleting = false;
             this.httpUtils.successSnackbar(this.translate.instant('FEED.DELETED'));
             this.router.navigate([this.backRoute]);
           },
-          (error: any) => {
+          error: (error: any) => {
             this.isDeleting = false;
-            this.httpUtils.errorDialog(error);
+            if (error.status !== 401)
+              this.httpUtils.errorDialog(error);
           }
-        );
+        });
       }
     });
   }

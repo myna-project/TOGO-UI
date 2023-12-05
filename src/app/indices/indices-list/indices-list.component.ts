@@ -43,24 +43,26 @@ export class IndicesComponent implements OnInit {
     this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
     this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-    forkJoin(this.orgsService.getOrganizations(), this.indexGroupsService.getIndexGroups(), this.indicesService.getIndices()).subscribe(
-      (results: any) => {
+    forkJoin([this.orgsService.getOrganizations(), this.indexGroupsService.getIndexGroups(), this.indicesService.getIndices()]).subscribe({
+      next: (results: any) => {
         this.allOrgs = results[0];
         this.allIndexGroups = results[1];
         this.allIndices = results[2];
-        this.organizationsTree.initialize(this.allOrgs, [], [], [], [], [], this.allIndexGroups, this.allIndices, [], []);
+        this.organizationsTree.initialize(this.allOrgs, [], [], [], [], [], this.allIndexGroups, this.allIndices, [], [], true, 'feed');
         this.organizationsTree.dataChange.subscribe((data: any) => {
           this.dataSource.data = data;
         });
         this.isLoading = false;
       },
-      (error: any) => {
-        const dialogRef = this.httpUtils.errorDialog(error);
-        dialogRef.afterClosed().subscribe((_value: any) => {
-          this.router.navigate([this.backRoute]);
-        });
+      error: (error: any) => {
+        if (error.status !== 401) {
+          const dialogRef = this.httpUtils.errorDialog(error);
+          dialogRef.afterClosed().subscribe((_value: any) => {
+            this.router.navigate([this.backRoute]);
+          });
+        }
       }
-    );
+    });
   }
 
   getLevel = (node: TreeItemFlatNode) => node.level;
@@ -89,7 +91,7 @@ export class IndicesComponent implements OnInit {
   filterChanged(filterText: string, type: string) {
     this.isFiltering = true;
     this.isLoading = true;
-    if (this.organizationsTree.filterOrgs(filterText, type))
+    if (this.organizationsTree.filterByType(filterText, type, true))
       this.treeControl.expandAll();
     this.isLoading = false;
   }

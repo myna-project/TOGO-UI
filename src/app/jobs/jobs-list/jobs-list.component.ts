@@ -38,20 +38,21 @@ export class JobsComponent implements OnInit {
     this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
     this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
-    forkJoin(this.orgsService.getOrganizations(), this.jobsService.getJobs()).subscribe(
-      (results: any) => {
+    forkJoin([this.orgsService.getOrganizations(), this.jobsService.getJobs()]).subscribe({
+      next: (results: any) => {
         this.allOrgs = results[0];
         this.allJobs = results[1];
-        this.organizationsTree.initialize(this.allOrgs, this.allJobs, [], [], [], [], [], [], [], []);
+        this.organizationsTree.initialize(this.allOrgs, this.allJobs, [], [], [], [], [], [], [], [], true, 'feed');
         this.organizationsTree.dataChange.subscribe((data: any) => {
           this.dataSource.data = data;
         });
         this.isLoading = false;
       },
-      (error: any) => {
-        this.httpUtils.errorDialog(error);
+      error: (error: any) => {
+        if (error.status !== 401)
+          this.httpUtils.errorDialog(error);
       }
-    );
+    });
   }
 
   getLevel = (node: TreeItemFlatNode) => node.level;
@@ -80,7 +81,7 @@ export class JobsComponent implements OnInit {
   filterChanged(filterText: string, type: string) {
     this.isFiltering = true;
     this.isLoading = true;
-    if (this.organizationsTree.filterOrgs(filterText, type))
+    if (this.organizationsTree.filterByType(filterText, type, true))
       this.treeControl.expandAll();
     this.isLoading = false;
   }

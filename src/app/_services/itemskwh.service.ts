@@ -18,32 +18,32 @@ export class ItemskWhService {
 
   getInvoiceItems(): Observable<InvoiceItem[]> {
     return this.http.get<InvoiceItem[]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   getInvoiceItem(id: number | string): Observable<InvoiceItem> {
     return this.http.get<InvoiceItem>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + +id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     );
   }
 
   createInvoiceItem(item: InvoiceItem): Observable<InvoiceItem> {
     return this.http.post<InvoiceItem>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource, item).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     )
   }
 
   updateInvoiceItem(item: InvoiceItem): Observable<InvoiceItem> {
     return this.http.put<InvoiceItem>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + item.id, item).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     )
   }
 
   deleteInvoiceItem(item: InvoiceItem | number): Observable<InvoiceItem> {
     const id = typeof item === 'number' ? item : item.id;
     return this.http.delete<InvoiceItem>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '/' + +id).pipe(
-      catchError((err) => { return throwError(err); })
+      catchError((err) => { return throwError(() => err);  })
     )
   }
 }

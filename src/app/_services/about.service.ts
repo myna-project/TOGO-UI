@@ -18,7 +18,7 @@ export class AboutService {
 
   getVersion(): Observable<About> {
     return this.http.get<About>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource).pipe(
-      catchError((err) => throwError(err))
+      catchError((err) => throwError(() => err))
     );
   }
 }
