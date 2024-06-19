@@ -114,7 +114,7 @@ export class DrainsComponent implements OnInit {
   show(id: number): void {
     this.router.navigate(['measures/' + id]);
     if (id)
-      this.router.navigate(['measures'], { queryParams: { drainIds: 'd_' + id.toString() } });
+      this.router.navigate(['measures'], { queryParams: { nodeIds: 'd_' + id.toString() } });
   }
 
   edit(type: string, id: number): void {

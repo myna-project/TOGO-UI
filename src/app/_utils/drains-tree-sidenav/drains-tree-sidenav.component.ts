@@ -1,43 +1,56 @@
 import { FlatTreeControl } from '@angular/cdk/tree';
-import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Component, Input, OnInit } from '@angular/core';
 import { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
+import { TranslateService } from '@ngx-translate/core';
 
 import { Client } from '../../_models/client';
 import { Drain } from '../../_models/drain';
 import { Feed } from '../../_models/feed';
 import { Formula } from '../../_models/formula';
+import { Index } from "../../_models";
+import { IndexGroup } from "../../_models/indexgroup";
 import { Organization } from '../../_models/organization';
 import { TreeItemFlatNode, TreeItemNode } from '../../_models/treenode';
 
 import { AuthenticationService } from '../../_services/authentication.service';
+import { FormulasService } from '../../_services/formulas.service';
 
+import { HttpUtils } from '../../_utils/http.utils';
 import { OrganizationsTree } from '../../_utils/tree/organizations-tree';
 
-export interface DrainsTreeDialogData {
+import { MeasuresComponent } from '../../measures/measures.component';
+
+export interface DrainsTreeSidenavData {
   orgs: Organization[];
   clients: Client[];
   feeds: Feed[];
   drains: Drain[];
   formulas: Formula[];
+  indices: Index[];
+  indexGroups: IndexGroup[];
   showDetails: boolean;
-  singleDrain: boolean;
+  parentComponent: MeasuresComponent;
 }
 
 @Component({
-  templateUrl: './drains-tree-dialog.component.html'
+  selector: 'app-drains-tree-sidenav',
+  templateUrl: './drains-tree-sidenav.component.html'
 })
-export class DrainsTreeDialogComponent implements OnInit {
+export class DrainsTreeSidenavComponent implements OnInit {
 
-  selectedDrains = [];
-  selectedDrain: TreeItemNode = new TreeItemNode();
-  showDetails: boolean = false;
-  singleDrain: boolean = false;
-  filterTextValue: string;
-  typeValue: string;
+  @Input() data: DrainsTreeSidenavData;
+
+  isClickable: boolean = true;
+  isDarkTheme: boolean;
   isFiltering: boolean = false;
   isLoading: boolean = true;
+  parentComponent: MeasuresComponent;
+  removing: boolean;
+  showDetails: boolean = false;
+  filterTextValue: string;
+  typeValue: string;
   depthTree: string;
+  searchType: string;
 
   flatNodeMap = new Map<TreeItemFlatNode, TreeItemNode>();
   nestedNodeMap = new Map<TreeItemNode, TreeItemFlatNode>();
@@ -45,22 +58,23 @@ export class DrainsTreeDialogComponent implements OnInit {
   treeFlattener: MatTreeFlattener<TreeItemNode, TreeItemFlatNode>;
   dataSource: MatTreeFlatDataSource<TreeItemNode, TreeItemFlatNode>;
 
-  constructor(public dialogRef: MatDialogRef<DrainsTreeDialogComponent>, private authService: AuthenticationService, private organizationsTree: OrganizationsTree, @Inject(MAT_DIALOG_DATA) private data: DrainsTreeDialogData) {}
+  constructor(private authService: AuthenticationService, private organizationsTree: OrganizationsTree, private httpUtils: HttpUtils, private formulasService: FormulasService, private translate: TranslateService) {}
 
   ngOnInit() {
     let currentUser = this.authService.getCurrentUser();
     this.depthTree = currentUser.drain_tree_depth;
+    this.isDarkTheme = currentUser.dark_theme;
+    console.log(currentUser);
     this.treeFlattener = new MatTreeFlattener(this.transformer, this.getLevel, this.isExpandable, this.getChildren);
     this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
     this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
     this.organizationsTree.dataChange.subscribe((data: any) => {
       this.dataSource.data = data;
     });
-    this.organizationsTree.initialize(this.data.orgs, [], this.data.clients, this.data.feeds, this.data.drains, this.data.formulas, [], [], [], [], this.data.showDetails, this.depthTree);
+    this.organizationsTree.initialize(this.data.orgs, [], this.data.clients, this.data.feeds, this.data.drains, this.data.formulas, this.data.indexGroups, this.data.indices, [], [], this.data.showDetails, this.depthTree);
 
+    this.parentComponent = this.data.parentComponent;
     this.showDetails = this.data.showDetails ? this.data.showDetails : false;
-    this.singleDrain = this.data.singleDrain ? this.data.singleDrain : false;
-
     this.isLoading = false;
   }
 
@@ -88,6 +102,7 @@ export class DrainsTreeDialogComponent implements OnInit {
       flatNode.client_default_drain = node.client_default_drain;
     if (node.type == 'client')
       flatNode.default_drain_ids = node.default_drain_ids;
+    flatNode.selected = node.selected;
     flatNode.expanded = node.expanded;
 
     this.flatNodeMap.set(flatNode, node);
@@ -97,8 +112,8 @@ export class DrainsTreeDialogComponent implements OnInit {
     return flatNode;
   }
 
-  checkSelectedDrain(node: TreeItemNode): boolean {
-    return (this.selectedDrains.filter(d => ((d.id === node.id) && (d.type === node.type))).length > 0) || (this.selectedDrain && (this.selectedDrain.id === node.id));
+  changeSearchType(searchType: string) {
+    this.searchType = (searchType !== this.searchType) ? searchType : '';
   }
 
   filterChanged(filterText: string, type: string) {
@@ -110,21 +125,7 @@ export class DrainsTreeDialogComponent implements OnInit {
     this.typeValue = type;
   }
 
-  selectDrain(node: TreeItemNode): void {
-    if ((node.type === 'drain') || (node.type === 'formula')) {
-      if (this.data.singleDrain) {
-        this.selectedDrain = (this.selectedDrain && (this.selectedDrain.id === node.id)) ? null : node;
-      } else {
-        let i: number = this.selectedDrains.indexOf(node);
-        if (i > -1)
-          this.selectedDrains.splice(i, 1);
-        else
-          this.selectedDrains.push(node);
-      }
-    }
-  }
-
-  detailsDrainButton(node: TreeItemFlatNode): void {
+  changeViewDetails(node: TreeItemFlatNode): void {
     node.is_loading = true;
     setTimeout(() => {
       this.organizationsTree.changeViewDetails(node);
@@ -132,5 +133,47 @@ export class DrainsTreeDialogComponent implements OnInit {
         this.filterChanged(this.filterTextValue, this.typeValue);
       node.is_loading = false;
     }, 500);
+  }
+
+  selectNode(node: TreeItemNode, readd: boolean, remove: boolean): void {
+    if (this.isClickable && ((node.type == 'drain') || (node.type == 'formula') || (node.type == 'index'))) {
+      this.isClickable = false;
+      if (remove || ((node.type === 'index') && node.selected)) {
+        this.parentComponent.removeNode(node);
+        this.isClickable = true;
+      } else if (!node.selected || readd) {
+        this.isClickable = false;
+        this.parentComponent.addNode(node, true, true);
+      } else {
+        this.isClickable = true;
+      }
+    }
+  }
+
+  editNode(id: number, type: string, selected: boolean) {
+    let node = this.treeControl.dataNodes.find(node => ((node.id === id) && (node.type === type)));
+    if (node)
+      node.selected = selected;
+  }
+
+  endLoadingMeasure(): void {
+    this.isClickable = true;
+  }
+
+  deleteFormula(node: TreeItemNode): void {
+    const dialogRef = this.httpUtils.confirmDelete(this.translate.instant('FORMULASTREE.DELETECONFIRM'));
+    dialogRef.afterClosed().subscribe((dialogResult: any) => {
+      if (dialogResult) {
+        this.formulasService.deleteFormula(node.id).subscribe({
+          next: (_response: any) => {
+            this.httpUtils.successSnackbar(this.translate.instant('FORMULASTREE.DELETEFORMULA'));
+            window.location.reload();
+          },
+          error: (error: any) => {
+            this.httpUtils.errorDialog(error);
+          }
+        });
+      }
+    });
   }
 }

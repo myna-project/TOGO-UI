@@ -54,7 +54,7 @@
   </form>
   <div class="button-row-right">
     <button type="submit" mat-raised-button color="primary" (click)="save(false)" [disabled]="isSaving || dashboardForm.invalid">{{ 'DASHBOARD.SAVE' | translate }}</button>
-    <button *ngIf="dashboard.id" mat-raised-button class="darkmagenta-button" (click)="save(true)" [disabled]="isSaving || dashboardForm.invalid">{{ 'DASHBOARD.DUPLICATE' | translate }}</button>
+    <button *ngIf="dashboard.id" mat-raised-button class="whiteblue-button" (click)="save(true)" [disabled]="isSaving || dashboardForm.invalid">{{ 'DASHBOARD.DUPLICATE' | translate }}</button>
     <button mat-raised-button (click)="goBack()" tabindex="-1">{{ 'DIALOG.BACK' | translate }}</button>
   </div>
 </div>

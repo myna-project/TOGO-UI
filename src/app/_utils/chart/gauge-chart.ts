@@ -12,42 +12,61 @@ export class GaugeChart {
     return new Chart({
       chart: {
         type: 'gauge',
-        backgroundColor: options.background_color,
+        backgroundColor: {
+          linearGradient: { x1: 0.7, x2: 0.4, y1: 0.4, y2: 1 },
+          stops: [
+            [0, '#310640'],
+            [1, options.background_color.toString()],
+          ]
+        },
         height: options ? options.height : '100%',
         width: options ? options.width : '100%'
+      },
+      pane: {
+        startAngle: -90,
+        endAngle: 89.9,
+        background: null,
+        center: ['50%', '75%'],
+        size: '80%'
       },
       credits: {
         enabled: true
       },
       title: {
         text: options.title,
-        verticalAlign: 'top'
+        verticalAlign: 'top',
+        style: {
+          color: '#e6d4d4',
+          fontWeight: 'bold',
+          fontSize: '1.1em',
+        }
       },
       legend: {
         enabled: false
       },
-      pane: {
-        startAngle: -150,
-        endAngle: 150
-      },
       yAxis: {
         min: options.min_value,
         max: options.max_value,
-        minorTickInterval: 'auto',
-        minorTickWidth: 1,
+        minorTickInterval: null,
+        minorTickWidth: 2,
         minorTickLength: 10,
-        minorTickPosition: 'inside',
-        minorTickColor: '#666',
-        tickPixelInterval: 30,
-        tickWidth: 2,
-        tickPosition: 'inside',
-        tickLength: 10,
-        tickColor: '#666',
+        tickPixelInterval: 50,
         labels: {
-          step: 2
+          y: 0,
+          style: {
+            color: "#bbb1b1",
+            fontWeight: 'bold',
+          },
+          distance: 18
         },
         title: {
-          text: options.unit ? options.unit : ''
+          text: options.unit ? options.unit : '',
+          style: {
+            fontSize: '1em',
+            color: "#bbb1b1",
+            fontWeight: 'bold'
+          },
+          y: 36
         },
         plotBands: options.plot_bands,
       },
@@ -56,12 +75,22 @@ export class GaugeChart {
           type: 'gauge',
           name: '',
           dataLabels: {
-            format: '{point.y:,.' + (options.decimals ? options.decimals : 2) + 'f}'
+            format: '{point.y:,.' + (options.decimals ? options.decimals : 2) + 'f}',
+            style: {
+              fontSize: '16px'
+            }
           },
           data: [options.value],
           tooltip: {
             valueDecimals: ((options.decimals !== null) && (options.decimals !== undefined)) ? options.decimals : 2,
             valueSuffix: options.unit ? ' ' + options.unit : ''
+          },
+          dial: {
+            radius: '80%',
+            backgroundColor: '#bbb1b1',
+          },
+          pivot: {
+            backgroundColor: '#bbb1b1'
           }
         }
       ]
@@ -69,9 +98,9 @@ export class GaugeChart {
   }
 
   public setPlotBands(options: any, alarm_value: number, warning_value: number): void {
-    let alarm_color = '#DF5353' // red
-    let warning_color = '#DDDF0D' // yellow
-    let ok_color = '#55BF3B' // green
+    let alarm_color = '#a62b2b' // red
+    let warning_color = '#e3c81e' // yellow
+    let ok_color = '#5e9a50' // green
     if ((options.min_value === undefined) || (options.min_value > options.value))
       options.min_value = options.value;
     if ((options.max_value === undefined) || (options.max_value < options.value))

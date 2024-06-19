@@ -15,14 +15,14 @@ export class MeasuresService {
 
   constructor(private http: HttpClient, private httpUtils: HttpUtils) {}
 
-  getMeasures(drains: string, positiveNegativeValues: string, aggregations: string, operations: string, start: string, end: string, timeAggregation: string): Observable<any[]> {
-    return this.http.get<any[][]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '?ids%5B%5D=' + drains + '&positiveNegativeValues%5B%5D=' + positiveNegativeValues + '&measureAggregation%5B%5D=' + aggregations + '&operations%5B%5D=' + operations + '&start=' + start + '&end=' + end + '&timeAggregation=' + timeAggregation).pipe(
+  getMeasures(drains: string, excludeOutliers: string, positiveNegativeValues: string, aggregations: string, operations: string, start: string, end: string, timeAggregation: string): Observable<any[]> {
+    return this.http.get<any[][]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiResource + '?ids%5B%5D=' + drains + '&excludeOutliers%5B%5D=' + excludeOutliers + '&positiveNegativeValues%5B%5D=' + positiveNegativeValues + '&measureAggregation%5B%5D=' + aggregations + '&operations%5B%5D=' + operations + '&start=' + start + '&end=' + end + '&timeAggregation=' + timeAggregation).pipe(
       catchError((err) => { return throwError(() => err);  })
     );
   }
 
-  getCosts(drain_cost_id: number, drains: string, aggregation: string, operations: string, start: string, end: string, timeAggregation: string): Observable<any[]> {
-    return this.http.get<any[][]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiCostsResource + '?drainCostId=' + drain_cost_id + '&ids%5B%5D=' + drains + '&measureAggregation=' + aggregation + '&operations%5B%5D=' + operations + '&start=' + start + '&end=' + end + '&timeAggregation=' + timeAggregation).pipe(
+  getCosts(drain_cost_id: number, drains: string, excludeOutliers: string, positiveNegativeValues: string, aggregation: string, operations: string, start: string, end: string, timeAggregation: string): Observable<any[]> {
+    return this.http.get<any[][]>(this.httpUtils.getTogoAPIUrl() + this.httpUtils.getAdminUrl() + this.apiCostsResource + '?drainCostId=' + drain_cost_id + '&ids%5B%5D=' + drains + '&excludeOutliers%5B%5D=' + excludeOutliers + '&positiveNegativeValues%5B%5D=' + positiveNegativeValues + '&measureAggregation=' + aggregation + '&operations%5B%5D=' + operations + '&start=' + start + '&end=' + end + '&timeAggregation=' + timeAggregation).pipe(
       catchError((err) => { return throwError(() => err);  })
     );
   }

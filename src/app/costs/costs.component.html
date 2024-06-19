@@ -29,10 +29,11 @@
         <ngx-mat-datetime-picker #endpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
         <mat-error *ngIf="group['endTime'].invalid && (group['endTime'].dirty || group['endTime'].touched) && group['endTime'].errors.required">{{ 'COSTS.MISSINGENDDATE' | translate }}</mat-error>
       </mat-form-field>
-      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastHour()">{{ 'COSTS.LASTHOUR' | translate }}</button>
-      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastDay()">{{ 'COSTS.LASTDAY' | translate }}</button>
-      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastWeek()">{{ 'COSTS.LASTWEEK' | translate }}</button>
-      <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="setLastMonth()">{{ 'COSTS.LASTMONTH' | translate }}</button>
+      <button mat-raised-button class="togo-form-button whiteblue-button" (click)="setLastHour()">{{ 'COSTS.LASTHOUR' | translate }}</button>
+      <button mat-raised-button class="togo-form-button whiteblue-button" (click)="setLastDay()">{{ 'COSTS.LASTDAY' | translate }}</button>
+      <button mat-raised-button class="togo-form-button whiteblue-button" (click)="setLastWeek()">{{ 'COSTS.LASTWEEK' | translate }}</button>
+      <button mat-raised-button class="togo-form-button whiteblue-button" (click)="setLastMonth()">{{ 'COSTS.LASTMONTH' | translate }}</button>
+      <button mat-raised-button class="togo-form-button whiteblue-button" (click)="setDefaultDate()" *ngIf="(this.default_start !== null && this.default_start !== undefined) && (this.default_end !== null && this.default_end !== undefined)">{{ 'COSTS.DEFAULTDATE' | translate }}</button>
     </div>
     <div class="togo-form-field-group">
       <mat-form-field class="short-form-field">
@@ -54,19 +55,40 @@
         <button mat-raised-button class="togo-form-button adddrains-button" [disabled]="isLoading || !costsDrain" (click)="addDrains()">{{ 'COSTS.ADDDRAINS' | translate }}</button>
         <button mat-raised-button class="togo-form-button loadformulas-button" [disabled]="isLoading || !costsDrain" (click)="loadFormulas()">{{ 'COSTS.LOADFORMULAS' | translate }}</button>
       </h5>
-      <div class="togo-list">
-        <div *ngFor="let d of drains; let i = index" class="togo-list-item drain">
+      <div class="togo-list" cdkDropList (cdkDropListDropped)="onDrop($event)" *ngIf="!isChangingMeasures">
+        <div [cdkDragData]="d" *ngFor="let d of drains; let i = index" class="togo-list-item drain" cdkDrag cdkDragLockAxis="y">
           <div *ngIf="d.visible" class="togo-form-field-group">
             <div class="togo-list-item-title">
+              <button cdkDragHandle mat-icon-button class="togo-list-item-title-icon">
+                <mat-icon class="togo-list-item-title-icon">unfold_more</mat-icon>
+              </button>
               <button mat-icon-button class="togo-list-item-title-icon" (click)="removeDrain(i)" >
                 <mat-icon class="togo-list-item-title-icon error" title="{{ 'COSTS.REMOVEDRAIN' | translate }}">remove_circle</mat-icon>
               </button>
               {{d.full_name}}
-              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.operation === 'SEMICOLON')" (click)="showLegend(i)" >
+              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.operation && (d.operation === 'SEMICOLON'))" (click)="showLegend(i)" >
                 <mat-icon class="togo-list-item-title-icon" color="primary" title="{{ 'COSTS.EDITLEGEND' | translate }}">edit</mat-icon>
+              </button>
+              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.components)" (click)="showFormulaDetails(i)" >
+                <mat-icon class="togo-list-item-title-icon" color="primary" title="{{ 'COSTS.FORMULADETAILS' | translate }}">remove_red_eye</mat-icon>
+              </button>
+              <button mat-icon-button class="togo-list-item-title-icon" *ngIf="(d.components)" (click)="editFormula(i)" >
+                <mat-icon class="togo-list-item-title-icon" color="primary" title="{{ 'COSTS.EDITFORMULA' | translate }}">settings</mat-icon>
               </button>
             </div>
             <div class="togo-list-item-right togo-list-item-right-form-field">
+              <div class="measure-mat-slide-toggle" *ngIf="d.is_exclude_outliers && !d.components">
+                <mat-label>{{ 'COSTS.EXCLUDEOUTLIERS' | translate }}</mat-label>
+                <mat-slide-toggle color="primary" [formControlName]="'excludeOutliers_' + i"><mat-icon class="incremental-info" matTooltip="{{ 'MEASURES.EXCLUDEOUTLIERSINFO' | translate }}">info_outline</mat-icon></mat-slide-toggle>
+              </div>
+              <mat-form-field class="short-form-field" *ngIf="d.full_name && !d.components && d.is_positive_negative_value">
+                <mat-label>{{ 'COSTS.POSITIVENEGATIVEVALUES' | translate }}</mat-label>
+                <mat-select [formControlName]="'positiveNegativeValue_' + i">
+                  <mat-option [value]="''">{{ 'COSTS.ALLVALUES' | translate }}</mat-option>
+                  <mat-option [value]="'pos'">{{ 'COSTS.POSITIVEVALUES' | translate }}</mat-option>
+                  <mat-option [value]="'neg'">{{ 'COSTS.NEGATIVEVALUES' | translate }}</mat-option>
+                </mat-select>
+              </mat-form-field>
               <mat-form-field class="short-form-field">
                 <mat-label>{{ 'COSTS.OPERATION' | translate }}</mat-label>
                 <mat-select [formControlName]="'operation_' + i" required>
@@ -152,7 +174,7 @@
       <div>
         <button *ngIf="!isPieChart && !isHeatmapChart && !chartOptions" mat-raised-button color="primary" (click)="chartOptions = true">{{ 'COSTS.SHOWCHARTOPTIONS' | translate }}</button>
         <button mat-raised-button color="primary" class="chart-footer-button" (click)="exportCsv()">{{ 'COSTS.DOWNLOADCSV' | translate }}</button>
-        <button mat-raised-button color="primary" class="chart-footer-button" (click)="shareLink()">{{ 'MEASURES.SHARELINK' | translate }}</button>
+        <button mat-raised-button color="primary" class="chart-footer-button" (click)="shareLink()">{{ 'COSTS.SHARELINK' | translate }}</button>
       </div>
     </div>
   </form>

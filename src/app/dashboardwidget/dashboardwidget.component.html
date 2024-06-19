@@ -63,7 +63,7 @@
         <ngx-mat-color-picker #c3></ngx-mat-color-picker>
       </mat-form-field>
     </div>
-    <div *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP')" class="togo-form-field-group">
+    <div *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP') || (widget.widget_type === 'STACKED')" class="togo-form-field-group">
       <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
         <mat-slide-toggle color="primary" [formControl]="legend">{{ 'DASHBOARDWIDGET.LEGEND' | translate }}</mat-slide-toggle>
         <textarea matInput hidden></textarea>
@@ -83,7 +83,7 @@
         </mat-select>
       </mat-form-field>
     </div>
-    <div *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP')" class="togo-form-field-group">
+    <div *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP') || (widget.widget_type === 'STACKED')" class="togo-form-field-group">
       <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
         <mat-slide-toggle color="primary" [formControl]="navigator">{{ 'DASHBOARDWIDGET.NAVIGATOR' | translate }}</mat-slide-toggle>
         <textarea matInput hidden></textarea>
@@ -108,7 +108,7 @@
           </mat-select>
           <mat-error *ngIf="period_missing">{{ 'DASHBOARDWIDGET.MISSINGLASTPERIODS' | translate }}</mat-error>
         </mat-form-field>
-        <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="changeRelativeTime(false)">{{ 'DASHBOARDWIDGET.SETTIME' | translate }}</button>
+        <button mat-raised-button class="togo-form-button whiteblue-button" (click)="changeRelativeTime(false)">{{ 'DASHBOARDWIDGET.SETTIME' | translate }}</button>
       </div>
       <div *ngIf="!relativeTime" class="togo-form-field-group">
         <mat-form-field class="short-form-field">
@@ -124,7 +124,7 @@
           <mat-datepicker-toggle matSuffix [for]="endpicker"></mat-datepicker-toggle>
           <ngx-mat-datetime-picker #endpicker [defaultTime]="[0,0,0]" [showSeconds]="false" [touchUi]="true"></ngx-mat-datetime-picker>
         </mat-form-field>
-        <button mat-raised-button class="togo-form-button darkmagenta-button" (click)="changeRelativeTime(true)">{{ 'DASHBOARDWIDGET.SETRELATIVEPERIOD' | translate }}</button>
+        <button mat-raised-button class="togo-form-button whiteblue-button" (click)="changeRelativeTime(true)">{{ 'DASHBOARDWIDGET.SETRELATIVEPERIOD' | translate }}</button>
       </div>
     </div>
     <fieldset class="togo-form-fieldset">
@@ -156,7 +156,11 @@
               {{d.full_name}}
             </div>
             <div *ngIf="d.drain_id || d.formula_id" class="togo-list-item-right togo-list-item-right-form-field">
-              <mat-form-field class="short-form-field" *ngIf="d.full_name && !d.formula_id && d.is_positive_negative_value && !costsWidget">
+              <div class="measure-mat-slide-toggle" *ngIf="d.is_exclude_outliers">
+                <mat-label>{{ 'MEASURES.EXCLUDEOUTLIERS' | translate }}</mat-label>
+                <mat-slide-toggle color="primary" [formControlName]="'excludeOutliers_' + i"><mat-icon class="incremental-info" matTooltip="{{ 'MEASURES.EXCLUDEOUTLIERSINFO' | translate }}">info_outline</mat-icon></mat-slide-toggle>
+              </div>
+              <mat-form-field class="short-form-field" *ngIf="d.full_name && !d.formula_id && d.is_positive_negative_value">
                 <mat-label>{{ 'MEASURES.POSITIVENEGATIVEVALUES' | translate }}</mat-label>
                 <mat-select [formControlName]="'positiveNegativeValue_' + i">
                   <mat-option [value]="''">{{ 'MEASURES.ALLVALUES' | translate }}</mat-option>
@@ -185,7 +189,7 @@
       </div>
     </fieldset>
     <div class="togo-form-field-group">
-      <mat-form-field *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM')" class="short-form-field">
+      <mat-form-field *ngIf="(widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'STACKED')" class="short-form-field">
         <mat-label>{{ 'DASHBOARDWIDGET.TIMEAGGREGATION' | translate }}</mat-label>
         <mat-select *ngIf="!costsWidget" [formControlName]="'time_aggregation'" required>
           <mat-option *ngFor="let aggregation of timeAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>

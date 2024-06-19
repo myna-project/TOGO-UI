@@ -15,4 +15,5 @@ export class Index {
   formula_elements: any[];
   operators: string[];
   result: any[];
+  selected: boolean;
 }

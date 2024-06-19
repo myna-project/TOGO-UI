@@ -102,7 +102,11 @@ export class DashboardWidgetComponent implements OnInit {
             this.translate.get('CHART.GAUGE').subscribe((gauge: string) => {
               this.widgetTypes.push({ id: 'GAUGE', description: gauge });
               this.costsWidgetTypes.push({ id: 'GAUGE', description: gauge });
-              this.widgetTypes.push({ id: 'ALERT', description: 'Alert' });
+              this.translate.get('CHART.STACKED').subscribe((stacked: string) => {
+                this.widgetTypes.push({ id: 'STACKED', description: stacked });
+                this.costsWidgetTypes.push({ id: 'STACKED', description: stacked });
+                this.widgetTypes.push({ id: 'ALERT', description: 'Alert' });
+              });
             });
           });
         });
@@ -404,7 +408,7 @@ export class DashboardWidgetComponent implements OnInit {
               let control = true;
               formula.components.forEach((drain_id: number) => {
                 let drain = this.allDrains.filter(d => d.id === drain_id)[0];
-                if (!drain.measure_unit.toLowerCase().includes('wh'))
+                if (drain.measure_unit && !drain.measure_unit.toLowerCase().includes('wh'))
                   control = false;
               });
               if (control)
@@ -478,6 +482,7 @@ export class DashboardWidgetComponent implements OnInit {
             let org = this.allOrgs.find(o => o.id === client.org_id);
             if (org) {
               detail.drain_id = drain.id;
+              detail.is_exclude_outliers = ((drain.min_value != null) || (drain.max_value != null));
               detail.full_name = ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : '');
               detail.is_positive_negative_value = drain.positive_negative_value;
               detail.aggregations = this.httpUtils.getMeasuresAggregationsForMeasureType(drain.measure_type);
@@ -489,9 +494,13 @@ export class DashboardWidgetComponent implements OnInit {
       }
     }
     detail.divider = (!detail.operator || (detail.operator === 'SEMICOLON'));
+    this.group['excludeOutliers_' + i] = new FormControl(detail.id ? detail.exclude_outliers : detail.is_exclude_outliers);
     this.group['positiveNegativeValue_' + i] = new FormControl(detail.positive_negative_value ? detail.positive_negative_value : '');
     this.group['aggregation_' + i] = new FormControl(detail.aggregation, []);
     this.group['operator_' + i] = new FormControl(detail.operator, []);
+    this.widgetForm.get('excludeOutliers_' + i).valueChanges.subscribe((ex: boolean) => {
+      detail.exclude_outliers = ex;
+    });
     this.widgetForm.get('positiveNegativeValue_' + i).valueChanges.subscribe((pn: string) => {
       detail.positive_negative_value = pn;
     });

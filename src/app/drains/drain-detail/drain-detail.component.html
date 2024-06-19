@@ -90,6 +90,18 @@
       </mat-form-field>
     </div>
     <div class="togo-form-field-group">
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.MINVALUE' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAIN.MINVALUE' | translate }}" [formControl]="min_value">
+        <mat-error *ngIf="min_value.invalid && (min_value.dirty || min_value.touched) && min_value.errors.pattern">{{ 'DRAIN.INVALIDMINVALUE' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field class="medium-form-field">
+        <mat-label>{{ 'DRAIN.MAXVALUE' | translate }}</mat-label>
+        <input matInput placeholder="{{ 'DRAIN.MAXVALUE' | translate }}" [formControl]="max_value">
+        <mat-error *ngIf="max_value.invalid && (max_value.dirty || max_value.touched) && max_value.errors.pattern">{{ 'DRAIN.INVALIDMAXVALUE' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="togo-form-field-group">
       <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
         <mat-slide-toggle color="primary" [formControl]="positive_negative_value">{{ 'DRAIN.POSITIVENEGATIVEVALUES' | translate }}<mat-icon class="incremental-info" matTooltip="{{ 'DRAIN.POSITIVENEGATIVEVALUESINFO' | translate }}">info_outline</mat-icon></mat-slide-toggle>
         <textarea matInput hidden></textarea>

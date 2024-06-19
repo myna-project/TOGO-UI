@@ -70,7 +70,7 @@ export class SynopticDashboardComponent implements AfterViewInit, OnDestroy {
           k++;
         });
         let start_time: Date = new Date(moment().add(data.lastN * -1, (data.last == 'HOUR') ? 'hour' : 'month').toISOString());
-        this.measuresService.getMeasures(data.drains, null, data.aggregations, data.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), data.timeAggregation).subscribe({
+        this.measuresService.getMeasures(data.drains, '', '', data.aggregations, data.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), data.timeAggregation).subscribe({
           next: (measures: any[]) => {
             let i = 0;
             measures.forEach(m => {

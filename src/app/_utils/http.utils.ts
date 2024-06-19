@@ -137,6 +137,10 @@ export class HttpUtils {
     return (new Date(date)).toLocaleDateString(this.getLanguage(), { year: "numeric", month: "2-digit", day: "2-digit" }) + ' ' + (new Date(date)).toLocaleTimeString(this.getLanguage(), { hour: '2-digit', minute: '2-digit' });
   }
 
+  public getLocaleDateTimeStringWithSeconds(date: string): string {
+    return (new Date(date)).toLocaleDateString(this.getLanguage(), { year: "numeric", month: "2-digit", day: "2-digit" }) + ' ' + (new Date(date)).toLocaleTimeString(this.getLanguage(), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
   public hexToRgb(hex: string) {
     const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
     hex = hex.replace(shorthandRegex, (_m, r, g, b) => {
@@ -175,7 +179,7 @@ export class HttpUtils {
     return this.chartAggregations;
   }
 
-  public createCsvContent(measures: Measures[], seriesNames: string[], indices: Index[]): string {
+  public createCsvContent(seriesNames: string[], indices: Index[], measures: Measures[]): string {
     let csvData: any[] = [];
     let csvHeaders: string[] = ['Time'];
     let csvValues: any[] = [];
@@ -224,7 +228,7 @@ export class HttpUtils {
     csvData[0] = csvHeaders;
     csvValues.sort((a, b) => a.time < b.time ? -1 : a.time > b.time ? 1 : 0);
     csvValues.forEach(tv => {
-      let csvRow = [this.getLocaleDateTimeString(tv.time)];
+      let csvRow = [this.getLocaleDateTimeStringWithSeconds(tv.time)];
       for (let j = 0; j < i; j++) {
         let m = tv['measures'].find((v: any) => v.key === j);
         csvRow.push(m !== undefined ? m.value.toString().replace('.', ',') : '');
@@ -246,6 +250,10 @@ export class HttpUtils {
       queryParams += 'costsDrain=' + costsDrain.id + '&';
     if (dataDrain && dataDrain.drainIds)
       queryParams += 'drainIds=' + dataDrain.drainIds.toString() + '&';
+    if (dataDrain && dataDrain.nodeIds)
+      queryParams += 'nodeIds=' + dataDrain.nodeIds.toString() + '&';
+    if (dataDrain && dataDrain.excludeOutliers)
+      queryParams += 'excludeOutliers=' + dataDrain.excludeOutliers.toString() + '&';
     if (dataDrain && dataDrain.positiveNegativeValues)
       queryParams += 'positiveNegativeValues=' + dataDrain.positiveNegativeValues.toString() + '&';
     if (dataDrain && dataDrain.aggregations)

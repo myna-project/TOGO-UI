@@ -252,12 +252,12 @@ export class ClientsComponent implements OnInit {
   }
 
   measures(node: TreeItemFlatNode): void {
-    let drains: string[] = [];
+    let nodes: string[] = [];
     if (node.default_drain_ids && node.default_drain_ids.length > 0)
-      node.default_drain_ids.forEach(drain_id => drains.push('d_' + drain_id));
+      node.default_drain_ids.forEach((id: number) => nodes.push('d_' + id));
     if (node.formula_ids && node.formula_ids.length > 0)
-      node.formula_ids.forEach(formula_id => drains.push('f_' + formula_id));
-    this.dialog.open(ChartDialogComponent, { width: '75%', data: { drains: drains } });
+      node.formula_ids.forEach((id: number) => nodes.push('f_' + id));
+    this.dialog.open(ChartDialogComponent, { width: '75%', data: { nodes: nodes } });
   }
 
   goBack(): void {

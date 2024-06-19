@@ -96,6 +96,12 @@
       <button mat-mini-fab class="btn btn-blue" (click)="changeStyle('blue')"></button>
       <button mat-mini-fab class="btn btn-deep-orange" (click)="changeStyle('deep-orange')"></button>
     </div>
+    <div class="togo-form-field-group">
+      <mat-form-field class="short-form-field" floatLabel="always" appearance="none">
+        <mat-slide-toggle [formControl]="dark_mode">{{ 'PROFILE.DARKMODE' | translate }}</mat-slide-toggle>
+        <textarea matInput hidden></textarea>
+      </mat-form-field>
+    </div>
   </form>
   <div class="button-row-right">
     <button type="submit" mat-raised-button color="primary" (click)="save()" [disabled]="profileForm.invalid">{{ 'PROFILE.SAVE' | translate }}</button>

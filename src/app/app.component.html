@@ -1,4 +1,4 @@
-<div class="my-container" [ngClass]="style" [class.my-is-mobile]="mobileQuery.matches">
+<div class="my-container" [ngClass]="style" [class.dark]="darkTheme" [class.my-is-mobile]="mobileQuery.matches">
   <mat-toolbar color="primary" class="my-toolbar">
     <button mat-icon-button (click)="snav.toggle()" *ngIf="currentUser && currentUser.is_logged"><mat-icon>menu</mat-icon></button>
     <h1 class="my-app-name" [class.my-is-mobile]="mobileQuery.matches">Togo Web Interface</h1>

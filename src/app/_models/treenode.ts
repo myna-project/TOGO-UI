@@ -15,6 +15,7 @@ export class TreeItemNode {
   has_details: boolean;
   view_details: boolean;
   expanded: boolean;
+  selected: boolean;
   is_loading: boolean;
 }
 
@@ -36,5 +37,6 @@ export class TreeItemFlatNode {
   has_details: boolean;
   view_details: boolean;
   expanded: boolean;
+  selected: boolean;
   is_loading: boolean;
 }

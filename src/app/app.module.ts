@@ -38,7 +38,7 @@ import { MatTreeModule } from '@angular/material/tree';
 import { MatMomentDateModule, MomentDateAdapter } from '@angular/material-moment-adapter';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MAT_COLOR_FORMATS, NgxMatColorPickerModule, NGX_MAT_COLOR_FORMATS } from '@angular-material-components/color-picker';
-import { NgxMatDateAdapter, NgxMatDatetimePickerModule } from '@angular-material-components/datetime-picker';
+import { NgxMatDateAdapter, NgxMatDatetimePickerModule, NgxMatTimepickerModule } from '@angular-material-components/datetime-picker';
 import { NgxMatFileInputModule } from '@angular-material-components/file-input';
 import { NgxMatMomentModule, NgxMatMomentAdapter } from '@angular-material-components/moment-adapter';
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
@@ -50,6 +50,7 @@ import * as more from 'highcharts/highcharts-more.src';
 import * as heatMap from 'highcharts/modules/heatmap.src';
 import * as highstock from 'highcharts/modules/stock.src';
 import * as solidGauge from 'highcharts/modules/solid-gauge.src';
+import * as pie from 'highcharts/highcharts-3d';
 
 import * as highchartsBoost  from 'highcharts/modules/boost';
 
@@ -95,6 +96,7 @@ import { ConfirmDialogComponent } from './_utils/confirm-dialog/confirm-dialog.c
 import { DrainControlDetailsTreeDialogComponent } from './_utils/draincontroldetails-tree-dialog/draincontroldetails-tree-dialog.component';
 import { DrainControlsTreeDialogComponent } from './_utils/draincontrols-tree-dialog/draincontrols-tree-dialog.component';
 import { DrainsTreeDialogComponent } from './_utils/drains-tree-dialog/drains-tree-dialog.component';
+import { DrainsTreeSidenavComponent } from './_utils/drains-tree-sidenav/drains-tree-sidenav.component';
 import { FormulaDetailsDialogComponent } from './_utils/formula-details-dialog/formula-details-dialog.component';
 import { FormulasTreeDialogComponent } from './_utils/formulas-tree-dialog/formulas-tree-dialog.component';
 import { IndicesTreeDialogComponent } from './_utils/indices-tree-dialog/indices-tree-dialog.component';
@@ -129,6 +131,7 @@ export function HttpLoaderFactory(httpClient: HttpClient) {
     DrainControlsTreeDialogComponent,
     DrainsComponent,
     DrainsTreeDialogComponent,
+    DrainsTreeSidenavComponent,
     FeedComponent,
     FormulaDetailsDialogComponent,
     FormulasTreeDialogComponent,
@@ -159,6 +162,7 @@ export function HttpLoaderFactory(httpClient: HttpClient) {
     BrowserModule,
     ChartModule,
     CommonModule,
+    DragDropModule,
     FormsModule,
     GridsterModule,
     HttpClientModule,
@@ -195,9 +199,10 @@ export function HttpLoaderFactory(httpClient: HttpClient) {
     MatTooltipModule,
     MatTreeModule,
     NgxMatColorPickerModule,
-    NgxMatFileInputModule,
     NgxMatDatetimePickerModule,
+    NgxMatFileInputModule,
     NgxMatMomentModule,
+    NgxMatTimepickerModule,
     ReactiveFormsModule,
     TranslateModule.forRoot({
       loader: {
@@ -206,14 +211,13 @@ export function HttpLoaderFactory(httpClient: HttpClient) {
         deps: [HttpClient]
       }
     }),
-    DragDropModule
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: CustomHttpInterceptor, multi: true },
     { provide: MAT_COLOR_FORMATS, useValue: NGX_MAT_COLOR_FORMATS },
     { provide: DateAdapter, useClass: MomentDateAdapter, deps: [MAT_DATE_LOCALE] },
     { provide: NgxMatDateAdapter, useClass: NgxMatMomentAdapter },
-    { provide: HIGHCHARTS_MODULES, useFactory: () => [ heatMap, highstock, more, solidGauge, highchartsBoost ] }
+    { provide: HIGHCHARTS_MODULES, useFactory: () => [ heatMap, highstock, more, solidGauge, highchartsBoost, pie ] }
   ],
   bootstrap: [
     AppComponent

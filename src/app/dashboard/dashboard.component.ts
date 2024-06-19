@@ -73,7 +73,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       minRows: 4,
       pushItems: true,
       draggable: { enabled: true, delayStart: 500 },
-      resizable: { enabled: true, delayStart: 300 }
+      resizable: { enabled: true, delayStart: 300 },
+      keepFixedHeightInMobile: true,
+      mobileBreakpoint: 1300
     };
     this.route.paramMap.subscribe((params: any) => {
       this.isLoading = true;
@@ -94,7 +96,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
             let widgets: DashboardWidget[] = results[6];
             widgets.sort((a, b) => a.x_pos < b.x_pos ? ((a.y_pos <= b.y_pos) ? -1 : 1) : ((a.y_pos <= b.y_pos) ? -1 : 1));
             widgets.forEach(widget => {
-              widget.positive_negative_values = '';
               this.setGridsterItemPosition(widget);
               this.dashboard.push(widget);
               if (widget.widget_type === 'GAUGE') {
@@ -104,8 +105,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
                     this.loadGauge(widget, true);
                   }, widget.interval_seconds * 1000);
                 }
-              } else if ((widget.widget_type === 'SPLINE') || (widget.widget_type === 'PIE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP')) {
-                widget.type = (widget.widget_type === 'SPLINE') ? 'spline' : ((widget.widget_type === 'HISTOGRAM') ? 'column' : ((widget.widget_type === 'PIE') ? 'pie' : 'heatmap'));
+              } else if ((widget.widget_type === 'SPLINE') || (widget.widget_type === 'PIE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP') || widget.widget_type === 'STACKED') {
+                widget.type = (widget.widget_type === 'SPLINE') ? 'spline' : ((widget.widget_type === 'HISTOGRAM' || widget.widget_type === 'STACKED') ? 'column' : ((widget.widget_type === 'PIE') ? 'pie' : 'heatmap'));
                 this.loadChart(widget);
                 if (widget.interval_seconds) {
                   widget.interval = setInterval(() => {
@@ -149,7 +150,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     widget.width = Number(itemComponent.el.style.width.substring(0, itemComponent.el.style.width.indexOf('px')));
     if (widget.widget_type === 'GAUGE')
       widget.gauge = this.gaugeChart.createGaugeChart(widget);
-    if ((widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM'))
+    if ((widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'STACKED'))
       widget.chart = this.timeChart.createTimeChart(widget);
   }
 
@@ -236,7 +237,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     let formula = this.allFormulas.find(f => f.id === detail.formula_id);
     if (formula) {
       if (formula.components) {
-        formula.drains = this.allDrains.filter(d => formula.components.includes(d.id));
         widget.formula_ids += ((widget.formula_ids !== '') ? ',' : '') + formula.id;
         this.loadDrainDetail(widget, detail, undefined, formula);
       }
@@ -252,6 +252,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       widget.drains = '';
       widget.aggregations = '';
       widget.operations = '';
+      widget.exclude_outliers = '';
       widget.details.forEach(detail => {
         if (detail.drain_id) {
           if (!update || !widget.gauge)
@@ -295,7 +296,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
       if (widget.drains != '') {
         if (widget.costs_drain_id) {
-          this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe({
+          this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe({
             next: (measures: any) => {
               this.loadMeasuresInGauge(widget, measures, update);
             },
@@ -307,7 +308,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             }
           });
         } else {
-          this.measuresService.getMeasures(widget.drains, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe({
+          this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe({
             next: (measures: any) => {
               this.loadMeasuresInGauge(widget, measures, update);
             },
@@ -365,6 +366,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     widget.formula_ids = '';
     widget.aggregations = '';
     widget.operations = '';
+    widget.exclude_outliers = '';
     widget.units = [];
     widget.y_axis = [];
     widget.series = [];
@@ -382,7 +384,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
       widget.color_axis = { stops: colors, max: isBoolean ? 1 : undefined, min: isBoolean ? 0 : undefined };
     } else if (widget.widget_type !== 'PIE') {
-      widget.plot_options = { series: { marker: { enabled: true }, dataGrouping: { enabled: true, approximation: 'average' } } };
+      widget.plot_options = (widget.widget_type === 'STACKED') ? { column: { stacking: 'normal', dataLabels: { enabled: true, format: '{point.percentage:.0f}%', style: { fontSize: '1.1em' } } } } : { series: { marker: { enabled: true }, dataGrouping: { enabled: true, approximation: 'average' } } };
     }
     if (widget.details) {
       widget.indices = [];
@@ -420,9 +422,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if ((start_time.getFullYear() === end_time.getFullYear()) || (widget.time_aggregation === 'ALL')) {
           if (widget.drains != '')
             if (widget.costs_drain_id)
-              requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
+              requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
             else
-              requests.push(this.measuresService.getMeasures(widget.drains,widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
+              requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
           let i = 0;
           widget.indices.forEach((index: Index) => {
             indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
@@ -436,9 +438,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
              start = (start_time.getFullYear() === new Date(end.toISOString()).getFullYear()) ? moment(start_time) : moment(end).startOf('year');
              if (widget.drains != '')
                if (widget.costs_drain_id)
-                 requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
+                 requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
                else
-                 requests.push(this.measuresService.getMeasures(widget.drains, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
+                 requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
              let i = 0;
              widget.indices.forEach((index: Index) => {
                indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
@@ -511,7 +513,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           if (widget.widget_type === 'PIE') {
             index.result.forEach((measure: any) => {
               if (!Number.isNaN(parseFloat(measure.value)))
-                widget.series.push(this.pieChart.createSerie(parseFloat(measure.value), indexName, index.decimals));
+                widget.series.push(this.pieChart.createSerie(parseFloat(measure.value), undefined, indexName, true));
             });
           } else {
             let yAxisIndex: number;
@@ -520,7 +522,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             } else {
               widget.units.push(index.measure_unit);
               yAxisIndex = widget.units.length - 1;
-              widget.y_axis[yAxisIndex] = this.timeChart.createYAxis(index.measure_unit, widget.units.length, (widget.units.length === 1) ? widget.alarm_value : undefined, (widget.units.length === 1) ? widget.warning_value : undefined, undefined, undefined, (widget.widget_type === 'HEATMAP'), 'f', widget.time_aggregation);
+              widget.y_axis[yAxisIndex] = this.timeChart.createYAxis(index.measure_unit, widget.units.length, (widget.units.length === 1) ? widget.alarm_value : undefined, (widget.units.length === 1) ? widget.warning_value : undefined, undefined, undefined, (widget.widget_type === 'HEATMAP'), 'f', widget.time_aggregation, true, false);
             }
             let data_array: any[] = [];
             let component = this;
@@ -529,7 +531,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                   data_array.push(component.timeChart.createData(new Date(measure.at), measure.value.toString(), index.decimals, (widget.widget_type === 'HEATMAP'), widget.time_aggregation));
             });
             if (data_array.length > 0)
-              widget.series.push(this.timeChart.createSerie(data_array, indexName, yAxisIndex, index.decimals, (widget.widget_type === 'HEATMAP'), 'f', widget.time_aggregation));
+              widget.series.push(this.timeChart.createSerie(data_array, undefined, indexName, yAxisIndex, index.decimals, (widget.widget_type === 'HEATMAP'), (widget.widget_type === 'STACKED'), 'f', widget.time_aggregation));
           }
         }
       });
@@ -545,7 +547,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           if (widget.widget_type === 'PIE') {
             m.measures.forEach((measure: Measure) => {
               if ((measure.value !== null) && (measure.value !== undefined) && !Number.isNaN(parseFloat(measure.value.toString())))
-                widget.series.push(this.pieChart.createSerie(measure.value, drainColumnName, m.decimals));
+                widget.series.push(this.pieChart.createSerie(measure.value, undefined, drainColumnName, true));
             });
           } else {
             let yAxisIndex: number;
@@ -554,7 +556,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             } else {
               widget.units.push(m.unit);
               yAxisIndex = widget.units.length - 1;
-              widget.y_axis[yAxisIndex] = this.timeChart.createYAxis(m.unit, widget.units.length, (widget.units.length === 1) ? widget.alarm_value : undefined, (widget.units.length === 1) ? widget.warning_value : undefined, undefined, undefined, (widget.widget_type === 'HEATMAP'), m.measure_type, widget.time_aggregation);
+              widget.y_axis[yAxisIndex] = this.timeChart.createYAxis(m.unit, widget.units.length, (widget.units.length === 1) ? widget.alarm_value : undefined, (widget.units.length === 1) ? widget.warning_value : undefined, undefined, undefined, (widget.widget_type === 'HEATMAP'), m.measure_type, widget.time_aggregation, true, false);
             }
             let component = this;
             m.measures.forEach(function(measure: Measure) {
@@ -562,7 +564,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 data_array.push(component.timeChart.createData(new Date(measure.time), measure.value.toString(), (m.measure_type === 'c') ? 0 : m.decimals, (widget.widget_type === 'HEATMAP'), widget.time_aggregation));
             });
             if (data_array.length > 0)
-              widget.series.push(component.timeChart.createSerie(data_array, drainColumnName, yAxisIndex, m.decimals, (widget.widget_type === 'HEATMAP'), m.measure_type, widget.time_aggregation));
+              widget.series.push(component.timeChart.createSerie(data_array, undefined, drainColumnName, yAxisIndex, m.decimals, (widget.widget_type === 'HEATMAP'), (widget.widget_type === 'STACKED'), m.measure_type, widget.time_aggregation));
           }
         }
         i++;
@@ -635,12 +637,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   goToMeasures($event: MouseEvent | TouchEvent, widget: DashboardWidget): void {
     $event.preventDefault();
     $event.stopPropagation();
-    if ((widget.drains || (widget.indices && widget.indices.length > 0)) && (widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'HEATMAP')) {
+    if ((widget.drains || (widget.indices && widget.indices.length > 0)) && (widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'STACKED') || (widget.widget_type === 'HEATMAP')) {
       let indexIds: number[] = [];
       widget.indices.forEach((index: Index) => {
         indexIds.push(index.id);
       })
-      this.router.navigate([widget.costs_drain_id ? 'costs' : 'measures'], { queryParams: { costsDrain: widget.costs_drain_id, indexIds: indexIds.toString(), drainIds: widget.drains, costsAggregation: widget.costs_aggregation, positiveNegativeValues: widget.positive_negative_values, aggregations: widget.aggregations, operations: widget.operations, startTime: this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), false), endTime: new Date(widget.end_time ? widget.end_time : moment().toISOString()), timeAggregation: widget.time_aggregation, chartType: widget.type, color1: widget.color1 ? widget.color1.replace('#', '%23') : undefined, color2: widget.color2 ? widget.color2.replace('#', '%23') : undefined, color3: widget.color3 ? widget.color3.replace('#', '%23') : undefined, warningValue: widget.warning_value, alarmValue: widget.alarm_value } });
+      this.router.navigate([widget.costs_drain_id ? 'costs' : 'measures'], { queryParams: { costsDrain: widget.costs_drain_id, indexIds: indexIds.toString(), nodeIds: widget.drains, costsAggregation: widget.costs_aggregation, excludeOutliers: widget.exclude_outliers, positiveNegativeValues: widget.positive_negative_values, aggregations: widget.aggregations, operations: widget.operations, startTime: this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), false), endTime: new Date(widget.end_time ? widget.end_time : moment().toISOString()), timeAggregation: widget.time_aggregation, chartType: widget.type, color1: widget.color1 ? widget.color1.replace('#', '%23') : undefined, color2: widget.color2 ? widget.color2.replace('#', '%23') : undefined, color3: widget.color3 ? widget.color3.replace('#', '%23') : undefined, warningValue: widget.warning_value, alarmValue: widget.alarm_value, widgetType: widget.widget_type } });
     }
   }
 
@@ -654,11 +656,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
             next: (control: DrainControl) => {
               let active_controls = control.details.filter(d => d.active);
               if (active_controls.length === 1) {
-                let drains: string[] = [];
+                let nodes: string[] = [];
                 let aggregations: string[] = [];
                 let operations: string[] = [];
                 if (active_controls[0].drain_id) {
-                  drains.push('d_' + active_controls[0].drain_id);
+                  nodes.push('d_' + active_controls[0].drain_id);
                   aggregations.push(active_controls[0].aggregation);
                   operations.push('SEMICOLON');
                 } else if (active_controls[0].formula_id) {
@@ -670,7 +672,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                       formula.components.forEach(function (drain_id: number) {
                         let drain = component.allDrains.find(d => d.id === drain_id);
                         if (drain) {
-                          drains.push('d_' + drain_id);
+                          nodes.push('d_' + drain_id);
                           aggregations.push(formula.aggregations[i]);
                           operations.push(formula.operators[i]);
                         }
@@ -679,7 +681,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                     }
                   }
                 }
-                this.dialog.open(ChartDialogComponent, { width: '75%', data: { drains: drains, aggregations: aggregations, operations: operations, startTime: new Date(moment().add(active_controls[0].last_minutes * -1, 'minutes').toISOString()), endTime: new Date(moment().toISOString()), timeAggregation: 'NONE', high_threshold: active_controls[0].high_threshold, low_threshold: active_controls[0].low_threshold } });
+                this.dialog.open(ChartDialogComponent, { width: '75%', data: { nodes: nodes, aggregations: aggregations, operations: operations, startTime: new Date(moment().add(active_controls[0].last_minutes * -1, 'minutes').toISOString()), endTime: new Date(moment().toISOString()), timeAggregation: 'NONE', high_threshold: active_controls[0].high_threshold, low_threshold: active_controls[0].low_threshold } });
               }
             },
             error: (error: any) => {
@@ -705,7 +707,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
             widget.drains += ((widget.drains !== '') ? ',' : '') + 'd_' + drain.id;
             if (!formula)
               widget.drain_ids += ((widget.drain_ids !== '') ? ',' : '') + drain.id;
-            widget.positive_negative_values += ((widget.positive_negative_values !== '') ? ',' : '') + ((detail.positive_negative_value !== undefined) ? detail.positive_negative_value : '');
+            widget.exclude_outliers += ((widget.exclude_outliers !== '') ? ',' : '') + ((detail.exclude_outliers !== undefined) ? detail.exclude_outliers : '');
+            if (widget.positive_negative_values === undefined || widget.positive_negative_values === null)
+              widget.positive_negative_values = '' + ((detail.positive_negative_value !== undefined && detail.positive_negative_value !== null) ? detail.positive_negative_value : '');
+            else
+              widget.positive_negative_values += ','  + ((detail.positive_negative_value !== undefined && detail.positive_negative_value !== null) ? detail.positive_negative_value : '');
             widget.aggregations += ((widget.aggregations !== '') ? ',' : '') + detail.aggregation;
             widget.operations += ((widget.operations !== '') ? ',' : '') + detail.operator;
             widget.last_operator = detail.operator;
@@ -777,6 +783,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     widget.number_periods = w.number_periods;
     widget.period = w.period;
     widget.start_time = w.start_time;
+    widget.end_time = w.end_time;
     widget.legend = w.legend;
     widget.legend_position = w.legend_position;
     widget.legend_layout = w.legend_layout;

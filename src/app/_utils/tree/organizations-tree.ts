@@ -14,6 +14,7 @@ import { InvoiceItem } from '../../_models/invoiceitem';
 import { Job } from '../../_models/job';
 import { Organization } from '../../_models/organization';
 import { TreeItemFlatNode, TreeItemNode } from '../../_models/treenode';
+import { TranslateService } from "@ngx-translate/core";
 
 @Injectable({
   providedIn: 'root',
@@ -40,7 +41,7 @@ export class OrganizationsTree {
     return this.dataChange.value;
   }
 
-  constructor(private treeUtils: TreeUtils) {}
+  constructor(private treeUtils: TreeUtils, private translate: TranslateService) {}
 
   initialize(orgs: Organization[], jobs: Job[], clients: Client[], feeds: Feed[], drains: Drain[], formulas: Formula[], indexgroups: IndexGroup[], indices: Index[], controls: DrainControl[], invoiceitemskWh: InvoiceItem[], showDetails: boolean, depthTree: string) {
     let orgsTree = this;
@@ -186,6 +187,7 @@ export class OrganizationsTree {
           drainNode.type = 'drain';
           drainNode.code = (feedNode.code ? feedNode.code : '0') + '.d' + drain.id;
           drainNode.client_default_drain = drain.client_default_drain;
+          drainNode.selected = drain.selected;
           orgsTree.orgNodes.push(drainNode);
           if (drain.client_default_drain)
             defaultDrains = true;
@@ -253,7 +255,7 @@ export class OrganizationsTree {
       if (formulaOrgs.length > 0) {
         let formulasNode = new TreeItemNode();
         formulasNode.id = -1;
-        formulasNode.item = 'Formule';
+        formulasNode.item = this.translate.instant('FORMULASTREE.ITEM');
         formulasNode.full_name = org.name + (client ? ' ' + client.name : '');
         formulasNode.type = 'formulas';
         formulasNode.code = (fatherNode.code ? fatherNode.code : '0') + '.fs';
@@ -265,6 +267,7 @@ export class OrganizationsTree {
           formulaNode.item = formula.name;
           formulaNode.type = 'formula';
           formulaNode.code = (formulasNode.code ? formulasNode.code : '0') + '.f' + formula.id;
+          formulaNode.selected = formula.selected;
           orgsTree.orgNodes.push(formulaNode);
         });
       }
@@ -272,41 +275,53 @@ export class OrganizationsTree {
   }
 
   createIndicesTree(orgsTree: OrganizationsTree, fatherNode: TreeItemNode, org: Organization): void {
-    if (orgsTree.allIndexGroups.length > 0) {
-      let indexGroupOrgs = orgsTree.allIndexGroups.filter(group => (group.org_id == org.id));
-      indexGroupOrgs.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-      indexGroupOrgs.forEach(function(group) {
-        let groupNode = new TreeItemNode();
-        groupNode.id = group.id;
-        groupNode.item = group.name;
-        groupNode.type = 'indexgroup';
-        groupNode.code = (fatherNode.code ? fatherNode.code : '0') + '.g' + group.id;
-        orgsTree.orgNodes.push(groupNode);
-        if (orgsTree.allIndices.length > 0) {
-          let indicesGroup = orgsTree.allIndices.filter(index => (index.group && (index.group.id == group.id)));
-          indicesGroup.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-          indicesGroup.forEach(function(index) {
-            let indexNode = new TreeItemNode();
-            indexNode.id = index.id;
-            indexNode.item = index.name;
-            indexNode.type = 'index';
-            indexNode.code = (groupNode.code ? groupNode.code : '0') + '.i' + index.id;
-            orgsTree.orgNodes.push(indexNode);
-          });
-        }
-      });
-    }
-    if (orgsTree.allIndices.length > 0) {
-      let indicesNoGroup = orgsTree.allIndices.filter(index => ((index.group === undefined) && (index.org_id == org.id)));
-      indicesNoGroup.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-      indicesNoGroup.forEach(function(index) {
-        let indexNode = new TreeItemNode();
-        indexNode.id = index.id;
-        indexNode.item = index.name;
-        indexNode.type = 'index';
-        indexNode.code = (fatherNode.code ? fatherNode.code : '0') + '.i' + index.id;
-        orgsTree.orgNodes.push(indexNode);
-      });
+      let indexOrgs = orgsTree.allIndices.filter(index =>  index.org_id === org.id);
+     if (indexOrgs.length > 0) {
+      let indicesNode = new TreeItemNode();
+      indicesNode.id = -1;
+      indicesNode.item = this.translate.instant('INDEX.ITEM');
+      indicesNode.full_name = org.name + (org ? ' ' + org.name : '');
+      indicesNode.type = 'indexes';
+      indicesNode.code = (fatherNode.code ? fatherNode.code : '0') + '.ix';
+      orgsTree.orgNodes.push(indicesNode);
+      if (orgsTree.allIndexGroups && orgsTree.allIndexGroups.length > 0) {
+        let indexGroupOrgs = orgsTree.allIndexGroups.filter(group => (group.org_id == org.id));
+        indexGroupOrgs.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+        indexGroupOrgs.forEach(function (group) {
+          let groupNode = new TreeItemNode();
+          groupNode.id = group.id;
+          groupNode.item = group.name;
+          groupNode.type = 'indexgroup';
+          groupNode.code = (indicesNode.code ? indicesNode.code : '0') + '.g' + group.id;
+          orgsTree.orgNodes.push(groupNode);
+          if (orgsTree.allIndices.length > 0) {
+            let indicesGroup = orgsTree.allIndices.filter(index => (index.group && (index.group.id == group.id)));
+            indicesGroup.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+            indicesGroup.forEach(function (index) {
+              let indexNode = new TreeItemNode();
+              indexNode.id = index.id;
+              indexNode.item = index.name;
+              indexNode.type = 'index';
+              indexNode.code = (groupNode.code ? groupNode.code : '0') + '.i' + index.id;
+              indexNode.selected = index.selected;
+              orgsTree.orgNodes.push(indexNode);
+            });
+          }
+        });
+      }
+      if (orgsTree.allIndices && orgsTree.allIndices.length > 0) {
+        let indicesNoGroup = orgsTree.allIndices.filter(index => ((index.group === undefined) && (index.org_id == org.id)));
+        indicesNoGroup.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+        indicesNoGroup.forEach(function (index) {
+          let indexNode = new TreeItemNode();
+          indexNode.id = index.id;
+          indexNode.item = index.name;
+          indexNode.type = 'index';
+          indexNode.code = (indicesNode.code ? indicesNode.code : '0') + '.i' + index.id;
+          indexNode.selected = index.selected;
+          orgsTree.orgNodes.push(indexNode);
+        });
+      }
     }
   }
 

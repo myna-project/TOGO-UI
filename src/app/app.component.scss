@@ -6,6 +6,7 @@
   bottom: 0;
   left: 0;
   right: 0;
+  height: 100%;
 }
 
 .my-toolbar {
@@ -86,4 +87,8 @@ h1.my-is-large-screen {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
   cursor: hand;
   border-radius: 50%;
+}
+
+main {
+  height: 100%;
 }

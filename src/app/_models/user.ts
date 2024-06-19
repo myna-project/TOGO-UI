@@ -10,6 +10,7 @@ export class User {
   avatar: string;
   lang: string;
   style: string;
+  dark_theme: boolean;
   role_ids: number[];
   job_ids: number[];
   is_logged: boolean;

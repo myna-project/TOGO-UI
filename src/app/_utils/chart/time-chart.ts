@@ -55,33 +55,51 @@ export class TimeChart {
       chart: {
         panning: { enabled: false },
         type: options.type,
-        height: options ? options.height : '100%',
-        width: options ? options.width : '100%',
+        height: options ? options.height : null,
+        width: options ? options.width : null,
         zooming: {
-          mouseWheel: { enabled: false }
-        }
+          mouseWheel: { enabled: false },
+          type: 'x'
+        },
+        backgroundColor: (options.widget_type || options.dark_theme) ? '#310640' : null
       },
-      colors: ["#2caffe", "#fa041a", "#214cd7", "#4fc574", "#da6a41", "#050f1f", "#00ea37", "#ea190e", "#d568fb", "#91e8e1"],
+      colors: (options.widget_type || options.dark_theme) ? ["#59b36b", "#3fafff","#ffca6a","#f13f43", "#2b27ff", "#ea7b08", "#c522e3", "#b8d043"] : ["#2caffe", "#fa041a", "#214cd7", "#4fc574", "#da6a41", "#050f1f", "#d568fb", "#91e8e1", "#00ea37", "#ea190e"],
       title: {
         text: options.title,
+        style: {
+          color: (options.widget_type || options.dark_theme) ? '#e6d4d4' : null,
+          fontWeight: 'bold',
+          fontSize: '1.2em'
+        }
       },
       boost: {
         useGPUTranslations: true
       },
       credits: {
-        enabled: true
+        enabled: true,
+        style: {
+          color: (options.widget_type || options.dark_theme) ? '#e6d4d4' : null
+        }
       },
       xAxis: {
         type: 'datetime',
-        ordinal: false
+        ordinal: false,
+        labels: {
+          style: {
+            color: (options.widget_type || options.dark_theme) ? '#e6d4d4' : null
+          }
+        }
       },
       yAxis: options.y_axis,
       colorAxis: options.color_axis,
       legend: {
-        enabled: options.legend,
+        enabled: (window.screen.width < 1000 && options.widget_type) ? false : options.legend,
         layout: (options.legend_layout && (options.legend_layout == 'h')) ? 'horizontal' : 'vertical',
         align: options.legend_position ? options.legend_position.substr(options.legend_position.indexOf('-') + 1) : 'center',
-        verticalAlign: options.legend_position ? options.legend_position.substr(0, options.legend_position.indexOf('-')) : 'bottom'
+        verticalAlign: options.legend_position ? options.legend_position.substr(0, options.legend_position.indexOf('-')) : 'bottom',
+        itemStyle: {
+          color: (options.widget_type || options.dark_theme) ? '#e6d4d4' : null
+        }
       },
       tooltip: {
         valueDecimals: 2
@@ -111,7 +129,7 @@ export class TimeChart {
     });
   }
 
-  public createYAxis(unit: string, n: number, alarm_value: number, warning_value: number, low_threshold: number, high_threshold: number, heatmap: boolean, measure_type: string, time_aggregation: string): any {
+  public createYAxis(unit: string, n: number, alarm_value: number, warning_value: number, low_threshold: number, high_threshold: number, heatmap: boolean, measure_type: string, time_aggregation: string, dashboard_type: boolean, dark_theme: boolean): any {
     let timeChart = this;
     return heatmap ?
       {
@@ -128,6 +146,9 @@ export class TimeChart {
               return timeChart.months[this.value - 1]
           },
           align: 'left',
+          style: {
+              color: (dashboard_type || dark_theme) ? '#e6d4d4' : null
+          }
         },
         showFirstLabel: true,
         showLastLabel: true,
@@ -142,6 +163,9 @@ export class TimeChart {
         labels: {
           formatter: function () {
             return (measure_type === 'c') ? ((this.value == 1) ? 'ON' : ((this.value == 0) ? 'OFF' : '')) : this.value + (unit ? ' ' + unit : '');
+          },
+          style: {
+            color: (dashboard_type || dark_theme) ? '#e6d4d4' : null
           }
         },
         offset: (n == 1) ? 50 : undefined,
@@ -159,10 +183,11 @@ export class TimeChart {
     return heatmap ? [ (time_aggregation === 'HOUR') ? new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' 00:00').getTime() : ((time_aggregation === 'DAY') ? new Date(date.getFullYear() + '-' + (date.getMonth() + 1) + '-01 00:00:00').getTime() : new Date(date.getFullYear() + '-01-01 00:00').getTime()), (time_aggregation === 'HOUR') ? date.getHours() : ((time_aggregation === 'DAY') ? date.getDate() : date.getMonth() + 1), parseFloat(parseFloat(value).toFixed(decimals)) ] : [ date.getTime(), parseFloat(parseFloat(value).toFixed(decimals)) ];
   }
 
-  public createSerie(data_array: any[], name: string, yAxisIndex: number, decimals: number, heatmap: boolean, measure_type: string, time_aggregation: string): any {
+  public createSerie(data_array: any[], id: string, name: string, yAxisIndex: number, decimals: number, heatmap: boolean, stacked: boolean, measure_type: string, time_aggregation: string): any {
     let timeChart = this;
     return heatmap ?
       {
+        id: id ? id : undefined,
         data: data_array,
         nullColor: '#EFEFEF',
         turboThreshold: 1000000,
@@ -176,11 +201,13 @@ export class TimeChart {
       }
     :
       {
+        id: id ? id : undefined,
         data: data_array,
         name: name,
         yAxis: yAxisIndex,
         tooltip: {
-          pointFormatter: function () {
+          pointFormat: (stacked) ? '<b>{series.name}:</b> {point.y}'+ ' ({point.percentage:.0f}%)<br/>' + 'Total: {point.stackTotal}' :  '',
+          pointFormatter: (stacked) ? '' : function () {
             return name + ': <b>' + ((measure_type === 'c') ? ((this.y == 1) ? 'ON' : ((this.y == 0) ? 'OFF' : '')) : this.y.toFixed(decimals)) + '</b></td>';
           }
         }

@@ -16,8 +16,7 @@ import { TimeChart } from '../../_utils/chart/time-chart';
 import { HttpUtils } from '../../_utils/http.utils';
 
 export interface ChartDialogData {
-  drains: string[];
-  formulas: string[];
+  nodes: string[];
   aggregations: string[];
   operations: string[];
   positive_negative_values: string[];
@@ -50,22 +49,22 @@ export class ChartDialogComponent implements OnInit {
         this.allDrains = results[0];
         this.allFormulas = results[1];
         let drains: string[] = [];
-        if (this.data.drains || this.data.formulas) {
+        if (this.data.nodes) {
           this.isLoading = true;
-          if (this.data.drains) {
+          if (this.data.nodes) {
             if (!this.data.aggregations)
               this.data.aggregations = [];
             if (!this.data.operations)
               this.data.operations = [];
             if (!this.data.positive_negative_values)
               this.data.positive_negative_values = [];
-            this.data.drains.forEach((drain_id: string, index) => {
+            this.data.nodes.forEach((drain_id: string, index) => {
               drains.push(drain_id);
-              if (this.data.drains[index].slice(0,1) === 'd')
+              if (this.data.nodes[index].slice(0,1) === 'd')
                 if (!this.data.aggregations[index])
                   this.data.aggregations.push('AVG');
-              if (this.data.drains[index].slice(0,1) === 'f') {
-                let formula = this.allFormulas.filter(f => this.data.drains[index].slice(2) === f.id.toString())[0];
+              if (this.data.nodes[index].slice(0,1) === 'f') {
+                let formula = this.allFormulas.filter(f => this.data.nodes[index].slice(2) === f.id.toString())[0];
                 if (formula && formula.operators.filter(o => o === 'SEMICOLON').length === 1)
                   if (!this.data.operations[index])
                     this.data.operations.push('SEMICOLON');
@@ -82,7 +81,7 @@ export class ChartDialogComponent implements OnInit {
             this.data.endTime = new Date(moment().toISOString());
             this.data.startTime = new Date(moment().add(-1, 'month').toISOString());
           }
-          this.measuresService.getMeasures(drains.toString(), this.data.positive_negative_values.toString(), this.data.aggregations.toString(), this.data.operations.toString(), this.httpUtils.getDateTimeForUrl(this.data.startTime, true), this.httpUtils.getDateTimeForUrl(this.data.endTime, true), this.data.timeAggregation ? this.data.timeAggregation : 'HOUR').subscribe({
+          this.measuresService.getMeasures(drains.toString(), '', this.data.positive_negative_values.toString(), this.data.aggregations.toString(), this.data.operations.toString(), this.httpUtils.getDateTimeForUrl(this.data.startTime, true), this.httpUtils.getDateTimeForUrl(this.data.endTime, true), this.data.timeAggregation ? this.data.timeAggregation : 'HOUR').subscribe({
             next: (measures: any) => {
               let unitArray = [];
               measures.forEach((m: any) => {
@@ -97,7 +96,7 @@ export class ChartDialogComponent implements OnInit {
                   } else {
                     unitArray.push(m.unit);
                     yAxisIndex = unitArray.length - 1;
-                    this.chartLabels[yAxisIndex] = this.timeChart.createYAxis(m.unit, unitArray.length, this.data.alarm_value, this.data.warning_value, this.data.low_threshold, this.data.high_threshold, false, m.measure_type, 'NONE');
+                    this.chartLabels[yAxisIndex] = this.timeChart.createYAxis(m.unit, unitArray.length, this.data.alarm_value, this.data.warning_value, this.data.low_threshold, this.data.high_threshold, false, m.measure_type, 'NONE', false, false);
                   }
                   let component = this;
                   m.measures.forEach(function(measure: any) {
@@ -105,7 +104,7 @@ export class ChartDialogComponent implements OnInit {
                       data_array.push(component.timeChart.createData(new Date(measure.time), measure.value.toString(), m.decimals, false, 'NONE'));
                   });
                   if (data_array.length > 0)
-                    this.chartSeries.push(component.timeChart.createSerie(data_array, drainColumnName, yAxisIndex, m.decimals, false, m.measure_type, 'NONE'));
+                    this.chartSeries.push(component.timeChart.createSerie(data_array, undefined, drainColumnName, yAxisIndex, m.decimals, false, false, m.measure_type, 'NONE'));
                 }
               });
               if (this.chartSeries.length > 0) {
@@ -134,7 +133,7 @@ export class ChartDialogComponent implements OnInit {
 
   goToMeasures() {
     this.dialogRef.close();
-    if (this.data.drains || this.data.formulas)
-      this.router.navigate(['measures'], { queryParams: { drainIds: this.data.drains ? this.data.drains.toString() : '', operations: this.data.operations ? this.data.operations.toString() : '', positiveNegativeValues: this.data.positive_negative_values ? this.data.positive_negative_values.toString() : '', aggregations: this.data.aggregations ? this.data.aggregations.toString() : '' } });
+    if (this.data.nodes)
+      this.router.navigate(['measures'], { queryParams: { nodeIds: this.data.nodes ? this.data.nodes.toString() : '', operations: this.data.operations ? this.data.operations.toString() : '', positiveNegativeValues: this.data.positive_negative_values ? this.data.positive_negative_values.toString() : '', aggregations: this.data.aggregations ? this.data.aggregations.toString() : '', startTime: this.data.startTime, endTime: this.data.endTime } });
   }
 }

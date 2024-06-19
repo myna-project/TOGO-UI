@@ -14,4 +14,6 @@ export class DashboardWidgetDetail {
   disabled_sub_formula: boolean;
   is_positive_negative_value: boolean;
   positive_negative_value: string;
+  is_exclude_outliers: boolean;
+  exclude_outliers: boolean;
 }

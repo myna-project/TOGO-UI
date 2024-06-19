@@ -95,7 +95,8 @@ export class UserComponent implements OnInit {
       newUser.lang = this.user.lang;
       newUser.avatar = this.user.avatar;
       newUser.style = this.user.style;
-      newUser.drain_tree_depth = 'org';
+	  newUser.dark_theme = this.user.dark_theme ? this.user.dark_theme : false;
+      newUser.drain_tree_depth = this.user.drain_tree_depth ? this.user.drain_tree_depth : 'org';
       this.usersService.updateUser(newUser).subscribe({
         next: (_response: User) => {
           this.isSaving = false;
@@ -109,6 +110,7 @@ export class UserComponent implements OnInit {
         }
       });
     } else {
+      newUser.drain_tree_depth = 'org';
       this.usersService.createUser(newUser).subscribe({
         next: (_response: User) => {
           this.isSaving = false;

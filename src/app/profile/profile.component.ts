@@ -53,6 +53,7 @@ export class ProfileComponent implements OnInit {
       this.usersService.getUsersByUsername(currentUser.username).subscribe({
         next: (users: User[]) => {
           this.user = users.filter(u => u.username === currentUser.username)[0];
+          this.user.style = this.user.style ? this.user.style : 'purple';
           if (this.user.avatar)
             this.user_avatar_show = this.sanitizer.bypassSecurityTrustUrl('data:image/jpg;base64,' + this.user.avatar);
           this.createForm();
@@ -79,6 +80,7 @@ export class ProfileComponent implements OnInit {
   get default_start() { return this.profileForm.get('default_start'); }
   get default_end() { return this.profileForm.get('default_end'); }
   get drain_tree_depth() { return this.profileForm.get('drain_tree_depth'); }
+  get dark_mode() { return this.profileForm.get('dark_mode'); }
 
   createForm() {
     this.profileForm = new FormGroup({
@@ -87,7 +89,8 @@ export class ProfileComponent implements OnInit {
       'lang': new FormControl(this.user.lang, []),
       'default_start': new FormControl(this.user.default_start ? new Date(this.user.default_start) : undefined, []),
       'default_end': new FormControl(this.user.default_end ? new Date(this.user.default_end) : undefined, []),
-      'drain_tree_depth': new FormControl(this.user.drain_tree_depth ? this.user.drain_tree_depth : 'org', [Validators.required])
+      'drain_tree_depth': new FormControl(this.user.drain_tree_depth ? this.user.drain_tree_depth : 'org', [ Validators.required ]),
+      'dark_mode': new FormControl(this.user.dark_theme ? this.user.dark_theme : false, [ Validators.required ])
     });
     if (this.changePassword) {
       this.profileForm.addControl('old_password', new FormControl('', [ Validators.required ]));
@@ -95,6 +98,10 @@ export class ProfileComponent implements OnInit {
       this.profileForm.addControl('confirmPassword', new FormControl('', [ Validators.required ]));
       this.profileForm.setValidators([ this.passwordChangedValidator, this.passwordMatchValidator ]);
     }
+    this.profileForm.get('dark_mode').valueChanges.subscribe((d: boolean) => {
+      this.user.dark_theme = d;
+      this.changeStyle(this.user.style);
+    });
   }
 
   onPasswordInput() {
@@ -139,7 +146,7 @@ export class ProfileComponent implements OnInit {
 
   changeStyle(newStyle: string) {
     this.user.style = newStyle;
-    this.myapp.changeStyle(newStyle);
+    this.myapp.changeStyle(this.user);
   }
 
   save(): void {
@@ -159,6 +166,7 @@ export class ProfileComponent implements OnInit {
       newUser.default_end = this.default_end.value;
       newUser.drain_tree_depth = this.drain_tree_depth.value;
       newUser.style = this.user.style;
+	  newUser.dark_theme = this.dark_mode.value;
       this.usersService.updateUser(newUser).subscribe({
         next: (_response: User) => {
           this.user = newUser;

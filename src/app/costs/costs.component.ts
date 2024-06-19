@@ -1,5 +1,6 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { Location } from '@angular/common';
+import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -17,7 +18,9 @@ import { Formula } from '../_models/formula';
 import { Organization } from '../_models/organization';
 import { Measure } from '../_models/measure';
 import { Measures } from '../_models/measures';
+import { User } from "../_models/user";
 
+import { AuthenticationService } from '../_services/authentication.service';
 import { ClientsService } from '../_services/clients.service';
 import { DrainsService } from '../_services/drains.service';
 import { FeedsService } from '../_services/feeds.service';
@@ -28,6 +31,7 @@ import { MeasuresService } from '../_services/measures.service';
 import { PieChart } from '../_utils/chart/pie-chart';
 import { TimeChart } from '../_utils/chart/time-chart';
 import { DrainsTreeDialogComponent } from '../_utils/drains-tree-dialog/drains-tree-dialog.component';
+import { FormulaDetailsDialogComponent } from "../_utils/formula-details-dialog/formula-details-dialog.component";
 import { FormulasTreeDialogComponent } from '../_utils/formulas-tree-dialog/formulas-tree-dialog.component';
 import { HttpUtils } from '../_utils/http.utils';
 import { OrganizationsTree } from '../_utils/tree/organizations-tree';
@@ -41,8 +45,10 @@ export class CostsComponent implements OnInit {
   isLoading: boolean = true;
   isLoadingCosts: boolean = false;
   costsLoaded: boolean = false;
+  checkFormula: boolean = false;
   isSaving: boolean = false;
   params: any = {};
+  user: User = new User();
   allOrgs: Organization[] = [];
   energyClients: Client[] = [];
   allFeeds: Feed[] = [];
@@ -67,6 +73,7 @@ export class CostsComponent implements OnInit {
   isSplineChart: boolean = true;
   isPieChart: boolean = false;
   isHeatmapChart: boolean = false;
+  isChangingMeasures: boolean = false;
   chartAggregations: any[] = [];
   tableTypes: string[] = ['None', 'Time'];
   chartSeries: any[] = [];
@@ -78,11 +85,17 @@ export class CostsComponent implements OnInit {
   visibleDrains: boolean = false;
   chartOptions: boolean = false;
   seriesNames: string[] = [];
+  default_start: string;
+  default_end: string;
   backRoute: string = 'dashboard';
 
-  constructor(private orgsService: OrganizationsService, private clientsService: ClientsService, private feedsService: FeedsService, private drainsService: DrainsService, private formulasService: FormulasService, private measuresService: MeasuresService, private timeChart: TimeChart, private pieChart: PieChart, private organizationsTree: OrganizationsTree, private route: ActivatedRoute, private router: Router, private location: Location, private clipboard: Clipboard, private dialog: MatDialog, private httpUtils: HttpUtils, private translate: TranslateService) {}
+  constructor(private authService: AuthenticationService, private orgsService: OrganizationsService, private clientsService: ClientsService, private feedsService: FeedsService, private drainsService: DrainsService, private formulasService: FormulasService, private measuresService: MeasuresService, private timeChart: TimeChart, private pieChart: PieChart, private organizationsTree: OrganizationsTree, private route: ActivatedRoute, private router: Router, private location: Location, private clipboard: Clipboard, private dialog: MatDialog, private httpUtils: HttpUtils, private translate: TranslateService) {}
 
   ngOnInit(): void {
+    this.user = this.authService.getCurrentUser();
+    this.default_start = this.user.default_start;
+    this.default_end = this.user.default_end;
+
     this.costsAggregations = this.httpUtils.getMeasuresAggregationsForMeasureType('f');
     this.costsOperations = this.httpUtils.getMeasuresOperationsForMeasureType('f');
     this.chartAggregations = this.httpUtils.getChartAggregations();
@@ -94,6 +107,9 @@ export class CostsComponent implements OnInit {
           this.chartTypes.push({ id: 'heatmap', description: heatmap, visible: false });
           this.translate.get('CHART.PIE').subscribe((pie: string) => {
             this.chartTypes.push({ id: 'pie', description: pie, visible: true });
+            this.translate.get('CHART.STACKED').subscribe((stacked: string) => {
+              this.chartTypes.push({ id: 'stacked', description: stacked, visible: true });
+            });
           });
         });
       });
@@ -156,6 +172,8 @@ export class CostsComponent implements OnInit {
           if (this.params.drainIds || this.params.formulaIds) {
             if (this.params.drainIds) {
               var drainIds = this.params.drainIds.split(',');
+              var drainExcludeOutliers = this.params.excludeOutliers ? this.params.excludeOutliers.split(',') : [];
+              var drainPositiveNegativeValues = this.params.positiveNegativeValues ? this.params.positiveNegativeValues.split(',') : [];
               var drainOperations = this.params.operations ? this.params.operations.split(',') : [];
               var drainLegends = this.params.legends ? this.params.legends.split(',') : [];
               let i: number = 0;
@@ -163,7 +181,7 @@ export class CostsComponent implements OnInit {
                 if (drainId.slice(0,1) === 'd') {
                   let drain = this.allDrains.find(d => d.id === parseInt(drainId.slice(2)));
                   if (drain)
-                    this.loadDrain(drain, (drainOperations.length > i) ? drainOperations[i] : 'SEMICOLON', (drainLegends.length > i) ? drainLegends[i] : undefined);
+                    this.loadDrain(drain, (drainExcludeOutliers.length > i) ? ((drainExcludeOutliers[i] === 'true') ?  true : false): false , (drainPositiveNegativeValues.length > i) ? drainPositiveNegativeValues[i] : ''  , (drainOperations.length > i) ? drainOperations[i] : 'SEMICOLON', (drainLegends.length > i) ? drainLegends[i] : undefined);
                   i++;
                 } else if (drainId.slice(0,1) === 'f') {
                   let formula = this.allFormulas.find(f => f.id === parseInt(drainId.slice(2)));
@@ -202,7 +220,7 @@ export class CostsComponent implements OnInit {
     this.group['endTime'] = new FormControl(this.params.endTime ? new Date(this.params.endTime) : new Date(moment().toISOString()), [ Validators.required ]);
     this.group['timeAggregation'] = new FormControl(this.params.timeAggregation ? this.params.timeAggregation : 'QHOUR', [ Validators.required ]);
     this.group['costsAggregation'] = new FormControl(this.params.costsAggregation ? this.params.costsAggregation : 'SUM', [ Validators.required ]);
-    this.group['chartType'] = new FormControl(this.params.chartType ? this.params.chartType : 'spline', [ Validators.required ]);
+    this.group['chartType'] = new FormControl(this.params.widgetType !== 'STACKED' ? (this.params.chartType ? this.params.chartType : 'spline') : 'stacked', [ Validators.required ]);
     this.group['showMarkers'] = new FormControl(this.params.showMarkers ? this.params.showMarkers : false, []);
     this.group['chartAggregation'] = new FormControl(this.params.chartAggregation ? this.params.chartAggregation : 'average', [ Validators.required ]);
     this.group['color1'] = new FormControl(color1_rgb ? new Color(color1_rgb.r, color1_rgb.g, color1_rgb.b) : undefined, []);
@@ -234,7 +252,15 @@ export class CostsComponent implements OnInit {
     });
   }
 
-  createDrainControls(i: number, operation: string, legend: String): void {
+  createDrainControls(i: number, excludeOutliers: boolean, positiveNegativeValue: string, operation: string, legend: String): void {
+    this.group['excludeOutliers_' + i] = new FormControl(excludeOutliers, []);
+    this.costsForm.get('excludeOutliers_' + i).valueChanges.subscribe((ex: boolean) => {
+      this.drains[i].exclude_outliers = ex;
+    });
+    this.group['positiveNegativeValue_' + i] = new FormControl(positiveNegativeValue, []);
+    this.costsForm.get('positiveNegativeValue_' + i).valueChanges.subscribe((pn: string) => {
+      this.drains[i].positive_negative_value = pn;
+    });
     this.group['operation_' + i] = new FormControl(operation ? operation : 'SEMICOLON', [ Validators.required ]);
     this.costsForm.get('operation_' + i).valueChanges.subscribe((o: string) => {
       this.drains[i].operation = o;
@@ -280,6 +306,10 @@ export class CostsComponent implements OnInit {
 
   setLastMonth(): void {
     this.costsForm.patchValue({ startTime: new Date(moment().add(-1, 'month').toISOString()), endTime: new Date(moment().toISOString()) });
+  }
+
+  setDefaultDate(): void {
+    this.costsForm.patchValue({ startTime: new Date(this.default_start), endTime: new Date(this.default_end) });
   }
 
   setChartTypesVisible(): void {
@@ -330,7 +360,7 @@ export class CostsComponent implements OnInit {
         result.forEach(function (selected: any) {
           let drain = component.allDrains.find((d: Drain) => d.id === selected.id);
           if (drain)
-            component.loadDrain(drain, 'SEMICOLON', undefined);
+            component.loadDrain(drain,false,'', 'SEMICOLON', undefined);
         });
         component.setChartTypesVisible();
       }
@@ -345,7 +375,7 @@ export class CostsComponent implements OnInit {
     this.setChartTypesVisible();
   }
 
-  loadDrain (drain: Drain, operation: string, legend: string) {
+  loadDrain (drain: Drain, excludeOutliers: boolean, positiveNegativeValue: string, operation: string, legend: string) {
     let feed = this.allFeeds.find(f => f.id === drain.feed_id);
     if (feed) {
       let client = this.energyClients.find(c => (feed.client_ids.indexOf(c.id) > -1));
@@ -354,8 +384,8 @@ export class CostsComponent implements OnInit {
         if (org) {
           if (!legend)
             legend = client.name + ' - ' + drain.name;
-          this.createDrainControls(this.drains.length, operation, legend)
-          this.drains.push({ id: drain.id, visible: true, full_name: ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : ''), operation: operation, legend: legend, show_legend: false });
+          this.createDrainControls(this.drains.length, excludeOutliers, positiveNegativeValue, operation, legend);
+          this.drains.push({ id: drain.id, visible: true, measure_type: drain.measure_type, full_name: ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : ''), operations: this.httpUtils.getMeasuresOperationsForMeasureType(drain.measure_type), operation: operation, legend: legend, show_legend: false, is_positive_negative_value: drain.positive_negative_value, positive_negative_value: positiveNegativeValue, exclude_outliers: excludeOutliers, is_exclude_outliers: ((drain.min_value != null) || (drain.max_value != null)) });
           this.visibleDrains = true;
         }
       }
@@ -377,17 +407,9 @@ export class CostsComponent implements OnInit {
       if (result) {
         let component = this;
         result.forEach(function (formula: Formula) {
-          if (formula.components) {
-            let i = 0;
-            formula.components.forEach(function (drain_id: number) {
-              let drain = component.allDrains.find(d => d.id === drain_id);
-              if (drain)
-                component.loadDrain(drain, formula.operators[i], formula.legends[i]);
-              i++;
-            });
-          }
+          component.loadFormula(formula);
         });
-        this.formulaId = ((result.length === 1) && !this.formulaId) ? result[0].id : undefined;
+        this.formulaId = undefined;
         this.setChartTypesVisible();
       }
     });
@@ -397,32 +419,155 @@ export class CostsComponent implements OnInit {
     if (formula.components) {
       let i = 0;
       let component = this;
+      let type = 'f';
       formula.components.forEach(function (drain_id: number) {
-        let drain = component.allDrains.find(d => d.id === drain_id);
-        if (drain)
-          component.loadDrain(drain, formula.operators[i], formula.legends[i]);
+        let drain = component.allDrains.find((d: Drain) => d.id === drain_id);
+        if (drain) {
+          component.loadDrain(drain, formula.exclude_outliers[i] ? true : false, formula.positive_negative_values[i] ? formula.positive_negative_values[i] : '', formula.operators[i], formula.legends[i]);
+          if (drain.type === 'c')
+            type = drain.type;
+        }
         i++;
       });
+      this.createDrainControls(this.drains.length, false, formula.positive_negative_values[i], 'SEMICOLON', null);
+      component.drains.push({ id: formula.id, name: formula.name, full_name: formula.name, positive_negative_values: formula.positive_negative_values, aggregations: formula.aggregations, operations: this.httpUtils.getMeasuresOperationsForMeasureType(type), operation: 'SEMICOLON', legends: formula.legends, legend: formula.name, visible: true, components: formula.components, show_legend: false, disabled_sub_formula: formula.operators.filter(o => o === 'SEMICOLON').length > 1 });
+    }
+  }
+
+  editFormula(i: number) {
+    let drainCopy = [];
+    this.drains.forEach((d,j) => {
+      drainCopy.push(d);
+      this.costsForm.removeControl('excludeOutliers_' + i);
+      this.costsForm.removeControl('operation_' + j);
+      this.costsForm.removeControl('legend_' + j);
+      this.costsForm.removeControl('positiveNegativeValue_' + j);
+    });
+    this.drains = [];
+    this.isChangingMeasures = true;
+    setTimeout(() =>{
+      drainCopy.forEach((drain) => {
+        if ((this.drains.length) === i) {
+          drain.drains.forEach((d: any, k: number) => {
+            this.createDrainControls((this.drains.length),d.exclude_outliers, drain.positive_negative_values[k], d.operation, d.legend);
+            this.drains.push(d);
+          });
+        } else {
+          this.createDrainControls(this.drains.length, drain.exclude_outliers, drain.positive_negative_value, drain.operation, drain.legend);
+          this.drains.push(drain);
+        }
+      });
+      this.isChangingMeasures = false;
+    }, 500);
+  }
+
+  onDrop(event: CdkDragDrop<any[]>) {
+    if (event.previousIndex !== event.currentIndex) {
+      let drainCopy = [];
+      this.drains.forEach((d,i) => {
+        drainCopy.push(d);
+        this.costsForm.removeControl('excludeOutliers_' + i);
+        this.costsForm.removeControl('positiveNegativeValue_' + i);
+        this.costsForm.removeControl('operation_' + i);
+        this.costsForm.removeControl('legend_' + i);
+      });
+      this.drains = [];
+      moveItemInArray(drainCopy, event.previousIndex, event.currentIndex);
+      this.isChangingMeasures = true;
+      setTimeout(() => {
+        drainCopy.forEach((d, i) => {
+          this.createDrainControls(i, d.exclude_outliers, d.positive_negative_value, d.operation, d.legend);
+          this.drains.push(d);
+          this.costsForm.get('excludeOutliers_' + i).valueChanges.subscribe((ex: boolean) => {
+            this.drains[i].exclude_outliers = ex;
+          });
+          this.costsForm.get('positiveNegativeValue_' + i).valueChanges.subscribe((pn: string) => {
+            this.drains[i].positive_negative_value = pn;
+          });
+          this.costsForm.get('aggregation_' + i).valueChanges.subscribe((a: string) => {
+            this.drains[i].aggregation = a;
+          });
+          this.costsForm.get('operation_' + i).valueChanges.subscribe((o: string) => {
+            this.drains[i].operation = o;
+          });
+        });
+        this.isChangingMeasures = false;
+      }, 500);
+    }
+  }
+
+  showFormulaDetails(i: number) {
+    let formula = this.allFormulas.find((f: Formula) => f.id === this.drains[i].id );
+    if (formula) {
+      let componentNames: string[] = [];
+      formula.components.forEach((drain_id: number) => {
+        let drain = this.allDrains.find((d: Drain) => d.id === drain_id);
+        if (drain) {
+          let feed = this.allFeeds.find((f: Feed) => f.id === drain.feed_id);
+          if (feed) {
+            let client = this.energyClients.find((c: Client) => (feed.client_ids.indexOf(c.id) > -1));
+            if (client) {
+              let org = this.allOrgs.find((o: Organization) => o.id === client.org_id);
+              if (org) {
+                componentNames.push(((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : ''));
+              }
+            }
+          }
+        }
+      });
+      this.dialog.open(FormulaDetailsDialogComponent, { width: '75%', data: { formula: formula } });
     }
   }
 
   saveLoad(): any {
     let drainIds = [];
     let operations = [];
+    let excludeOutliers = [];
+    let positiveNegativeValues = [];
     let lastSemicolonControl: boolean = false;
     let legends = [];
     this.seriesNames = [];
     this.drains.forEach(drain => {
       if (drain.visible) {
-        drainIds.push('d_' + drain.id);
-        operations.push(drain.operation);
-        lastSemicolonControl = (drain.operation === 'SEMICOLON');
-        legends.push((drain.operation === 'SEMICOLON') ? drain.legend : undefined);
-        if (drain.operation === 'SEMICOLON')
-          this.seriesNames.push(drain.legend);
+        if (drain.components) {
+          drainIds.push("f_" + drain.id);
+          let subFormulas = drain.drains.filter((d: any) => d.operation === 'SEMICOLON').length > 1;
+          let legendControl = operations.length > 0 ? operations[operations.length - 1] === 'SEMICOLON' : true;
+          if (subFormulas === true) {
+            if (legendControl === false || drain.operation !== 'SEMICOLON') {
+              this.checkFormula = true;
+              return;
+            }
+            drain.drains.forEach((d: any) => {
+              if (d.operation === 'SEMICOLON') {
+                this.seriesNames.push(d.legend);
+                legends.push(d.legend);
+                lastSemicolonControl = true;
+              }
+            });
+          } else {
+            if (drain.operation === 'SEMICOLON') {
+              legends.push(drain.legend);
+              this.seriesNames.push(drain.legend);
+              lastSemicolonControl = true;
+            } else
+              lastSemicolonControl = false;
+            operations.push(drain.operation);
+          }
+        }
+        else {
+          drainIds.push('d_' + drain.id);
+          operations.push(drain.operation);
+          positiveNegativeValues.push(drain.is_positive_negative_value ? drain.positive_negative_value : '');
+          excludeOutliers.push(drain.exclude_outliers);
+          lastSemicolonControl = (drain.operation === 'SEMICOLON');
+          legends.push((drain.operation === 'SEMICOLON') ? drain.legend : undefined);
+          if (drain.operation === 'SEMICOLON')
+            this.seriesNames.push(drain.legend);
+        }
       }
     });
-    return { drainIds: drainIds, operations: operations, lastSemicolon: lastSemicolonControl, legends: legends };
+    return { drainIds: drainIds, excludeOutliers: excludeOutliers, positiveNegativeValues: positiveNegativeValues, operations: operations, lastSemicolon: lastSemicolonControl, legends: legends };
   }
 
   loadCosts(): void {
@@ -444,13 +589,13 @@ export class CostsComponent implements OnInit {
         return;
       }
       if ((start_time.getFullYear() === end_time.getFullYear()) || (this.costsForm.get('timeAggregation').value === 'ALL')) {
-        requests.push(this.measuresService.getCosts(this.costsDrain.id, dataDrain.drainIds.toString(), this.costsForm.get('costsAggregation').value, dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.costsForm.get('timeAggregation').value));
+        requests.push(this.measuresService.getCosts(this.costsDrain.id, dataDrain.drainIds.toString(), dataDrain.excludeOutliers.toString(), dataDrain.positiveNegativeValues.toString(), this.costsForm.get('costsAggregation').value, dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.costsForm.get('timeAggregation').value));
       } else {
          let start = moment(start_time);
          let end = moment(end_time);
          while (moment(start_time) < end) {
            start = (start_time.getFullYear() === new Date(end.toISOString()).getFullYear()) ? moment(start_time) : moment(end).startOf('year');
-           requests.push(this.measuresService.getCosts(this.costsDrain.id, dataDrain.drainIds.toString(), this.costsForm.get('costsAggregation').value, dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.costsForm.get('timeAggregation').value));
+           requests.push(this.measuresService.getCosts(this.costsDrain.id, dataDrain.drainIds.toString(), dataDrain.excludeOutliers.toString(), dataDrain.positiveNegativeValues.toString(), this.costsForm.get('costsAggregation').value, dataDrain.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.costsForm.get('timeAggregation').value));
            end = moment(start).add(-1, 'second');
          }
       }
@@ -490,7 +635,7 @@ export class CostsComponent implements OnInit {
           if (this.costsForm.get('chartType').value === 'pie') {
             m.measures.forEach((measure: Measure) => {
               if ((measure.value !== null) && (measure.value !== undefined) && !Number.isNaN(parseFloat(measure.value.toString())))
-                this.chartSeries.push(this.pieChart.createSerie(measure.value, drainColumnName, m.decimals));
+                this.chartSeries.push(this.pieChart.createSerie(measure.value, undefined, drainColumnName, false));
             });
           } else {
             let yAxisIndex: number;
@@ -499,7 +644,7 @@ export class CostsComponent implements OnInit {
             } else {
               unitArray.push(m.unit);
               yAxisIndex = unitArray.length - 1;
-              this.chartLabels[yAxisIndex] = this.timeChart.createYAxis(m.unit, unitArray.length, this.costsForm.get('alarmValue').value, this.costsForm.get('warningValue').value, undefined, undefined, this.isHeatmapChart, m.measure_type, this.costsForm.get('timeAggregation').value);
+              this.chartLabels[yAxisIndex] = this.timeChart.createYAxis(m.unit, unitArray.length, this.costsForm.get('alarmValue').value, this.costsForm.get('warningValue').value, undefined, undefined, this.isHeatmapChart, m.measure_type, this.costsForm.get('timeAggregation').value, false, this.user.dark_theme);
             }
             let data_array: any[] = [];
             let component = this;
@@ -508,7 +653,7 @@ export class CostsComponent implements OnInit {
                 data_array.push(component.timeChart.createData(new Date(measure.time), measure.value.toString(), m.decimals, this.isHeatmapChart, this.costsForm.get('timeAggregation').value));
             });
             if (data_array.length > 0)
-              this.chartSeries.push(this.timeChart.createSerie(data_array, drainColumnName, yAxisIndex, m.decimals, this.isHeatmapChart, m.measure_type, this.costsForm.get('timeAggregation').value));
+              this.chartSeries.push(this.timeChart.createSerie(data_array, undefined, drainColumnName, yAxisIndex, m.decimals, this.isHeatmapChart,this.costsForm.get('chartType').value === 'stacked', m.measure_type, this.costsForm.get('timeAggregation').value));
           }
         }
         i++;
@@ -516,9 +661,10 @@ export class CostsComponent implements OnInit {
     }
     if (this.chartSeries.length > 0) {
       let options = {};
-      options['type'] = this.costsForm.get('chartType').value;
+      options['type'] = this.costsForm.get('chartType').value === 'stacked' ? 'column' : this.costsForm.get('chartType').value;
       options['height'] = Math.max(400, window.screen.height * 0.7);
       options['series'] = this.chartSeries;
+      options['dark_theme'] = this.user.dark_theme;
       if (this.costsForm.get('chartType').value === 'pie') {
         this.chart = this.pieChart.createPieChart(options);
       } else {
@@ -540,7 +686,7 @@ export class CostsComponent implements OnInit {
           options['navigator'] = false;
         } else {
           options['navigator'] = true;
-          options['plot_options'] = { series: { marker: { enabled: this.costsForm.get('showMarkers').value }, dataGrouping: { enabled: (this.costsForm.get('chartAggregation').value === 'None') ? false : true, approximation: (this.costsForm.get('chartAggregation').value === 'None') ? null : this.costsForm.get('chartAggregation').value } } }
+          options['plot_options'] =  this.costsForm.get('chartType').value === 'stacked' ? { column: { stacking: 'normal', dataLabels: { enabled: true, format: '{point.percentage:.0f}%', style: { fontSize: '1.1em' } } } } :{ series: { marker: { enabled: this.costsForm.get('showMarkers').value }, dataGrouping: { enabled: (this.costsForm.get('chartAggregation').value === 'None') ? false : true, approximation: (this.costsForm.get('chartAggregation').value === 'None') ? null : this.costsForm.get('chartAggregation').value } } }
         }
         this.chart = this.timeChart.createTimeChart(options);
       }
@@ -549,7 +695,7 @@ export class CostsComponent implements OnInit {
 
   exportCsv(): void {
     const link = document.createElement("a");
-    link.href = this.httpUtils.createCsvContent(this.costs, this.seriesNames, null);
+    link.href = this.httpUtils.createCsvContent(this.seriesNames, null, this.costs);
     link.download = 'costs_data.csv';
     link.click();
   }

@@ -225,6 +225,8 @@ export class DrainComponent implements OnInit {
   get decimals() { return this.drainForm.get('decimals'); }
   get incremental() { return this.drainForm.get('incremental'); }
   get client_default_drain() { return this.drainForm.get('client_default_drain'); }
+  get min_value() { return this.drainForm.get('min_value'); }
+  get max_value() { return this.drainForm.get('max_value'); }
   get positive_negative_value() { return this.drainForm.get('positive_negative_value'); }
   get base_drain() { return this.drainForm.get('base_drain'); }
   get coefficient() { return this.drainForm.get('coefficient'); }
@@ -243,6 +245,8 @@ export class DrainComponent implements OnInit {
       'decimals': new FormControl(this.drain.decimals, [ Validators.pattern(patterns.positiveInteger) ]),
       'incremental': new FormControl((this.drain.type === 'inc') ? true : false, []),
       'client_default_drain': new FormControl((this.drain.client_default_drain != null) ? this.drain.client_default_drain : false, []),
+      'min_value': new FormControl(this.drain.min_value, [ Validators.pattern(patterns.positiveNegativeFloat) ]),
+      'max_value': new FormControl(this.drain.max_value, [ Validators.pattern(patterns.positiveNegativeFloat) ]),
       'positive_negative_value': new FormControl(this.drain.positive_negative_value ? this.drain.positive_negative_value : false, []),
       'base_drain': new FormControl(this.drain.base_drain_id ? this.drainsForFeed.filter(d => (d.id === this.drain.base_drain_id))[0] : '', []),
       'coefficient': new FormControl({ value: this.drain.coefficient, disabled: ((this.drain.base_drain_id === null) || (this.drain.base_drain_id === undefined)) }, [ Validators.pattern(patterns.positiveNegativeFloat) ]),
@@ -299,6 +303,16 @@ export class DrainComponent implements OnInit {
     });
   }
 
+  updateValidators(controlName: string, value: string) {
+    const control = this.drainForm.get(controlName);
+
+    if (value !== null && value !== undefined && value !== '') {
+      control.setValidators([Validators.required]);
+    } else {
+      control.clearValidators();
+    }
+  }
+
   disabledCondition(): boolean {
     let disable = false;
     if (this.drain.id && this.f.id) {
@@ -332,6 +346,8 @@ export class DrainComponent implements OnInit {
     newDrain.base_drain_id = this.base_drain.value ? this.base_drain.value.id : undefined;
     newDrain.coefficient = this.coefficient.value;
     newDrain.diff_drain_id = this.diff_drain.value ? this.diff_drain.value.id : undefined;
+    newDrain.min_value = this.min_value.value;
+    newDrain.max_value = this.max_value.value;
     if (this.drain.id !== undefined) {
       newDrain.id = this.drain.id;
       this.drainsService.updateDrain(newDrain).subscribe({

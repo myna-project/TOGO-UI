@@ -1,0 +1,50 @@
+<div>
+  <mat-menu #menu="matMenu">
+    <button mat-menu-item (click)="changeSearchType('client')" [class.selected-search-type]="searchType === 'client'">
+      <mat-icon>factory</mat-icon>
+      <span>{{ 'DRAINSTREE.SEARCHCLIENT' | translate }}</span>
+    </button>
+    <button mat-menu-item (click)="changeSearchType('feed')" [class.selected-search-type]="searchType === 'feed'">
+      <mat-icon>flash_on</mat-icon>
+      <span>{{ 'DRAINSTREE.SEARCHFEED' | translate }}</span>
+    </button>
+    <button mat-menu-item (click)="changeSearchType('drain')" [class.selected-search-type]="searchType === 'drain'">
+      <mat-icon>timeline</mat-icon>
+      <span>{{ 'DRAINSTREE.SEARCHDRAIN' | translate }}</span>
+    </button>
+  </mat-menu>
+  <div *ngIf="!isLoading && ((dataSource.data.length > 0) || !isFiltering)">
+    <button mat-icon-button [matMenuTriggerFor]="menu">
+      <mat-icon>search</mat-icon>
+    </button>
+    <mat-form-field *ngIf="searchType" class="search-box long-form-field">
+      <mat-label>{{ ((searchType === 'client') ? 'DRAINSTREE.SEARCHCLIENT' : ((searchType === 'feed') ? 'DRAINSTREE.SEARCHFEED' : 'DRAINSTREE.SEARCHDRAIN')) | translate }}</mat-label>
+      <input matInput placeholder="{{ ((searchType === 'client') ? 'DRAINSTREE.SEARCHCLIENT' : ((searchType === 'feed') ? 'DRAINSTREE.SEARCHFEED' : 'DRAINSTREE.SEARCHDRAIN')) | translate }}" (input)="filterChanged($event.target.value, searchType);">
+    </mat-form-field>
+  </div>
+  <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
+    <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding [matTreeNodePaddingIndent]="'2.5%'">
+      <div class="mat-tree-node-sidenav-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node) || ((node.type === 'drain') || (node.type === 'formula') || (node.type === 'index') && isClickable)" [class.drain-selected]="node.selected " [class.dark]="isDarkTheme">
+        <mat-icon matTreeNodeToggle class="mat-tree-node-sidenav-toggle-icon mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
+          {{ treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+        </mat-icon>
+        <div class="mat-tree-node-sidenav-title" [class.mat-tree-node-bold-title]="node.type === 'organization'" [class.mat-tree-node-underlined-title]="node.type === 'client'" [class.mat-tree-node-italic-title]="node.type === 'feed'" (click)="selectNode(node, false, false)">
+          <mat-icon class="mat-tree-node-sidenav-title-icon">{{ (node.type === 'organization') ? 'factory' : ((node.type === 'client') ? 'folder' : ((node.type === 'feed') ? (((node.item === 'Energia') || (node.item === 'Energy')) ? 'flash_on' : (((node.item === 'Potenza') || (node.item === 'Power')) ? 'power' : (((node.item === 'Tensione') || (node.item === 'Voltage')) ? 'electric_rickshaw' : (((node.item === 'Corrente') || (node.item === 'Current')) ? 'settings_input_component' : (((node.item === 'Temperatura') || (node.item === '°C') || (node.item === 'Ambientale')) ? 'thermostat' : ((node.item === 'Costo') ? 'euro_symbol' : 'compare_arrows')))))) : ((node.type == 'formulas') ? 'functions' : (((node.type === 'indexes') || (node.type === 'indexgroup')) ? 'equalizer' : 'timeline')))) }}</mat-icon>
+          {{node.item}}
+        </div>
+        <div *ngIf="node.has_details" class="mat-tree-node-sidenav-icons button-row-right">
+          <mat-slide-toggle [checked]="node.view_details" (click)="changeViewDetails(node)" matTooltip="{{ 'DRAINSTREE.DETAIL' | translate }}"></mat-slide-toggle>
+        </div>
+        <div *ngIf="((node.type === 'drain') || (node.type === 'formula')) && node.selected" class="mat-tree-node-sidenav-icons button-row-right">
+          <mat-icon (click)="selectNode(node, true, false)" matTooltip="{{ ((node.type == 'formula') ? 'DRAINSTREE.ADDFORMULA' : 'DRAINSTREE.ADDDRAIN') | translate }}">add_circle</mat-icon>
+          <mat-icon (click)="selectNode(node, false, true)" matTooltip="{{ ((node.type == 'formula') ? 'DRAINSTREE.REMOVELASTFORMULA' : 'DRAINSTREE.REMOVELASTDRAIN') | translate }}">remove_circle</mat-icon>
+        </div>
+        <div *ngIf="node.type === 'formula' && !node.selected" class="mat-tree-node-sidenav-icons button-row-right">
+          <mat-icon (click)="deleteFormula(node)" matTooltip="{{ 'DRAINSTREE.DELETEFORMULA' | translate }}">delete</mat-icon>
+        </div>
+        <mat-progress-bar *ngIf="node.is_loading" mode="indeterminate" class="mat-tree-node-sidenav-progress-bar"></mat-progress-bar>
+        <mat-divider class="mat-tree-node-sidenav-divider"></mat-divider>
+      </div>
+    </mat-tree-node>
+  </mat-tree>
+</div>

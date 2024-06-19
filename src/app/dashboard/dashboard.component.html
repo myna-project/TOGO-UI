@@ -6,10 +6,10 @@
       <div *ngIf="item.widget_type === 'ALERT'" class="item-title">
         <span>{{item.title}}</span>
       </div>
-      <div *ngIf="!item.error && item.details && ((item.widget_type === 'SPLINE') || (item.widget_type === 'HISTOGRAM') || (item.widget_type === 'PIE') || (item.widget_type === 'HEATMAP'))" [chart]="item.chart"></div>
+      <div *ngIf="!item.error && item.details && ((item.widget_type === 'SPLINE') || (item.widget_type === 'HISTOGRAM') || (item.widget_type === 'STACKED') || (item.widget_type === 'PIE') || (item.widget_type === 'HEATMAP'))" [chart]="item.chart"></div>
       <div *ngIf="!item.error && item.details && (item.widget_type === 'GAUGE')" [chart]="item.gauge"></div>
-      <div *ngIf="item.widget_type === 'ALERT'">
-        <mat-icon color="primary" class="clickable" (click)="goToControl($event, item)" title="{{ 'DASHBOARD.GOTOCONTROL' | translate }}">visibility</mat-icon>
+      <div *ngIf="item.widget_type === 'ALERT'" class="alert-widget">
+        <mat-icon color="primary" class="go-to-settings clickable" (click)="goToControl($event, item)" title="{{ 'DASHBOARD.GOTOCONTROL' | translate }}">visibility</mat-icon>
         <mat-icon *ngIf="((item.alert_n || 0) + (item.warning_n || 0) + (item.ok_n || 0)) === 1" color="primary" class="go-to-measures clickable" (click)="goToControlMeasures($event, item)" title="{{ 'DASHBOARD.GOTOMEASURES' | translate }}">timeline</mat-icon>
       </div>
       <div *ngIf="item.widget_type === 'ALERT'" class="lights">
@@ -31,7 +31,7 @@
       </div>
       <mat-icon class="setting-button" (click)="settingWidget($event, item)" title="{{ 'DASHBOARD.SETTINGS' | translate }}">settings</mat-icon>
       <mat-icon class="remove-button" (click)="removeWidget($event, item)" title="{{ 'DASHBOARD.DELETE' | translate }}">delete</mat-icon>
-      <mat-icon *ngIf="!item.error && item.drains && ((item.widget_type === 'SPLINE') || (item.widget_type === 'HISTOGRAM') || (item.widget_type === 'HEATMAP'))" class="view-button" (click)="goToMeasures($event, item)" title="{{ 'DASHBOARD.GOTOMEASURES' | translate }}">visibility</mat-icon>
+      <mat-icon *ngIf="!item.error && item.drains && ((item.widget_type === 'SPLINE') || (item.widget_type === 'HISTOGRAM') || (item.widget_type === 'STACKED') || (item.widget_type === 'HEATMAP'))" class="view-button" (click)="goToMeasures($event, item)" title="{{ 'DASHBOARD.GOTOMEASURES' | translate }}">visibility</mat-icon>
       <span *ngIf="item.error" class="">{{item.error}}</span>
       <span *ngIf="item.last_updated" class="last-updated">{{ 'DASHBOARD.LASTUPDATED' | translate }}: {{item.last_updated}}</span>
     </div>

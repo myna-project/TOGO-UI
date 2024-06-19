@@ -1,9 +1,13 @@
 <h1 mat-dialog-title>{{ 'MEASURES.FORMULADETAILS' | translate }}</h1>
 <div mat-dialog-content class="main container">
   <mat-divider class="mat-tree-node-divider"></mat-divider>
-  <div *ngFor="let d of formula.drains; let i = index" class="details-formula-container">
-    {{d.full_name}}
+  <div *ngFor="let d of details; let i = index" class="details-formula-container">
+    {{ d.full_name }}
     <div class="togo-list-item-right-form-field">
+      <div class="measure-mat-slide-toggle" *ngIf="d.is_exclude_outliers">
+        <mat-label>{{ 'MEASURES.EXCLUDEOUTLIERS' | translate }}</mat-label>
+        <mat-slide-toggle color="primary" [checked]="d.exclude_outliers" disabled><mat-icon class="incremental-info" matTooltip="{{ 'MEASURES.EXCLUDEOUTLIERSINFO' | translate }}">info_outline</mat-icon></mat-slide-toggle>
+      </div>
       <mat-form-field class="short-form-field" *ngIf="d.is_positive_negative_value">
         <mat-label>{{ 'MEASURES.POSITIVENEGATIVEVALUES' | translate }}</mat-label>
         <mat-select [value]="d.positive_negative_value" disabled>
@@ -12,7 +16,7 @@
           <mat-option [value]="'neg'">{{ 'MEASURES.NEGATIVEVALUES' | translate }}</mat-option>
         </mat-select>
       </mat-form-field>
-      <mat-form-field class="short-form-field">
+      <mat-form-field class="short-form-field" *ngIf="d.aggregation">
         <mat-label>{{ 'MEASURES.AGGREGATION' | translate }}</mat-label>
         <mat-select [value]="d.aggregation" disabled>
           <mat-option *ngFor="let aggregation of d.aggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>

@@ -27,6 +27,7 @@ export class TreeUtils {
         node.warning = o.warning;
         node.has_details = o.has_details;
         node.view_details = o.view_details;
+        node.selected = o.selected;
         node.expanded = o.expanded;
         const children = obj.filter(so => (<string>so.code).startsWith(level + '.'));
         if (children && children.length > 0)

@@ -52,15 +52,15 @@
             <mat-icon class="mat-tree-node-title-icon mat-tree-node-title-icon-after warning" *ngIf="node.warning" title="{{ 'DRAIN.WARNING' | translate }}">warning</mat-icon>
           </div>
           <div class="mat-tree-node-buttons button-row-right">
-            <button *ngIf="node.id !== 0 && ((node.default_drain_ids && (node.default_drain_ids.length > 0)) || (node.formula_ids && (node.formula_ids.length > 0)))" mat-stroked-button color="primary" (click)="measures(node)">
+            <button *ngIf="node.id !== 0 && ((node.default_drain_ids && (node.default_drain_ids.length > 0)) || (node.formula_ids && (node.formula_ids.length > 0)))" mat-stroked-button color="primary" class="button-dark-mode" (click)="measures(node)">
               <mat-icon>timeline</mat-icon>
               {{ 'CLIENT.VIEWMEASURES' | translate }}
             </button>
-            <button *ngIf="node.id !== 0" mat-stroked-button color="primary" (click)="drains(node.id)">
+            <button *ngIf="node.id !== 0" mat-stroked-button color="primary" class="button-dark-mode" (click)="drains(node.id)">
               <mat-icon>list</mat-icon>
               {{ 'CLIENT.DRAINLIST' | translate }}
             </button>
-            <button *ngIf="node.id !== 0" mat-stroked-button color="primary" (click)="edit(node.id)">
+            <button *ngIf="node.id !== 0" mat-stroked-button color="primary" class="button-dark-mode" (click)="edit(node.id)">
               <mat-icon>edit</mat-icon>
               {{ 'CLIENT.EDIT' | translate }}
             </button>

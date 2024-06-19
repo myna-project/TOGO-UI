@@ -7,6 +7,7 @@ export class Formula {
   aggregations: string[];
   operators: string[];
   legends: string[];
-  drains: any[] = [];
   positive_negative_values: string[];
+  exclude_outliers: string[];
+  selected: boolean;
 }

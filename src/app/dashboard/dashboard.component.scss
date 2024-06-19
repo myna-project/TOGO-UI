@@ -6,20 +6,33 @@ gridster {
   display: block;
 }
 
-gridster-item div.item-content {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+gridster-item {
+  border-radius: 25px;
+  box-shadow: 3px 3px 2px 2px #1f2d35;
+  background-color: #310640;
+}
+
+  gridster-item div.item-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+@media only screen and (max-width: 1300px) {
+
+  gridster-item div.item-content div:not(.light):not(.lights):not(.alert-widget):not(.item-title) {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .setting-button {
   position: absolute;
-  top: 3px;
+  top: 7px;
   left: 5px;
-  color: black;
   cursor: pointer;
 }
 
@@ -27,7 +40,6 @@ gridster-item div.item-content {
   position: absolute;
   bottom: 3px;
   left: 5px;
-  color: black;
   cursor: pointer;
 }
 
@@ -35,7 +47,6 @@ gridster-item div.item-content {
   position: absolute;
   bottom: 3px;
   right: 5px;
-  color: black;
   cursor: pointer;
 }
 
@@ -86,6 +97,11 @@ gridster-item div.item-content {
 
 .go-to-measures {
   margin-left: 10px;
+}
+
+.go-to-settings, .go-to-measures, .item-title, .setting-button,
+.view-button, .last-updated, .remove-button {
+  color: #e6d4d4;
 }
 
 .lights {

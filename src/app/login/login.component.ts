@@ -42,7 +42,7 @@ export class LoginComponent implements OnInit {
         this.usersService.getUsersByUsername(this.username.value).subscribe({
           next: (resp: any) => {
             const user = resp.filter((u: any) => u.username === this.username.value)[0];
-            localStorage.setItem('currentUser', JSON.stringify({ 'username': this.username.value, 'lang': user.lang, 'avatar': user.avatar, 'style': user.style, 'is_logged': true, 'is_admin': (data.headers.get('isAdmin') === 'true') ? true : false, 'default_dashboard_id': user.default_dashboard_id, 'dashboard_ids': user.dashboard_ids ? user.dashboard_ids : [], 'default_start': user.default_start, 'default_end': user.default_end, 'drain_tree_depth': user.drain_tree_depth }));
+            localStorage.setItem('currentUser', JSON.stringify({ 'username': this.username.value, 'lang': user.lang, 'avatar': user.avatar, 'style': user.style ? user.style : 'purple', 'dark_theme': user.dark_theme, 'is_logged': true, 'is_admin': (data.headers.get('isAdmin') === 'true') ? true : false, 'default_dashboard_id': user.default_dashboard_id, 'dashboard_ids': user.dashboard_ids ? user.dashboard_ids : [], 'default_start': user.default_start, 'default_end': user.default_end, 'drain_tree_depth': user.drain_tree_depth }));
             this.isLoading = false;
             this.myapp.initializeDashboardId();
             this.router.navigate(['/dashboard']);

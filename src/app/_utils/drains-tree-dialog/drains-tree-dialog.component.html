@@ -14,7 +14,7 @@
   <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="togo-tree">
     <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
       <div class="mat-tree-node-content" matTreeNodeToggle [class.clickable]="hasChild(node.id, node) || (node.type === 'drain') || (node.type === 'formula')" [class.drain-selected]="((node.type === 'drain') && checkSelectedDrain(node)) || ((node.type === 'formula') && checkSelectedDrain(node))" (click)="selectDrain(node)">
-        <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id" >
+        <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'toggle ' + node.id">
           <mat-icon class="mat-icon-rtl-mirror" *ngIf="hasChild(node.id, node)">
             {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
           </mat-icon>

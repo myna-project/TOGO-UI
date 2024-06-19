@@ -46,6 +46,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isReturnToTopShow: boolean;
   topPosToStartShowing: number = 100;
   style: string = 'purple';
+  darkTheme: boolean = false;
   mobileQuery: MediaQueryList;
   opened: boolean;
   orgs: Organization[] = [];
@@ -88,8 +89,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.router.navigate(['/login']);
       return;
     }
-
     this.style = this.currentUser.style;
+    this.darkTheme = this.currentUser.dark_theme;
     if (this.currentUser.lang) {
       this.selectedLang = this.currentUser.lang;
       this.translate.use(this.selectedLang);
@@ -217,9 +218,11 @@ export class AppComponent implements OnInit, OnDestroy {
     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
   }
 
-  changeStyle(newStyle: string) {
-    this.style = newStyle;
-    this.currentUser.style = newStyle;
+  changeStyle(user: User) {
+    this.darkTheme = user.dark_theme;
+    this.style = user.style;
+	this.currentUser.dark_theme = user.dark_theme;
+    this.currentUser.style = user.style;
     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
   }
 
@@ -266,6 +269,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.style = this.currentUser.style;
+	this.darkTheme = this.currentUser.dark_theme;
     if (this.currentUser.lang) {
       this.selectedLang = this.currentUser.lang;
       this.translate.use(this.selectedLang);

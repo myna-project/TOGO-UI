@@ -1,3 +1,7 @@
+.measure-breadcrumb {
+  margin-bottom: 20px;
+}
+
 .cdk-drag-placeholder {
   background: #ccc;
   border: dotted 3px #999;
@@ -16,4 +20,12 @@
 
 .cdk-drag-animating {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.sidenav-container {
+  height: 100%;
+}
+
+.need-reload-measures {
+  margin-left: 4px;
 }

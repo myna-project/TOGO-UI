@@ -2,6 +2,7 @@
 
 @include mat.core();
 
+//Deep-Purple (default)
 $my-primary: mat.define-palette(mat.$deep-purple-palette, 500);
 $my-accent: mat.define-palette(mat.$amber-palette, A200, A100, A400);
 
@@ -14,46 +15,143 @@ $my-theme: mat.define-light-theme((
  density: 0
 ));
 
+$my-dark-theme: mat.define-dark-theme((
+  color: (
+    primary: $my-primary,
+    accent: $my-accent,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+//Blue
+$blue-primary: mat.define-palette(mat.$indigo-palette);
+$blue-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+
+$my-blue-theme: mat.define-light-theme((
+  color: (
+    primary: $blue-primary,
+    accent: $blue-accent,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+$my-dark-blue-theme: mat.define-dark-theme((
+  color: (
+    primary: $blue-primary,
+    accent: $blue-accent,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+//Pink
+$pink-primary: mat.define-palette(mat.$pink-palette);
+$pink-accent: mat.define-palette(mat.$yellow-palette);
+
+$my-pink-theme: mat.define-light-theme((
+  color: (
+    primary: $pink-primary,
+    accent: $pink-accent,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+$my-dark-pink-theme: mat.define-dark-theme((
+  color: (
+    primary: $pink-primary,
+    accent: $pink-accent,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+//Deep-Orange
+$deep-orange-primary: mat.define-palette(mat.$deep-orange-palette);
+$deep-orange-accent: mat.define-palette(mat.$teal-palette, A100);
+
+$my-deep-orange-theme: mat.define-light-theme((
+  color: (
+    primary: $deep-orange-primary,
+    accent: $deep-orange-accent,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+$my-dark-deep-orange-theme: mat.define-dark-theme((
+  color: (
+    primary: $deep-orange-primary,
+    accent: $deep-orange-accent,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
 @include mat.all-component-themes($my-theme);
 
+.purple.dark {
+  @include mat.all-component-colors($my-dark-theme);
+}
+
 .pink {
-  $pink-primary: mat.define-palette(mat.$pink-palette);
-  $pink-accent: mat.define-palette(mat.$yellow-palette);
-  $my-pink-theme: mat.define-light-theme((
-     color: (
-       primary: $pink-primary,
-       accent: $pink-accent,
-     ),
-     typography: mat.define-typography-config(),
-     density: 0)
-  );
   @include mat.all-component-colors($my-pink-theme);
 }
 
+.pink.dark {
+  @include mat.all-component-colors($my-dark-pink-theme);
+}
+
 .deep-orange {
-  $deep-orange-primary: mat.define-palette(mat.$deep-orange-palette);
-  $deep-orange-accent: mat.define-palette(mat.$teal-palette, A100);
-  $my-deep-orange-theme: mat.define-light-theme((
-     color: (
-       primary: $deep-orange-primary,
-       accent: $deep-orange-accent,
-     ),
-     typography: mat.define-typography-config(),
-     density: 0)
-  );
   @include mat.all-component-colors($my-deep-orange-theme);
 }
 
+.deep-orange.dark {
+  @include mat.all-component-colors($my-dark-deep-orange-theme);
+}
+
 .blue {
-  $blue-primary: mat.define-palette(mat.$indigo-palette);
-  $blue-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
-  $my-blue-theme: mat.define-light-theme((
-     color: (
-       primary: $blue-primary,
-       accent: $blue-accent,
-     ),
-     typography: mat.define-typography-config(),
-     density: 0)
-  );
   @include mat.all-component-colors($my-blue-theme);
+}
+
+.blue.dark {
+  @include mat.all-component-colors($my-dark-blue-theme)
+}
+
+.purple.dark .mat-mdc-outlined-button.mat-primary {
+  --mdc-outlined-button-label-text-color: #{mat.get-color-from-palette($my-accent)};
+}
+
+.purple.dark .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label,
+.purple.dark .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: #{mat.get-color-from-palette($my-accent)};
+}
+
+.blue.dark .mat-mdc-outlined-button.mat-primary {
+  --mdc-outlined-button-label-text-color: #{mat.get-color-from-palette($blue-accent)};
+}
+
+.blue.dark .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label,
+.blue.dark .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: #{mat.get-color-from-palette($blue-accent)};
+}
+
+.pink.dark .mat-mdc-outlined-button.mat-primary {
+  --mdc-outlined-button-label-text-color: #{mat.get-color-from-palette($pink-accent)};
+}
+
+.pink.dark .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label,
+.pink.dark .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: #{mat.get-color-from-palette($pink-accent)};
+}
+
+.deep-orange.dark .mat-mdc-outlined-button.mat-primary {
+  --mdc-outlined-button-label-text-color: #{mat.get-color-from-palette($deep-orange-accent)};
+}
+
+.deep-orange.dark .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label,
+.deep-orange.dark .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: #{mat.get-color-from-palette($deep-orange-accent)};
 }
