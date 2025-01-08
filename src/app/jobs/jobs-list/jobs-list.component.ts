@@ -16,7 +16,8 @@ import { OrganizationsTree } from '../../_utils/tree/organizations-tree';
 
 @Component({
   templateUrl: './jobs-list.component.html',
-  styleUrls: ['./jobs-list.component.scss']
+  styleUrls: ['./jobs-list.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class JobsComponent implements OnInit {
 

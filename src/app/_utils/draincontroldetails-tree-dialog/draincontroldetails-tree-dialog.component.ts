@@ -21,7 +21,8 @@ export interface DrainControlDetailsTreeDialogData {
 }
 
 @Component({
-  templateUrl: './draincontroldetails-tree-dialog.component.html'
+  templateUrl: './draincontroldetails-tree-dialog.component.html',
+  providers: [OrganizationsTree]
 })
 export class DrainControlDetailsTreeDialogComponent implements OnInit {
 

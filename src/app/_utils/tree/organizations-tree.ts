@@ -16,9 +16,7 @@ import { Organization } from '../../_models/organization';
 import { TreeItemFlatNode, TreeItemNode } from '../../_models/treenode';
 import { TranslateService } from "@ngx-translate/core";
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class OrganizationsTree {
 
   allOrgs: Organization[] = [];

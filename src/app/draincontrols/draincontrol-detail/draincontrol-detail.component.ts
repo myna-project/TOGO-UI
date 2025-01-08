@@ -32,7 +32,8 @@ import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   templateUrl: './draincontrol-detail.component.html',
-  styleUrls: ['./draincontrol-detail.component.scss']
+  styleUrls: ['./draincontrol-detail.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class DrainControlComponent implements OnInit {
 

@@ -20,7 +20,8 @@ export interface IndicesTreeDialogData {
 }
 
 @Component({
-  templateUrl: './indices-tree-dialog.component.html'
+  templateUrl: './indices-tree-dialog.component.html',
+  providers: [OrganizationsTree]
 })
 export class IndicesTreeDialogComponent implements OnInit {
 

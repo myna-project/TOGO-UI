@@ -35,19 +35,23 @@ import { MeasuresService } from '../_services/measures.service';
 
 import { PieChart } from '../_utils/chart/pie-chart';
 import { TimeChart } from '../_utils/chart/time-chart';
+import { DrainsTreeDialogComponent } from '../_utils/drains-tree-dialog/drains-tree-dialog.component';
 import { DrainsTreeSidenavComponent } from '../_utils/drains-tree-sidenav/drains-tree-sidenav.component';
 import { FormulaDetailsDialogComponent } from '../_utils/formula-details-dialog/formula-details-dialog.component';
 import { HttpUtils } from '../_utils/http.utils';
+import { OrganizationsTree } from '../_utils/tree/organizations-tree';
 
 @Component({
   templateUrl: './measures.component.html',
-  styleUrls: ['./measures.component.scss']
+  styleUrls: ['./measures.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class MeasuresComponent implements OnInit {
 
   @ViewChild('treeSidenav') drainsTree: DrainsTreeSidenavComponent;
 
   isLoading: boolean = true;
+  costs: boolean = true;
   isLoadingMeasures: boolean = false;
   isChangingMeasures: boolean = false;
   isChangingOptionsMeasure: boolean = false;
@@ -68,7 +72,18 @@ export class MeasuresComponent implements OnInit {
   allFormulas: Formula[] = [];
   allIndexGroups: IndexGroup[] = [];
   allIndices: Index[] = [];
+  costsOrgs: Organization[] = [];
+  costsClients: Client[] = [];
+  costsFeeds: Feed[] = [];
+  costsDrains: Drain[] = [];
+  costsDrain: any;
+  unitOrgs: Organization[] = [];
+  unitClients: Client[] = [];
+  unitFeeds: Feed[] = [];
+  unitDrains: Drain[] = [];
   timeAggregations: any[] = [];
+  costsAggregations: any[] = [];
+  costsOperations: any[] = [];
   fastSettings: any[] = [];
   indices: Index[] = [];
   formulas: Formula[] = [];
@@ -99,11 +114,14 @@ export class MeasuresComponent implements OnInit {
   treeData: any = {};
   backRoute: string = 'dashboard';
 
-  constructor(private authService: AuthenticationService, private orgsService: OrganizationsService, private clientsService: ClientsService, private feedsService: FeedsService, private drainsService: DrainsService, private formulasService: FormulasService, private indicesService: IndicesService, private indexGroupsService: IndexGroupsService, private measuresService: MeasuresService, private timeChart: TimeChart, private pieChart: PieChart, private route: ActivatedRoute, private router: Router, private location: Location, private clipboard: Clipboard, private dialog: MatDialog, private httpUtils: HttpUtils, private translate: TranslateService) {}
+  constructor(private authService: AuthenticationService, private orgsService: OrganizationsService, private clientsService: ClientsService, private feedsService: FeedsService, private drainsService: DrainsService, private formulasService: FormulasService, private indicesService: IndicesService, private indexGroupsService: IndexGroupsService, private measuresService: MeasuresService, private timeChart: TimeChart, private pieChart: PieChart, private organizationsTree: OrganizationsTree, private route: ActivatedRoute, private router: Router, private location: Location, private clipboard: Clipboard, private dialog: MatDialog, private httpUtils: HttpUtils, private translate: TranslateService) {}
 
   ngOnInit(): void {
-    this.chartAggregations = this.httpUtils.getChartAggregations();
+    this.costs = (this.router.url === '/costs');
     this.user = this.authService.getCurrentUser();
+    this.chartAggregations = this.httpUtils.getChartAggregations();
+    this.costsAggregations = this.httpUtils.getMeasuresAggregationsForMeasureType('f');
+    this.costsOperations = this.httpUtils.getMeasuresOperationsForMeasureType('f');
     this.translate.get('CHART.SPLINE').subscribe((spline: string) => {
       this.chartTypes.push({ id: 'spline', description: spline, visible: true });
       this.translate.get('CHART.HISTOGRAM').subscribe((histogram: string) => {
@@ -120,9 +138,11 @@ export class MeasuresComponent implements OnInit {
       });
     });
     this.translate.get('TIME.NONE').subscribe((none: string) => {
-      this.timeAggregations.push({ id: 'NONE', description: none, order: 0 });
+      if (!this.costs)
+        this.timeAggregations.push({ id: 'NONE', description: none, order: 0 });
       this.translate.get('TIME.MINUTE').subscribe((minute: string) => {
-        this.timeAggregations.push({ id: 'MINUTE', description: minute, order: 1 });
+        if (!this.costs)
+          this.timeAggregations.push({ id: 'MINUTE', description: minute, order: 1 });
         this.translate.get('TIME.QHOUR').subscribe((qhour: string) => {
           this.timeAggregations.push({ id: 'QHOUR', description: qhour, order: 2 });
           this.translate.get('TIME.HOUR').subscribe((hour: string) => {
@@ -172,17 +192,44 @@ export class MeasuresComponent implements OnInit {
           this.energyClients.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
           this.allFeeds = results[2];
           this.allDrains = results[3];
+          if (this.costs) {
+            this.costsDrains = this.allDrains.filter(d => (d.measure_unit && d.measure_unit.includes('€/')));
+            if ((this.costsDrains.length === 1) || this.params.costsDrain) {
+              let drain = this.params.costsDrain ? this.costsDrains.find(d => d.id === +this.params.costsDrain) : this.costsDrains[0];
+              if (drain) {
+                let feed = this.allFeeds.find(f => f.id === drain.feed_id);
+                if (feed) {
+                  let client = this.energyClients.find(c => feed.client_ids.indexOf(c.id) > -1);
+                  if (client) {
+                    let org = this.allOrgs.find(o => o.id === client.org_id);
+                    if (org)
+                      this.costsDrain = { id: drain.id, full_name: ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : '') }
+                      this.unitDrains = this.allDrains.filter(d => (d.measure_unit && d.measure_unit.toLowerCase().includes('wh') && !d.measure_unit.toLowerCase().includes('€')));
+                      let data = { orgs: [], clients: [], feeds: [], drains: [] };
+                      this.addDrainsForTree(data, this.unitDrains);
+                      this.unitOrgs = data.orgs;
+                      this.unitClients = data.clients;
+                      this.unitFeeds = data.feeds;
+                  }
+                }
+              }
+            }
+            let data = { orgs: [], clients: [], feeds: [], drains: [] };
+            this.addDrainsForTree(data, this.costsDrains);
+            this.costsOrgs = data.orgs;
+            this.costsFeeds = data.feeds;
+            this.costsClients = data.clients;
+          }
           this.allFormulas = results[4];
           this.allIndexGroups = results[5];
           this.allIndices = results[6];
           this.isLoading = false;
           if (this.params.indexIds || this.params.nodeIds) {
-            if (this.params.indexIds) {
+            if (this.costs && this.params.indexIds) {
               var indexIds = this.params.indexIds.split(',');
               indexIds.forEach((indexId: string) => {
-                if (!this.indices.find((i: Index) => i.id === parseInt(indexId))) {
+                if (!this.indices.find((i: Index) => i.id === parseInt(indexId)))
                   this.addNode({ id: parseInt(indexId), type: 'index' }, false, false);
-                }
               });
             }
             if (this.params.nodeIds) {
@@ -226,7 +273,7 @@ export class MeasuresComponent implements OnInit {
             this.isHeatmapChart = (this.params.chartType === 'heatmap') ? true : false;
             this.loadMeasures(undefined, undefined, false);
           }
-          this.treeData = { orgs: this.allOrgs, clients: this.energyClients, feeds: this.allFeeds, drains: this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))), formulas: this.allFormulas, indexGroups: this.allIndexGroups, indices: this.allIndices, depth: this.user.drain_tree_depth, parentComponent: this };
+          this.treeData = { orgs: this.costs ? this.unitOrgs : this.allOrgs, clients: this.costs ? this.unitClients : this.energyClients, feeds: this.costs ? this.unitFeeds : this.allFeeds, drains: this.costs ? this.unitDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))) : this.allDrains.filter(d => ((d.measure_type !== 'C') && (d.measure_type !== 's'))), formulas: this.allFormulas, indexGroups: this.costs ? [] : this.allIndexGroups, indices: this.costs ? [] : this.allIndices, depth: this.user.drain_tree_depth, parentComponent: this };
         },
         error: (error: any) => {
           if (error.status !== 401) {
@@ -248,11 +295,12 @@ export class MeasuresComponent implements OnInit {
     this.group['startTime'] = new FormControl(this.params.startTime ? new Date(this.params.startTime) : new Date(moment().add(-1, 'day').toISOString()), [ Validators.required ]);
     this.group['endTime'] = new FormControl(this.params.endTime ? new Date(this.params.endTime) : new Date(moment().toISOString()), [ Validators.required ]);
     this.group['fastSetting'] = new FormControl('', []);
-    this.group['timeAggregation'] = new FormControl(this.params.timeAggregation ? this.params.timeAggregation : 'NONE', [ Validators.required ]);
+    this.group['timeAggregation'] = new FormControl(this.params.timeAggregation ? this.params.timeAggregation : (this.costs ? 'QHOUR' : 'NONE'), [ Validators.required ]);
+    this.group['costsAggregation'] = new FormControl(this.params.costsAggregation ? this.params.costsAggregation : 'SUM', [ Validators.required ]);
     this.group['formulaName'] = new FormControl('', []);
     this.group['organization'] = new FormControl('', []);
     this.group['client'] = new FormControl('', []);
-    this.group['chartType'] = new FormControl(this.params.widgetType !== 'STACKED' ? (this.params.chartType ? this.params.chartType : 'spline') : 'stacked', [ Validators.required ]);
+    this.group['chartType'] = new FormControl((this.params.widgetType !== 'STACKED') ? (this.params.chartType ? this.params.chartType : 'spline') : 'stacked', [ Validators.required ]);
     this.group['showMarkers'] = new FormControl(this.params.showMarkers ? this.params.showMarkers : false, []);
     this.group['chartAggregation'] = new FormControl(this.params.chartAggregation ? this.params.chartAggregation : 'average', [ Validators.required ]);
     this.group['color1'] = new FormControl(color1_rgb ? new Color(color1_rgb.r, color1_rgb.g, color1_rgb.b) : undefined, []);
@@ -266,6 +314,8 @@ export class MeasuresComponent implements OnInit {
       if ((this.nodes.filter((n: any) => n.visible).length > 0) || (this.indices.length > 0))
         this.loadMeasures(undefined, undefined, false);
     });
+    this.measuresForm.get('startTime').valueChanges.subscribe((_t: string) => this.needReloadMeasures = true);
+    this.measuresForm.get('endTime').valueChanges.subscribe((_t: string) => this.needReloadMeasures = true);
     this.measuresForm.get('fastSetting').valueChanges.subscribe((window) => {
       if (window === 'hour')
         this.measuresForm.patchValue({ startTime: new Date(moment().set('minute', 0).set('second', 0).toISOString()), endTime: new Date(moment().set('minute', 59).set('second', 59).toISOString()) });
@@ -377,6 +427,20 @@ export class MeasuresComponent implements OnInit {
       this.measuresForm.patchValue({ chartType: 'spline' });
   }
 
+  addDrainsForTree(data: any, drains: Drain[]): void {
+    drains.forEach((drain: Drain) => {
+      this.organizationsTree.selectDrain(data, this.allOrgs, this.energyClients, this.allFeeds, this.allDrains, drain.id);
+    });
+  }
+
+  selectCostDrain(): void {
+    const dialogRef = this.dialog.open(DrainsTreeDialogComponent, { width: '75%', data: { orgs: this.costsOrgs, clients: this.costsClients, feeds: this.costsFeeds, drains: this.costsDrains, formulas: [], showDetails: true, singleDrain: true } });
+    dialogRef.afterClosed().subscribe((result: any) => {
+      if (result && result.id)
+        this.costsDrain = { id: result.id, full_name: result.full_name };
+    });
+  }
+
   addNode(node: any, editNode: boolean, loadMeasures: boolean): void {
     if (node) {
       if (node.type === 'drain') {
@@ -462,33 +526,35 @@ export class MeasuresComponent implements OnInit {
   }
 
   removeNodeByIndex(i: number, type: string, editFormula: boolean): void {
-    this.nodes[i].visible = false;
-    this.nodes[i].operation = 'SEMICOLON';
-    this.visibleDrains = this.nodes.find((n: any) => (n.visible === true)) ? true : false;
     if ((this.nodes[i].type === 'formula') && !editFormula) {
       this.formulaId = undefined;
       this.measuresForm.patchValue({ organization: undefined, formulaName: undefined });
     }
-    if (!this.nodes.find((n: any) => ((n.id === this.nodes[i].id) && n.visible)))
+    this.nodes[i].visible = false;
+    this.nodes[i].operation = 'SEMICOLON';
+    if (this.nodes.find((n: any) => ((n.id === this.nodes[i].id) && n.visible)) === undefined)
       this.drainsTree.editNode(this.nodes[i].id, type, false);
-    this.setHasMeasures();
-    this.setChartTypesVisible();
-    let measureInfoIndex: number = this.measuresInfo.findIndex((info: any) => info.position === this.nodes[i].position);
-    if (measureInfoIndex !== -1) {
-      this.measuresInfo[measureInfoIndex].info.forEach((info: any) => {
-        if (this.chart) {
-          let serie: any = this.chartRef.get(info.id);
-          if (serie)
-            serie.remove();
-        }
-        this.chartSeries.splice(this.chartSeries.findIndex((s: any) => s.id === info.id), 1);
-      });
-      this.measuresInfo.splice(measureInfoIndex, 1);
-    }
-    if (this.chartSeries.length === 0) {
-      this.chart = undefined;
-      this.measures = [];
-      this.measuresInfo = [];
+    this.visibleDrains = this.nodes.find((n: any) => (n.visible === true)) ? true : false;
+    if (!editFormula) {
+      this.setHasMeasures();
+      this.setChartTypesVisible();
+      let measureInfoIndex: number = this.measuresInfo.findIndex((info: any) => info.position === this.nodes[i].position);
+      if (measureInfoIndex !== -1) {
+        this.measuresInfo[measureInfoIndex].info.forEach((info: any) => {
+          if (this.chart) {
+            let serie: any = this.chartRef.get(info.id);
+            if (serie)
+              serie.remove();
+          }
+          this.chartSeries.splice(this.chartSeries.findIndex((s: any) => s.id === info.id), 1);
+        });
+        this.measuresInfo.splice(measureInfoIndex, 1);
+      }
+      if (this.chartSeries.length === 0) {
+        this.chart = undefined;
+        this.measures = [];
+        this.measuresInfo = [];
+      }
     }
   }
 
@@ -564,18 +630,15 @@ export class MeasuresComponent implements OnInit {
         if (formula && formula.components) {
           this.removeNodeByIndex(i, 'formula', true);
           let k = 0;
-          let j = 0;
           let component = this;
           formula.components.forEach(function (drain_id: number) {
             let drain = component.allDrains.find((d: Drain) => d.id === drain_id);
             if (drain) {
               drain.selected = true;
               let legend: string = '';
-              if (formula.operators[k] === 'SEMICOLON') {
-                legend = formula.legends[j] ? formula.legends[j] : formula.name;
-                j++;
-              }
-              component.addNode({ id: drain.id, type: 'drain', exclude_outliers: formula.exclude_outliers[k], positive_negative_value: formula.positive_negative_values[k] ? formula.positive_negative_values[k] : '', aggregation: formula.aggregations[k], operation: formula.operators[k], legend: legend }, true, true);
+              if (formula.operators[k] === 'SEMICOLON')
+                legend = formula.legends[k] ? formula.legends[k] : formula.name;
+              component.addNode({ id: drain.id, type: 'drain', exclude_outliers: formula.exclude_outliers[k], positive_negative_value: formula.positive_negative_values[k] ? formula.positive_negative_values[k] : '', aggregation: formula.aggregations[k], operation: formula.operators[k], legend: legend }, true, false);
             }
             k++;
           });
@@ -646,6 +709,7 @@ export class MeasuresComponent implements OnInit {
       lastSemicolonControl = this.addNodeToMeasuresQuery(node, nodeIds, operations, legends, lastSemicolonControl, aggregations, positiveNegativeValues, excludeOutliers);
     } else if (!index) {
       let component = this;
+      this.measures = undefined;
       this.nodes.forEach((n: any) => {
         if (n.visible)
           lastSemicolonControl = component.addNodeToMeasuresQuery(n, nodeIds, operations, legends, lastSemicolonControl, aggregations, positiveNegativeValues, excludeOutliers);
@@ -659,7 +723,7 @@ export class MeasuresComponent implements OnInit {
     if (node.type === 'formula') {
       nodeIds.push("f_" + node.id);
       if (node.subFormulas === 1)
-        operations.push('SEMICOLON');
+        operations.push(node.operation);
       lastSemicolonControl = (node.operation === 'SEMICOLON');
       let formula: Formula = this.allFormulas.find((f: Formula) => f.id === node.id)
       if (formula) {
@@ -725,8 +789,12 @@ export class MeasuresComponent implements OnInit {
       }
       let years: number = 0;
       if ((start_time.getFullYear() === end_time.getFullYear()) || (this.measuresForm.get('timeAggregation').value === 'ALL')) {
-        if (vNodes.nodeIds && (vNodes.nodeIds.length > 0))
-          requests.push(this.measuresService.getMeasures(vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), vNodes.aggregations.toString(), vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
+        if (vNodes.nodeIds && (vNodes.nodeIds.length > 0)) {
+          if (this.costs)
+            requests.push(this.measuresService.getCosts(this.costsDrain.id, vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), this.measuresForm.get('costsAggregation').value, vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
+          else
+            requests.push(this.measuresService.getMeasures(vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), vNodes.aggregations.toString(), vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
+        }
         if (index) {
           indexRequests[0].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
         } else if (!node && (this.indices.length > 0)) {
@@ -745,8 +813,12 @@ export class MeasuresComponent implements OnInit {
          let end = moment(end_time);
          while (moment(start_time) < end) {
            start = (start_time.getFullYear() === new Date(end.toISOString()).getFullYear()) ? moment(start_time) : moment(end).startOf('year');
-           if (vNodes.nodeIds && (vNodes.nodeIds.length > 0))
-             requests.push(this.measuresService.getMeasures(vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), vNodes.aggregations.toString(), vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
+           if (vNodes.nodeIds && (vNodes.nodeIds.length > 0)) {
+             if (this.costs)
+               requests.push(this.measuresService.getCosts(this.costsDrain.id, vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), this.measuresForm.get('costsAggregation').value, vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
+             else
+               requests.push(this.measuresService.getMeasures(vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), vNodes.aggregations.toString(), vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
+           }
            if (index) {
              indexRequests[0].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
            } else if (!node && (this.indices.length > 0)) {
@@ -815,19 +887,7 @@ export class MeasuresComponent implements OnInit {
           this.needReloadMeasures = false;
           this.drainsTree.endLoadingMeasure();
           if (exportCsv) {
-            let columnNames: string[] = [];
-            this.indices.forEach((index: Index) => {
-              columnNames.push(index.name);
-            });
-            this.measuresInfo.forEach((mi: any) => {
-              mi.info.forEach((info: any) => {
-                columnNames.push(info.name);
-              });
-            });
-            const link = document.createElement("a");
-            link.href = this.httpUtils.createCsvContent(columnNames, this.indexResults, this.measures);
-            link.download = 'drain_data.csv';
-            link.click();
+            this.exportCsv();
           } else if (this.chart && (node || index)) {
             if (index) {
               this.addIndexResults(this.indexResults[this.indexResults.length - 1], true);
@@ -1021,7 +1081,21 @@ export class MeasuresComponent implements OnInit {
   }
 
   exportCsv(): void {
-    this.loadMeasures(undefined, undefined, true);
+    if (this.needReloadMeasures)
+      this.loadMeasures(undefined, undefined, true);
+    let columnNames: string[] = [];
+    this.indices.forEach((index: Index) => {
+      columnNames.push(index.name);
+    });
+    this.measuresInfo.forEach((mi: any) => {
+      mi.info.forEach((info: any) => {
+        columnNames.push(info.name);
+      });
+    });
+    const link = document.createElement("a");
+    link.href = this.httpUtils.createCsvContent(columnNames, this.indexResults, this.measures);
+    link.download = 'drain_data.csv';
+    link.click();
   }
 
   shareLink(): void {

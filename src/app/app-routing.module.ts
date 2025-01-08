@@ -7,7 +7,6 @@ import { ClientCategoriesComponent } from './clientcategories/clientcategories-l
 import { ClientCategoryComponent } from './clientcategories/clientcategory-detail/clientcategory-detail.component';
 import { ClientComponent } from './clients/client-detail/client-detail.component';
 import { ClientsComponent } from './clients/clients-list/clients-list.component';
-import { CostsComponent } from './costs/costs.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { DashboardDetailComponent } from './dashboard/dashboard-detail/dashboard-detail.component';
 import { DashboardWidgetComponent } from './dashboardwidget/dashboardwidget.component';
@@ -123,7 +122,7 @@ const routes: Routes = [
   },
   {
     path: 'costs',
-    component: CostsComponent,
+    component: MeasuresComponent,
     canActivate: [ AuthGuard ]
   },
   {

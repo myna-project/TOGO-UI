@@ -8,10 +8,14 @@
       <div class="breadcrumb measure-breadcrumb">
         <mat-chip-listbox class="breadcrumb-left">
           <mat-chip-option routerLink="/organizations" routerLinkActive="active">{{ 'MENU.ORGS' | translate }}</mat-chip-option>
-          <mat-chip-option disabled>{{ 'MENU.MEASURES' | translate }}</mat-chip-option>
+          <mat-chip-option disabled>{{ (costs ? 'MENU.COSTS' : 'MENU.MEASURES') | translate }}</mat-chip-option>
         </mat-chip-listbox>
       </div>
       <form class="togo-form" [formGroup]="measuresForm">
+        <h5 *ngIf="costs">
+          {{ 'MEASURES.COST' | translate }}{{ costsDrain ? ': ' + costsDrain.full_name : '' }}
+          <button *ngIf="!isLoading" mat-raised-button class="togo-form-button adddrains-button" (click)="selectCostDrain()">{{ 'MEASURES.SELECTCOST' | translate }}</button>
+        </h5>
         <div class="togo-form-field-group">
           <mat-icon *ngIf="!isLoading" mat-raised-button class="show-hour-icon" (click)="showHours = !showHours" matTooltip="{{ (showHours ? 'MEASURES.HIDEHOURS' : 'MEASURES.SHOWHOURS') | translate }}">{{ showHours ? 'clear' : 'access_time' }}</mat-icon>
           <mat-form-field class="very-short-form-field" *ngIf="!showHours">
@@ -49,6 +53,12 @@
             <mat-label>{{ 'MEASURES.TIMEAGGREGATION' | translate }}</mat-label>
             <mat-select [formControlName]="'timeAggregation'" required>
               <mat-option *ngFor="let aggregation of timeAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field *ngIf="costs" class="very-short-form-field">
+            <mat-label>{{ 'MEASURES.AGGREGATION' | translate }}</mat-label>
+            <mat-select [formControlName]="'costsAggregation'" required>
+              <mat-option *ngFor="let aggregation of costsAggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
             </mat-select>
           </mat-form-field>
           <button type="submit" mat-raised-button class="togo-form-button whiteblue-button" *ngIf="hasMeasures" (click)="showDrainsOptions = !showDrainsOptions">{{ (showDrainsOptions ? 'MEASURES.HIDEDRAINOPTIONS' : 'MEASURES.SHOWDRAINOPTIONS') | translate }}</button>
@@ -121,7 +131,7 @@
                       <mat-option [value]="'neg'">{{ 'MEASURES.NEGATIVEVALUES' | translate }}</mat-option>
                     </mat-select>
                   </mat-form-field>
-                  <mat-form-field class="short-form-field" *ngIf="n.full_name && (n.type === 'drain')">
+                  <mat-form-field class="short-form-field" *ngIf="!costs && n.full_name && (n.type === 'drain')">
                     <mat-label>{{ 'MEASURES.AGGREGATION' | translate }}</mat-label>
                     <mat-select [formControlName]="'aggregation_' + i" required>
                       <mat-option *ngFor="let aggregation of n.aggregations" [value]="aggregation.id">{{aggregation.description}}</mat-option>
@@ -159,7 +169,7 @@
           <span *ngIf="needReloadMeasures && hasMeasures" class="need-reload-measures">{{ 'MEASURES.NEEDRELOADMEASURES' | translate }}</span>
         </div>
         <div class="no-data-div" *ngIf="measuresLoaded && noMeasuresFound">
-          <span>{{ 'MEASURES.NOMEASURES' | translate }}</span>
+          <span>{{ (costs ? 'MEASURES.NOCOSTS' : 'MEASURES.NOMEASURES') | translate }}</span>
         </div>
         <div *ngIf="chart">
           <div [chart]="chart"></div>

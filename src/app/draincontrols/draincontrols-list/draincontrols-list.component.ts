@@ -17,7 +17,8 @@ import { OrganizationsTree } from '../../_utils/tree/organizations-tree';
 
 @Component({
   templateUrl: './draincontrols-list.component.html',
-  styleUrls: ['./draincontrols-list.component.scss']
+  styleUrls: ['./draincontrols-list.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class DrainControlsComponent implements OnInit {
 

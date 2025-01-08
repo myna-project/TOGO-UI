@@ -36,7 +36,8 @@ import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   templateUrl: './dashboardwidget.component.html',
-  styleUrls: ['./dashboardwidget.component.scss']
+  styleUrls: ['./dashboardwidget.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class DashboardWidgetComponent implements OnInit {
 

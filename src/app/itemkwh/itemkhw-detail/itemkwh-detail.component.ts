@@ -26,7 +26,8 @@ import { OrganizationsTree } from '../../_utils/tree/organizations-tree';
 
 @Component({
   templateUrl: './itemkwh-detail.component.html',
-  styleUrls: ['./itemkwh-detail.component.scss']
+  styleUrls: ['./itemkwh-detail.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class ItemkwhComponent implements OnInit {
 

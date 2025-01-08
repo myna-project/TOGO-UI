@@ -13,7 +13,8 @@ import { OrganizationsTree } from '../../_utils/tree/organizations-tree';
 
 @Component({
   templateUrl: './organizations-list.component.html',
-  styleUrls: ['./organizations-list.component.scss']
+  styleUrls: ['./organizations-list.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class OrganizationsComponent implements OnInit {
 

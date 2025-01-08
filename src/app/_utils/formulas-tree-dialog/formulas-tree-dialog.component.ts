@@ -21,7 +21,8 @@ export interface FormulasTreeDialogData {
 }
 
 @Component({
-  templateUrl: './formulas-tree-dialog.component.html'
+  templateUrl: './formulas-tree-dialog.component.html',
+  providers: [OrganizationsTree]
 })
 export class FormulasTreeDialogComponent implements OnInit {
 

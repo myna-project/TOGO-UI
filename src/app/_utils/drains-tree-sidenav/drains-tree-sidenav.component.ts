@@ -34,7 +34,8 @@ export interface DrainsTreeSidenavData {
 
 @Component({
   selector: 'app-drains-tree-sidenav',
-  templateUrl: './drains-tree-sidenav.component.html'
+  templateUrl: './drains-tree-sidenav.component.html',
+  providers: [OrganizationsTree]
 })
 export class DrainsTreeSidenavComponent implements OnInit {
 
@@ -64,7 +65,6 @@ export class DrainsTreeSidenavComponent implements OnInit {
     let currentUser = this.authService.getCurrentUser();
     this.depthTree = currentUser.drain_tree_depth;
     this.isDarkTheme = currentUser.dark_theme;
-    console.log(currentUser);
     this.treeFlattener = new MatTreeFlattener(this.transformer, this.getLevel, this.isExpandable, this.getChildren);
     this.treeControl = new FlatTreeControl<TreeItemFlatNode>(this.getLevel, this.isExpandable);
     this.dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);

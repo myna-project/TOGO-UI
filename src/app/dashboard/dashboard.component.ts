@@ -44,7 +44,8 @@ import { OrganizationsTree } from '../_utils/tree/organizations-tree';
 
 @Component({
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+  styleUrls: ['./dashboard.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
 

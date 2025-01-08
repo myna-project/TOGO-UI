@@ -19,7 +19,8 @@ import { OrganizationsTree } from '../../_utils/tree/organizations-tree';
 
 @Component({
   templateUrl: './indices-list.component.html',
-  styleUrls: ['./indices-list.component.scss']
+  styleUrls: ['./indices-list.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class IndicesComponent implements OnInit {
 

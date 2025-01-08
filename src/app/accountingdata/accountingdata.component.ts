@@ -27,7 +27,8 @@ import { environment } from '../../environments/environment';
 
 @Component({
   templateUrl: './accountingdata.component.html',
-  styleUrls: ['./accountingdata.component.scss']
+  styleUrls: ['./accountingdata.component.scss'],
+  providers: [OrganizationsTree]
 })
 export class AccountingDataComponent implements OnInit {
 
