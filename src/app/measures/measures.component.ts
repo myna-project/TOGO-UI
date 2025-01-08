@@ -204,16 +204,16 @@ export class MeasuresComponent implements OnInit {
                     let org = this.allOrgs.find(o => o.id === client.org_id);
                     if (org)
                       this.costsDrain = { id: drain.id, full_name: ((this.allOrgs.length > 1) ? org.name + ' - ' : '') + client.name + ' - ' + feed.description + ' - ' + drain.name + (drain.measure_unit ? ' (' + drain.measure_unit + ')' : '') }
-                      this.unitDrains = this.allDrains.filter(d => (d.measure_unit && d.measure_unit.toLowerCase().includes('wh') && !d.measure_unit.toLowerCase().includes('€')));
-                      let data = { orgs: [], clients: [], feeds: [], drains: [] };
-                      this.addDrainsForTree(data, this.unitDrains);
-                      this.unitOrgs = data.orgs;
-                      this.unitClients = data.clients;
-                      this.unitFeeds = data.feeds;
                   }
                 }
               }
             }
+			this.unitDrains = this.allDrains.filter(d => (d.measure_unit && d.measure_unit.toLowerCase().includes('wh') && !d.measure_unit.toLowerCase().includes('€')));
+			let unitData = { orgs: [], clients: [], feeds: [], drains: [] };
+			this.addDrainsForTree(unitData, this.unitDrains);
+			this.unitOrgs = unitData.orgs;
+			this.unitClients = unitData.clients;
+			this.unitFeeds = unitData.feeds;
             let data = { orgs: [], clients: [], feeds: [], drains: [] };
             this.addDrainsForTree(data, this.costsDrains);
             this.costsOrgs = data.orgs;
