@@ -309,7 +309,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             }
           });
         } else {
-          this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation).subscribe({
+          this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(widget.end_time ? widget.end_time : moment().toISOString()), true), widget.time_aggregation, false).subscribe({
             next: (measures: any) => {
               this.loadMeasuresInGauge(widget, measures, update);
             },
@@ -425,7 +425,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             if (widget.costs_drain_id)
               requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
             else
-              requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
+              requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation, false));
           let i = 0;
           widget.indices.forEach((index: Index) => {
             indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
@@ -441,7 +441,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
                if (widget.costs_drain_id)
                  requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
                else
-                 requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
+                 requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation, false));
              let i = 0;
              widget.indices.forEach((index: Index) => {
                indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));

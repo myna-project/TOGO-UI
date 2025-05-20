@@ -81,7 +81,7 @@ export class ChartDialogComponent implements OnInit {
             this.data.endTime = new Date(moment().toISOString());
             this.data.startTime = new Date(moment().add(-1, 'month').toISOString());
           }
-          this.measuresService.getMeasures(drains.toString(), '', this.data.positive_negative_values.toString(), this.data.aggregations.toString(), this.data.operations.toString(), this.httpUtils.getDateTimeForUrl(this.data.startTime, true), this.httpUtils.getDateTimeForUrl(this.data.endTime, true), this.data.timeAggregation ? this.data.timeAggregation : 'HOUR').subscribe({
+          this.measuresService.getMeasures(drains.toString(), '', this.data.positive_negative_values.toString(), this.data.aggregations.toString(), this.data.operations.toString(), this.httpUtils.getDateTimeForUrl(this.data.startTime, true), this.httpUtils.getDateTimeForUrl(this.data.endTime, true), this.data.timeAggregation ? this.data.timeAggregation : 'HOUR', false).subscribe({
             next: (measures: any) => {
               let unitArray = [];
               measures.forEach((m: any) => {

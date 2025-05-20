@@ -70,14 +70,14 @@ export class SynopticDashboardComponent implements AfterViewInit, OnDestroy {
           k++;
         });
         let start_time: Date = new Date(moment().add(data.lastN * -1, (data.last == 'HOUR') ? 'hour' : 'month').toISOString());
-        this.measuresService.getMeasures(data.drains, '', '', data.aggregations, data.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), data.timeAggregation).subscribe({
+        this.measuresService.getMeasures(data.drains, '', '', data.aggregations, data.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), data.timeAggregation, data.forceDiff).subscribe({
           next: (measures: any[]) => {
             let i = 0;
             measures.forEach(m => {
               let lineY = ((data.lines.length == 1) ? data.imgHeight/2 : ((data.lines.length == 2) ? data.imgHeight * ((i + 1)/(data.lines.length) + 0.005) : data.imgHeight * ((i + 1)/(data.lines.length) - 0.1)));
               svgData += '<text class="ff lsxs" font-size="' + data.lines[i].descriptionSize + '" font-weight="' + data.lines[i].weight + '" x="' + (data.imgWidth/3 + 3) + '" y="'+ lineY + '" fill="' + data.lines[i].color + '">' + data.lines[i].description + '</text>';
               svgData += '<text class="ff lsxs" font-size="' + data.lines[i].unitSize + '" font-weight="' + data.lines[i].weight + '" x="' + (data.imgWidth * 0.67) + '" y="'+ lineY + '" fill="' + data.lines[i].color + '" text-anchor="middle">' + m.unit + '</text>';
-              svgData += '<text class="ff lsxs" font-size="' + data.lines[i].valueSize + '" font-weight="' + data.lines[i].weight + '" x="' + (data.imgWidth - 3) + '" y="'+ lineY + '" fill="' + data.lines[i].color + '" text-anchor="end">' + ((m.measures.length > 0) ? parseFloat(m.measures[m.measures.length - 1].value.toString()).toFixed(2) : '-') + '</text>';
+              svgData += '<text class="ff lsxs" font-size="' + data.lines[i].valueSize + '" font-weight="' + data.lines[i].weight + '" x="' + (data.imgWidth - 3) + '" y="'+ lineY + '" fill="' + data.lines[i].color + '" text-anchor="end">' + ((m.measures.length > 0 && !isNaN(m.measures[m.measures.length - 1].value)) ? new Intl.NumberFormat(data.numberFormatting).format(m.measures[m.measures.length - 1].value.toFixed(data.decimals)) : '-') + '</text>';
               i++;
             });
             svgData += '</svg>';

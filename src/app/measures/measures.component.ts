@@ -453,7 +453,7 @@ export class MeasuresComponent implements OnInit {
             if (client) {
               let org = this.allOrgs.find(o => o.id === client.org_id);
               if (org) {
-                let aggregation = node.aggregation ? node.aggregation : (drain.measure_unit && drain.measure_unit.toLowerCase().includes('wh')) ? 'SUM' : 'AVG';
+                let aggregation = node.aggregation ? node.aggregation : (drain.measure_unit && (drain.measure_unit.toLowerCase().includes('wh') || (feed.description == 'Produzione'))) ? 'SUM' : 'AVG';
                 let operation = node.operation ? node.operation : 'SEMICOLON';
                 let excludeOutliers = node.exclude_outliers ? node.exclude_outliers : (drain.max_value !== undefined || drain.min_value !== undefined);
                 let positiveNegativeValue = node.positive_negative_value ? node.positive_negative_value : '';
@@ -793,7 +793,7 @@ export class MeasuresComponent implements OnInit {
           if (this.costs)
             requests.push(this.measuresService.getCosts(this.costsDrain.id, vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), this.measuresForm.get('costsAggregation').value, vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
           else
-            requests.push(this.measuresService.getMeasures(vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), vNodes.aggregations.toString(), vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
+            requests.push(this.measuresService.getMeasures(vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), vNodes.aggregations.toString(), vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value, false));
         }
         if (index) {
           indexRequests[0].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), this.measuresForm.get('timeAggregation').value));
@@ -817,7 +817,7 @@ export class MeasuresComponent implements OnInit {
              if (this.costs)
                requests.push(this.measuresService.getCosts(this.costsDrain.id, vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), this.measuresForm.get('costsAggregation').value, vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
              else
-               requests.push(this.measuresService.getMeasures(vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), vNodes.aggregations.toString(), vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
+               requests.push(this.measuresService.getMeasures(vNodes.nodeIds.toString(), vNodes.excludeOutliers.toString(), vNodes.positiveNegativeValues.toString(), vNodes.aggregations.toString(), vNodes.operations.toString(), this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value, false));
            }
            if (index) {
              indexRequests[0].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), this.measuresForm.get('timeAggregation').value));
