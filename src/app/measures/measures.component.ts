@@ -208,12 +208,12 @@ export class MeasuresComponent implements OnInit {
                 }
               }
             }
-			this.unitDrains = this.allDrains.filter(d => (d.measure_unit && d.measure_unit.toLowerCase().includes('wh') && !d.measure_unit.toLowerCase().includes('€')));
-			let unitData = { orgs: [], clients: [], feeds: [], drains: [] };
-			this.addDrainsForTree(unitData, this.unitDrains);
-			this.unitOrgs = unitData.orgs;
-			this.unitClients = unitData.clients;
-			this.unitFeeds = unitData.feeds;
+            this.unitDrains = this.allDrains.filter(d => (d.measure_unit && d.measure_unit.toLowerCase().includes('wh') && !d.measure_unit.toLowerCase().includes('€')));
+            let unitData = { orgs: [], clients: [], feeds: [], drains: [] };
+            this.addDrainsForTree(unitData, this.unitDrains);
+            this.unitOrgs = unitData.orgs;
+            this.unitClients = unitData.clients;
+            this.unitFeeds = unitData.feeds;
             let data = { orgs: [], clients: [], feeds: [], drains: [] };
             this.addDrainsForTree(data, this.costsDrains);
             this.costsOrgs = data.orgs;
@@ -453,7 +453,7 @@ export class MeasuresComponent implements OnInit {
             if (client) {
               let org = this.allOrgs.find(o => o.id === client.org_id);
               if (org) {
-                let aggregation = node.aggregation ? node.aggregation : (drain.measure_unit && (drain.measure_unit.toLowerCase().includes('wh') || (feed.description == 'Produzione'))) ? 'SUM' : 'AVG';
+                let aggregation = node.aggregation ? node.aggregation : (drain.measure_unit && (drain.measure_unit.toLowerCase().includes('wh') || feed.description.startsWith('Produzione'))) ? 'SUM' : 'AVG';
                 let operation = node.operation ? node.operation : 'SEMICOLON';
                 let excludeOutliers = node.exclude_outliers ? node.exclude_outliers : (drain.max_value !== undefined || drain.min_value !== undefined);
                 let positiveNegativeValue = node.positive_negative_value ? node.positive_negative_value : '';
@@ -532,8 +532,18 @@ export class MeasuresComponent implements OnInit {
     }
     this.nodes[i].visible = false;
     this.nodes[i].operation = 'SEMICOLON';
-    if (this.nodes.find((n: any) => ((n.id === this.nodes[i].id) && n.visible)) === undefined)
+    if (this.nodes.find((n: any) => ((n.id === this.nodes[i].id) && n.visible)) === undefined) {
       this.drainsTree.editNode(this.nodes[i].id, type, false);
+      if (type === 'drain') {
+        let drain: Drain = this.treeData.drains.find((d: Drain) => d.id === this.nodes[i].id);
+        if (drain)
+          drain.selected = false;
+      } else if (type === 'formula') {
+        let formula: Formula = this.treeData.formulas.find((f: Formula) => f.id === this.nodes[i].id);
+        if (formula)
+          formula.selected = false;
+      }
+    }
     this.visibleDrains = this.nodes.find((n: any) => (n.visible === true)) ? true : false;
     if (!editFormula) {
       this.setHasMeasures();
@@ -568,6 +578,9 @@ export class MeasuresComponent implements OnInit {
         serie.remove();
     }
     this.drainsTree.editNode(index.id, 'index', false);
+    let ind: Index = this.treeData.indices.find((d: Index) => d.id === index.id);
+    if (ind)
+      ind.selected = false;
     if (this.chartSeries.length === 0)
       this.chart = undefined;
   }
@@ -764,11 +777,13 @@ export class MeasuresComponent implements OnInit {
         this.httpUtils.errorDialog({ status: 499, error: { errorCode: 8495 } });
         this.isLoadingMeasures = false;
         this.checkFormula = false;
+        this.drainsTree.endLoadingMeasure();
         return;
       } else if (((vNodes.nodeIds && (vNodes.nodeIds.length > 0)) && !vNodes.lastSemicolon)) {
         this.httpUtils.errorDialog({ status: 499, error: { errorCode: 8499 } });
         this.isLoadingMeasures = false;
         this.checkFormula = false;
+        this.drainsTree.endLoadingMeasure();
         return;
       }
       let start_time = new Date(moment(this.measuresForm.get('startTime').value).toISOString());
@@ -776,6 +791,7 @@ export class MeasuresComponent implements OnInit {
       if (end_time < start_time) {
         this.httpUtils.errorDialog({ status: 496, error: { errorCode: 8496 } });
         this.isLoadingMeasures = false;
+        this.drainsTree.endLoadingMeasure();
         return;
       }
       let requests: Observable<any>[] = [];
@@ -911,6 +927,7 @@ export class MeasuresComponent implements OnInit {
           if (error.status !== 401)
             this.httpUtils.errorDialog(error);
           this.isLoadingMeasures = false;
+          this.drainsTree.endLoadingMeasure();
         }
       });
     }
@@ -931,13 +948,16 @@ export class MeasuresComponent implements OnInit {
       let sf = 0;
       let measureNodes = this.nodes.filter((n: any) => n.visible && (n.operation === 'SEMICOLON'));
       this.measures.forEach((m: Measures) => {
-        let measureInfo = this.measuresInfo.find((info: any) => info.position === measureNodes[pos].position);
-        this.addMeasures(m, measureInfo.info[sf].id, measureInfo.info[sf].name, false);
-        if ((measureNodes[pos].type === 'formula') && (sf < (measureNodes[pos].subFormulas - 1))) {
-          sf++;
-        } else {
-          sf = 0;
-          pos++;
+        if ((measureNodes.length > pos)) {
+          let measureInfo = this.measuresInfo.find((info: any) => info.position === measureNodes[pos].position);
+          if (measureInfo && (measureInfo.info.length > sf))
+            this.addMeasures(m, measureInfo.info[sf].id, measureInfo.info[sf].name, false);
+          if ((measureNodes[pos].type === 'formula') && (sf < (measureNodes[pos].subFormulas - 1))) {
+            sf++;
+          } else {
+            sf = 0;
+            pos++;
+          }
         }
       });
     }

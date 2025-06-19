@@ -151,7 +151,7 @@ export class DrainsTreeSidenavComponent implements OnInit {
   }
 
   editNode(id: number, type: string, selected: boolean) {
-    let node = this.treeControl.dataNodes.find(node => ((node.id === id) && (node.type === type)));
+    let node = this.treeControl.dataNodes.find(n => ((n.id === id) && (n.type === type)));
     if (node)
       node.selected = selected;
   }
