@@ -54,7 +54,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   allFeeds: Feed[] = [];
   allDrains: Drain[] = [];
   allFormulas: Formula[] = [];
-  allIndices: Index[] = [];
   options: GridsterConfig;
   dashboard: DashboardWidget[] = [];
   currentUser: User = new User();
@@ -86,15 +85,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.currentUser = this.authService.getCurrentUser();
       if (this.currentUser.default_dashboard_id || params.get('id')) {
         this.dashboardId = params.get('id') ? params.get('id') : this.currentUser.default_dashboard_id;
-        forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.indicesService.getIndices(), this.dashboardWidgetsService.getDashboardWidgets(params.get('id') ? +params.get('id') : this.currentUser.default_dashboard_id)]).subscribe({
+        forkJoin([this.orgsService.getOrganizations(), this.clientsService.getClients(), this.feedsService.getFeeds(), this.drainsService.getDrains(), this.formulasService.getFormulas(), this.dashboardWidgetsService.getDashboardWidgets(params.get('id') ? +params.get('id') : this.currentUser.default_dashboard_id)]).subscribe({
           next: (results: any) => {
             this.allOrgs = results[0];
             this.energyClients = results[1].filter((c: Client) => c.energy_client);
             this.allFeeds = results[2];
             this.allDrains = results[3];
             this.allFormulas = results[4];
-            this.allIndices = results[5];
-            let widgets: DashboardWidget[] = results[6];
+            let widgets: DashboardWidget[] = results[5];
             widgets.sort((a, b) => a.x_pos < b.x_pos ? ((a.y_pos <= b.y_pos) ? -1 : 1) : ((a.y_pos <= b.y_pos) ? -1 : 1));
             widgets.forEach(widget => {
               this.setGridsterItemPosition(widget);
@@ -388,29 +386,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
       widget.plot_options = (widget.widget_type === 'STACKED') ? { column: { stacking: 'normal', dataLabels: { enabled: true, format: '{point.percentage:.0f}%', style: { fontSize: '1.1em' } } } } : { series: { marker: { enabled: true }, dataGrouping: { enabled: true, approximation: 'average' } } };
     }
     if (widget.details) {
-      widget.indices = [];
+      widget.index_ids = [];
       widget.details.forEach(detail => {
         if (detail.drain_id) {
           widget.is_loading_drain = true;
-          this.loadDrainDetail(widget, detail, this.allDrains.find(d => d.id === detail.drain_id), undefined);
+          this.loadDrainDetail(widget, detail, this.allDrains.find((d: Drain) => d.id === detail.drain_id), undefined);
         } else if (detail.formula_id) {
           widget.is_loading_drain = true;
           this.setFormula(widget, detail);
         } else if (detail.index_id) {
           widget.is_loading_drain = true;
-          let index: Index = this.allIndices.find(i => i.id = detail.index_id);
-          if (index)
-            widget.indices.push(index);
+          widget.index_ids.push(detail.index_id);
         }
       });
       if (widget.last_operator && (widget.last_operator !== 'SEMICOLON')) {
         this.setError(widget, { status: 8499 });
         return;
       }
-      if ((widget.drains != '') || (widget.indices.length > 0)) {
+      if ((widget.drains != '') || (widget.index_ids.length > 0)) {
         let requests: Observable<any>[] = [];
         let indexRequests: any[] = [];
-        widget.indices.forEach((_index: Index) => {
+        widget.index_ids.forEach((_index: number) => {
           indexRequests.push([]);
         });
         let start_time = new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString());
@@ -427,29 +423,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
             else
               requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation, false));
           let i = 0;
-          widget.indices.forEach((index: Index) => {
-            indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
+          widget.index_ids.forEach((index_id: number) => {
+            indexRequests[i].push(this.indicesService.calculateIndex(index_id, this.httpUtils.getDateTimeForUrl(start_time, true), this.httpUtils.getDateTimeForUrl(end_time, true), widget.time_aggregation));
             i++;
           });
           years++;
         } else {
-           let start = moment(start_time);
-           let end = moment(end_time);
-           while (moment(start_time) < end) {
-             start = (start_time.getFullYear() === new Date(end.toISOString()).getFullYear()) ? moment(start_time) : moment(end).startOf('year');
-             if (widget.drains != '')
-               if (widget.costs_drain_id)
-                 requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
-               else
-                 requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation, false));
-             let i = 0;
-             widget.indices.forEach((index: Index) => {
-               indexRequests[i].push(this.indicesService.calculateIndex(index.id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
-               i++;
-             });
-             end = moment(start).add(-1, 'second');
-             years++;
-           }
+          let start = moment(start_time);
+          let end = moment(end_time);
+          while (moment(start_time) < end) {
+            start = (start_time.getFullYear() === new Date(end.toISOString()).getFullYear()) ? moment(start_time) : moment(end).startOf('year');
+            if (widget.drains != '')
+              if (widget.costs_drain_id)
+                requests.push(this.measuresService.getCosts(widget.costs_drain_id, widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.costs_aggregation, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
+              else
+                requests.push(this.measuresService.getMeasures(widget.drains, widget.exclude_outliers, widget.positive_negative_values, widget.aggregations, widget.operations, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation, false));
+            let i = 0;
+            widget.index_ids.forEach((index_id: number) => {
+              indexRequests[i].push(this.indicesService.calculateIndex(index_id, this.httpUtils.getDateTimeForUrl(new Date(start.toISOString()), true), this.httpUtils.getDateTimeForUrl(new Date(end.toISOString()), true), widget.time_aggregation));
+              i++;
+            });
+            end = moment(start).add(-1, 'second');
+            years++;
+          }
         }
         let drainRequests = requests.length;
         indexRequests.forEach((irs: any[]) => {
@@ -638,12 +634,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   goToMeasures($event: MouseEvent | TouchEvent, widget: DashboardWidget): void {
     $event.preventDefault();
     $event.stopPropagation();
-    if ((widget.drains || (widget.indices && widget.indices.length > 0)) && (widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'STACKED') || (widget.widget_type === 'HEATMAP')) {
-      let indexIds: number[] = [];
-      widget.indices.forEach((index: Index) => {
-        indexIds.push(index.id);
-      })
-      this.router.navigate([widget.costs_drain_id ? 'costs' : 'measures'], { queryParams: { costsDrain: widget.costs_drain_id, indexIds: indexIds.toString(), nodeIds: widget.drains, costsAggregation: widget.costs_aggregation, excludeOutliers: widget.exclude_outliers, positiveNegativeValues: widget.positive_negative_values, aggregations: widget.aggregations, operations: widget.operations, startTime: this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), false), endTime: new Date(widget.end_time ? widget.end_time : moment().toISOString()), timeAggregation: widget.time_aggregation, chartType: widget.type, color1: widget.color1 ? widget.color1.replace('#', '%23') : undefined, color2: widget.color2 ? widget.color2.replace('#', '%23') : undefined, color3: widget.color3 ? widget.color3.replace('#', '%23') : undefined, warningValue: widget.warning_value, alarmValue: widget.alarm_value, widgetType: widget.widget_type } });
+    if ((widget.drains || (widget.index_ids && widget.index_ids.length > 0)) && (widget.widget_type === 'SPLINE') || (widget.widget_type === 'HISTOGRAM') || (widget.widget_type === 'STACKED') || (widget.widget_type === 'HEATMAP')) {
+      this.router.navigate([widget.costs_drain_id ? 'costs' : 'measures'], { queryParams: { costsDrain: widget.costs_drain_id, indexIds: widget.index_ids.toString(), nodeIds: widget.drains, costsAggregation: widget.costs_aggregation, excludeOutliers: widget.exclude_outliers, positiveNegativeValues: widget.positive_negative_values, aggregations: widget.aggregations, operations: widget.operations, startTime: this.httpUtils.getDateTimeForUrl(new Date(widget.start_time ? widget.start_time : moment().add(widget.number_periods * -1, <unitOfTime.DurationConstructor>widget.period).toISOString()), false), endTime: new Date(widget.end_time ? widget.end_time : moment().toISOString()), timeAggregation: widget.time_aggregation, chartType: widget.type, color1: widget.color1 ? widget.color1.replace('#', '%23') : undefined, color2: widget.color2 ? widget.color2.replace('#', '%23') : undefined, color3: widget.color3 ? widget.color3.replace('#', '%23') : undefined, warningValue: widget.warning_value, alarmValue: widget.alarm_value, widgetType: widget.widget_type } });
     }
   }
 

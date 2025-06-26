@@ -16,7 +16,7 @@ export class GaugeChart {
           linearGradient: { x1: 0.7, x2: 0.4, y1: 0.4, y2: 1 },
           stops: [
             [0, '#310640'],
-            [1, options.background_color.toString()],
+            [1, options.background_color ? options.background_color.toString() : '#310640' ],
           ]
         },
         height: options ? options.height : '100%',
@@ -82,7 +82,7 @@ export class GaugeChart {
           },
           data: [options.value],
           tooltip: {
-            valueDecimals: ((options.decimals !== null) && (options.decimals !== undefined)) ? options.decimals : 2,
+            valueDecimals: options.decimals ? options.decimals : 2,
             valueSuffix: options.unit ? ' ' + options.unit : ''
           },
           dial: {

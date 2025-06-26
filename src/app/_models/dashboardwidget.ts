@@ -2,7 +2,6 @@ import { GridsterItem } from 'angular-gridster2';
 
 import { DashboardWidgetDetail } from './dashboardwidgetdetail';
 import { DrainControl } from './draincontrol';
-import { Index } from './index';
 
 export class DashboardWidget implements GridsterItem {
   dashboard_id: number;
@@ -43,7 +42,7 @@ export class DashboardWidget implements GridsterItem {
   drains: string;
   drain_ids: string;
   formula_ids: string;
-  indices: Index[];
+  index_ids: number[];
   aggregations: string;
   operations: string;
   positive_negative_values: string;

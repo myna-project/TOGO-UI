@@ -41,7 +41,7 @@
           {{node.item}}
         </div>
         <div class="mat-tree-node-buttons button-row-right">
-          <button *ngIf="(node.id !== 0) && (node.type !== 'organization')" mat-stroked-button color="primary" (click)="edit(node.id, node.type)">
+          <button *ngIf="(node.id !== 0) && (node.type !== 'organization') && (node.type !== 'indexes')" mat-stroked-button color="primary" (click)="edit(node.id, node.type)">
             <mat-icon>edit</mat-icon>
             {{ ((node.type === 'indexgroup') ? 'INDEXGROUP.EDIT' : 'INDEX.EDIT') | translate }}
           </button>
